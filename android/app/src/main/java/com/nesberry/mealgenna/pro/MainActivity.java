@@ -1,4 +1,4 @@
-package com.nesberry.mealgenna;
+package com.nesberry.mealgenna.pro;
 
 import com.getcapacitor.BridgeActivity;
 
