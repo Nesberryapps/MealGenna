@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@apphosting/adapter-nextjs": "^14.0.18",
+    "@capacitor/assets": "^3.0.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
