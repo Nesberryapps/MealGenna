@@ -39,7 +39,6 @@ export async function generateGroceryList(input: GroceryListInput): Promise<Groc
 // The prompt that instructs the AI how to process the ingredient lists
 const groceryListPrompt = ai.definePrompt({
   name: 'generateGroceryListPrompt',
-  model: 'googleai/gemini-2.5-pro-preview-03-25',
   input: { schema: GroceryListInputSchema },
   output: { schema: GroceryListOutputSchema },
   prompt: `You are an expert at creating simple, clean grocery lists.

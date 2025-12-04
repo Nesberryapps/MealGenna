@@ -17,7 +17,10 @@ export const ai = genkit({
   plugins: [
     googleAI({
       // We are specifying a version to ensure consistency.
-      models: ['googleai/gemini-1.5-flash'],
+      models: [
+        'gemini-1.5-flash',
+        'imagen-4.0-fast-generate-001'
+      ],
     }),
   ],
 });
