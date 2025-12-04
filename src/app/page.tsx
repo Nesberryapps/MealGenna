@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { usePremium } from '@/hooks/use-premium';
+import { Capacitor } from '@capacitor/core';
 
 
 // Define gtag function for TypeScript and PWA install prompt types
@@ -245,7 +246,6 @@ export default function MealApp() {
     };
 
   }, []);
-
 
   useEffect(() => {
     if (isCameraDialogOpen) {
@@ -554,9 +554,6 @@ export default function MealApp() {
     URL.revokeObjectURL(url);
   };
   
-  const handleDownloadWithAd = async (meal: MealSuggestion) => {
-    handleDownloadRecipe(meal);
-  };
 
   const handleDownloadFullPlan = () => {
     if (!detailedPlan) return;
@@ -1266,9 +1263,9 @@ export default function MealApp() {
                                       <ClipboardList className="mr-2 h-4 w-4" />
                                       Grocery List
                                   </Button>
-                                  <Button onClick={() => handleDownloadWithAd(meal)} disabled={isAdLoading} className="w-full sm:w-auto">
-                                      {isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                                      {isAdLoading ? 'Loading...' : 'Download Recipe'}
+                                  <Button onClick={() => handleDownloadRecipe(meal)} className="w-full sm:w-auto">
+                                      <Download className="mr-2 h-4 w-4" />
+                                      Download Recipe
                                   </Button>
                               </CardFooter>
                           </Card>
@@ -1428,9 +1425,9 @@ export default function MealApp() {
                         <ClipboardList className="mr-2 h-4 w-4" />
                         Grocery List
                     </Button>
-                    <Button onClick={() => handleDownloadWithAd(activeMeal)} disabled={isAdLoading} className="w-full sm:w-auto">
-                        {isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        {isAdLoading ? 'Loading...' : 'Download Recipe'}
+                    <Button onClick={() => handleDownloadRecipe(activeMeal)} className="w-full sm:w-auto">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Recipe
                     </Button>
                     <DialogClose asChild>
                        <Button variant="secondary" className="w-full sm:w-auto mt-2 sm:mt-0">Close</Button>
