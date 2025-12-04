@@ -33,7 +33,7 @@ export async function generateBlogTopics(): Promise<BlogTopic[]> {
 // The prompt to generate blog topics.
 const blogTopicsPrompt = ai.definePrompt({
   name: 'generateBlogTopicsPrompt',
-  model: 'googleai/gemini-2.5-pro-preview-03-25',
+  model: 'googleai/gemini-1.5-flash',
   output: { schema: BlogTopicsOutputSchema },
   prompt: `You are a content strategist for a health and wellness blog called "MealGenna Insights".
 Your audience appreciates content that is encouraging, easy to understand, and quick to read.

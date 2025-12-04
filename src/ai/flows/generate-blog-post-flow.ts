@@ -26,7 +26,7 @@ export async function generateBlogPost(topic: string): Promise<BlogPost> {
 // The main prompt for generating the blog post
 const blogPostPrompt = ai.definePrompt({
   name: 'generateBlogPostPrompt',
-  model: 'googleai/gemini-2.5-pro-preview-03-25',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateBlogPostInputSchema },
   output: { schema: BlogPostSchema },
   prompt: `You are an expert content creator specializing in health and wellness for a blog called "MealGenna Insights".
