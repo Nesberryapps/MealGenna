@@ -34,7 +34,7 @@ export async function getMealDetails(input: GetMealDetailsInput): Promise<MealSu
 // The main prompt for generating the meal details
 const mealDetailsPrompt = ai.definePrompt({
   name: 'getMealDetailsPrompt',
-  model: 'googleai/gemini-2.5-pro-preview-03-25',
+  model: 'googleai/gemini-2.5-pro-preview',
   input: { schema: GetMealDetailsInputSchema },
   output: { schema: MealSuggestionSchema },
   prompt: `You are an expert chef who creates delicious and practical meal recipes.

@@ -42,7 +42,7 @@ export async function suggestMeals(input: SuggestMealInput): Promise<MealSuggest
 // Define the main prompt for generating the meal details
 const mealPrompt = ai.definePrompt({
   name: 'suggestMealPrompt',
-  model: 'googleai/gemini-2.5-pro-preview-03-25',
+  model: 'googleai/gemini-2.5-pro-preview',
   input: { schema: SuggestMealInputSchema },
   output: { schema: SuggestMealOutputSchema },
   prompt: `You are an expert chef who creates delicious and practical meal ideas based on ingredients a user already has.
@@ -105,7 +105,7 @@ const suggestMealsFlow = ai.defineFlow(
             meal.imageUrl = '';
         }
       } catch (error) {
-        console.error(`Image generation failed for "${meal.title}", proceeding without image.`, error);
+        console.error(\`Image generation failed for "\${meal.title}", proceeding without image.\`, error);
         meal.imageUrl = '';
       }
       return meal;
@@ -117,5 +117,3 @@ const suggestMealsFlow = ai.defineFlow(
     return { meals: mealsWithImages };
   }
 );
-
-    

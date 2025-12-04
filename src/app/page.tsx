@@ -851,8 +851,8 @@ export default function MealApp() {
       targetId: "tutorial-step-3",
     },
     {
-      title: "Generate Single Meals (Free!)",
-      description: "Choose one of these cards to get single meal ideas for free. On the mobile app, you will watch a short video ad to download the recipe.",
+      title: "Generate Single Meals",
+      description: "Choose one of these cards to get single meal ideas. You'll watch a short video ad to generate the recipes on mobile.",
       targetId: "tutorial-step-4",
     },
     {
@@ -1080,7 +1080,7 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleOpenPreferences('Quick')}
-                costText="Free"
+                costText="Watch Ad"
               />
            </div>
            <MoodCard 
@@ -1089,7 +1089,7 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleOpenPreferences('Healthy')}
-              costText="Free"
+              costText="Watch Ad"
             />
            <MoodCard 
               mood="Hearty" 
@@ -1097,7 +1097,7 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleOpenPreferences('Hearty')}
-              costText="Free"
+              costText="Watch Ad"
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
