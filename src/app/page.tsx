@@ -27,12 +27,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { loadStripe, Stripe, StripeElementsOptions } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { usePremium } from '@/hooks/use-premium';
-import { Capacitor } from '@capacitor/core';
 
 
 // Define gtag function for TypeScript and PWA install prompt types
@@ -556,7 +555,6 @@ export default function MealApp() {
   };
   
   const handleDownloadWithAd = async (meal: MealSuggestion) => {
-    // For web, just download. Ad logic will be for native mobile.
     handleDownloadRecipe(meal);
   };
 
