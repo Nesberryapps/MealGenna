@@ -105,7 +105,7 @@ const suggestMealsFlow = ai.defineFlow(
             meal.imageUrl = '';
         }
       } catch (error) {
-        console.error(\`Image generation failed for "\${meal.title}", proceeding without image.\`, error);
+        console.error(`Image generation failed for "${meal.title}", proceeding without image.`, error);
         meal.imageUrl = '';
       }
       return meal;
