@@ -19,6 +19,7 @@ export const ai = genkit({
       // We are specifying a version to ensure consistency.
       models: [
         'gemini-1.5-pro-latest',
+        'gemini-1.5-flash-latest',
         'imagen-4.0-fast-generate-001'
       ],
     }),
