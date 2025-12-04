@@ -33,7 +33,7 @@ export async function generateMealPlan(input: GenerateMealPlanInput): Promise<Me
 // The main prompt for generating the meal plan
 const mealPlanPrompt = ai.definePrompt({
   name: 'generateMealPlanPrompt',
-  model: 'googleai/gemini-2.5-pro-preview-03-25',
+  model: 'gemini-1.5-flash',
   input: { schema: GenerateMealPlanInputSchema },
   output: { schema: z.object({ dailyPlans: z.object({ 'Day 1': DailyPlanSchema, 'Day 2': DailyPlanSchema, 'Day 3': DailyPlanSchema, 'Day 4': DailyPlanSchema, 'Day 5': DailyPlanSchema, 'Day 6': DailyPlanSchema, 'Day 7': DailyPlanSchema }) }) },
   prompt: `You are an expert nutritionist and chef who creates balanced and detailed 7-day meal plans.
