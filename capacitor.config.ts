@@ -1,3 +1,4 @@
+
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -7,6 +8,8 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://www.mealgenna.com', 
     cleartext: true
+  },
+  plugins: {
   }
 };
 

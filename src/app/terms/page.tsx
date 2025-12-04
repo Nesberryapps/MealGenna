@@ -18,12 +18,12 @@ export default function TermsPage() {
 
           <h2 className="text-xl font-semibold text-foreground">2. Use of Service</h2>
           <p>
-            MealGenna provides AI-generated meal plans and recipes. This content is for informational purposes only. We do not guarantee the accuracy, completeness, or suitability of any information provided and are not responsible for any outcomes related to your use of this information. You are responsible for ensuring that any meals or ingredients are appropriate for your dietary needs and health conditions. The features of our service are offered on a pay-as-you-go basis, with some features supported by third-party advertising.
+            MealGenna provides AI-generated meal plans and recipes. This content is for informational purposes only. We do not guarantee the accuracy, completeness, or suitability of any information provided and are not responsible for any outcomes related to your use of this information. You are responsible for ensuring that any meals or ingredients are appropriate for your dietary needs and health conditions.
           </p>
 
           <h2 className="text-xl font-semibold text-foreground">3. Payments and Services</h2>
           <p>
-            We offer various AI-powered generation features. To generate single meal ideas, a one-time payment of $1.99 for a "24-Hour Pass" is required, which grants unlimited single meal generations for that period. Subsequent passes can be purchased for $1.99 each. Generating a 7-day meal plan requires a separate one-time payment of $7.99 per plan. All payments are processed through our third-party payment processor, Stripe, and are final and non-refundable. There are no subscriptions or recurring fees.
+            We offer various AI-powered generation features. Generating single meal ideas requires the purchase of a 24-hour pass for $1.99, which grants unlimited single meal generations during that period. Generating a full 7-day meal plan requires a one-time payment of $7.99 per plan. All payments are processed through our third-party payment processor (Stripe) and are final and non-refundable. There are no subscriptions or recurring fees.
           </p>
 
           <h2 className="text-xl font-semibold text-foreground">4. User Conduct</h2>
@@ -50,5 +50,3 @@ export default function TermsPage() {
     </div>
   );
 }
-
-    

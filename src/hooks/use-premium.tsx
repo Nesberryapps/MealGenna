@@ -5,13 +5,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 const PREMIUM_EXPIRY_KEY = 'mealgenna_premium_expiry';
 
-// This hook manages the user's premium access state for single meal generations.
+// This hook manages the user's premium access state.
+// "Premium" here refers to the 24-hour pass for generating single meals.
 export const usePremium = () => {
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const [premiumExpiry, setPremiumExpiry] = useState<number | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Check for an active premium pass on initial load
+  // On initial load, check for an active premium session from local storage.
   useEffect(() => {
     const expiryTimestamp = localStorage.getItem(PREMIUM_EXPIRY_KEY);
     if (expiryTimestamp) {
@@ -20,20 +21,19 @@ export const usePremium = () => {
         setIsPremium(true);
         setPremiumExpiry(expiry);
       } else {
-        // Clear expired pass from storage
+        // Clear expired session
         localStorage.removeItem(PREMIUM_EXPIRY_KEY);
       }
     }
     setIsInitialized(true);
   }, []);
 
+  // Grants a 24-hour premium pass.
   const setPremium = useCallback(() => {
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    const expiry = new Date().getTime() + twentyFourHours;
-    
-    localStorage.setItem(PREMIUM_EXPIRY_KEY, expiry.toString());
+    const newExpiry = new Date().getTime() + 24 * 60 * 60 * 1000; // 24 hours from now
+    localStorage.setItem(PREMIUM_EXPIRY_KEY, newExpiry.toString());
     setIsPremium(true);
-    setPremiumExpiry(expiry);
+    setPremiumExpiry(newExpiry);
   }, []);
 
   return { isPremium, setPremium, isInitialized, premiumExpiry };

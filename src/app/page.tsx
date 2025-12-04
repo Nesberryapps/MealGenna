@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Camera, ScanLine, Feather, Leaf, Zap, ChefHat, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, User, LogIn, Mail, Gem, Lock, CheckCircle } from 'lucide-react';
+import { Sparkles, Camera, ScanLine, Feather, Leaf, Zap, ChefHat, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, User, LogIn, Mail, Gem, Lock, CheckCircle, Video } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
@@ -175,7 +175,7 @@ export default function MealApp() {
   const [paymentEmail, setPaymentEmail] = useState('');
 
   // Premium state
-  const { isPremium, setPremium } = usePremium();
+  const { isPremium, setPremium, isInitialized, premiumExpiry } = usePremium();
 
   // Notification state
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
@@ -198,6 +198,7 @@ export default function MealApp() {
 
   // Payment promise state
   const paymentResolver = useRef<{ resolve: (value: boolean) => void } | null>(null);
+
 
   useEffect(() => {
     const date = new Date();
@@ -237,6 +238,11 @@ export default function MealApp() {
         setTimeout(() => setIsNotificationPromptOpen(true), 2000);
       }
     }
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+
   }, []);
 
 
@@ -400,14 +406,13 @@ export default function MealApp() {
 
   const handleGenerateMeal = async (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
     if (!isPremium) {
-        const paymentSuccess = await openPaymentDialog('single');
-        if (paymentSuccess) {
-            setPremium();
-        } else {
-            setIsMealSuggestionsOpen(false);
-            setLoadingMood(null);
-            return;
-        }
+      const paymentSuccess = await openPaymentDialog('single');
+      if (paymentSuccess) {
+        setPremium(); // Grant premium access
+      } else {
+        setIsPreferencesOpen(false); // Close preferences if payment fails/is cancelled
+        return; // Stop if payment fails
+      }
     }
     
     setLoadingMood(mood);
@@ -540,7 +545,7 @@ export default function MealApp() {
 
   const handleDownloadRecipe = (meal: MealSuggestion | null) => {
     if (!meal) return;
-
+    
     const { title, description, ingredients, recipe } = meal;
     let content = `${title}\n\n`;
     content += `${description}\n\n`;
@@ -812,11 +817,11 @@ export default function MealApp() {
   };
 
 
-  const MoodCard = ({ mood, icon, title, description, onClick, costText, isPremium: hasPremium }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string, isPremium?: boolean }) => (
+  const MoodCard = ({ mood, icon, title, description, onClick, costText }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string }) => (
     <Card className="relative flex flex-col text-center h-full">
         {costText && (
-            <Badge variant="default" className="absolute top-2 right-2 bg-primary text-primary-foreground">
-                {hasPremium ? 'Active Pass' : costText}
+            <Badge variant={costText.startsWith('$') ? 'default' : 'secondary'} className="absolute top-2 right-2 bg-primary text-primary-foreground">
+                {costText}
             </Badge>
         )}
         <CardHeader className="p-6">
@@ -831,7 +836,7 @@ export default function MealApp() {
         <CardFooter className="p-6 pt-0">
              <Button className="w-full" onClick={onClick}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {hasPremium ? 'Generate Again' : 'Generate'}
+                Generate
              </Button>
         </CardFooter>
     </Card>
@@ -854,8 +859,8 @@ export default function MealApp() {
       targetId: "tutorial-step-3",
     },
     {
-      title: "Generate Single Meals",
-      description: "Choose one of these cards to get single meal ideas. You'll need to purchase a 24-hour pass for unlimited generations.",
+      title: "Generate Single Meals (Pay-Per-Use)",
+      description: "Choose one of these cards to get single meal ideas. Each generation costs $1.99 and gives you 24-hour access to unlimited single meal generations.",
       targetId: "tutorial-step-4",
     },
     {
@@ -1083,8 +1088,7 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleOpenPreferences('Quick')}
-                costText="$1.99 / 24h Pass"
-                isPremium={isPremium}
+                costText="$1.99 Pass"
               />
            </div>
            <MoodCard 
@@ -1093,8 +1097,7 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleOpenPreferences('Healthy')}
-              costText="$1.99 / 24h Pass"
-              isPremium={isPremium}
+              costText="$1.99 Pass"
             />
            <MoodCard 
               mood="Hearty" 
@@ -1102,8 +1105,7 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleOpenPreferences('Hearty')}
-              costText="$1.99 / 24h Pass"
-              isPremium={isPremium}
+              costText="$1.99 Pass"
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
@@ -1215,7 +1217,8 @@ export default function MealApp() {
             <DialogHeader className="p-6 pb-2">
               <DialogTitle>Here are your meal ideas!</DialogTitle>
               <DialogDescription>
-                {isPremium ? `Your 24-hour pass is active! Enjoy unlimited meal ideas.` : "We've generated these options for you."}
+                We've generated three options for you based on your preferences.
+                {isPremium && ` Your 24-hour pass is active until ${new Date(premiumExpiry!).toLocaleTimeString()}.`}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -1499,12 +1502,12 @@ export default function MealApp() {
             <DialogContent className="max-h-[90vh] flex flex-col" onPointerDownOutside={(e) => { if(isPaymentProcessing || stripeOptions) e.preventDefault(); }}>
                 <DialogHeader>
                     <DialogTitle>
-                        {currentPlanType === 'single' ? 'Get 24-Hour Unlimited Access' : 'Generate 7-Day Meal Plan'}
+                        {currentPlanType === 'single' ? 'Unlock 24-Hour Access' : 'Generate 7-Day Meal Plan'}
                     </DialogTitle>
                     <DialogDescription>
-                        {currentPlanType === 'single' 
-                            ? "A one-time payment of $1.99 gives you unlimited single meal generations for a full 24 hours."
-                            : "A one-time payment of $7.99 is required to generate a full week's meal plan."
+                        {currentPlanType === 'single'
+                            ? 'A one-time payment of $1.99 is required for 24 hours of unlimited single meal generations.'
+                            : 'A one-time payment of $7.99 is required to generate a full week\'s meal plan.'
                         }
                     </DialogDescription>
                 </DialogHeader>
