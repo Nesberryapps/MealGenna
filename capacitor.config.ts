@@ -9,8 +9,7 @@ const config: CapacitorConfig = {
     url: 'https://www.mealgenna.com', 
     cleartext: true
   },
-  plugins: {
-  }
+  plugins: {}
 };
 
 export default config;

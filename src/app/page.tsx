@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { usePremium } from '@/hooks/use-premium';
+import { Capacitor } from '@capacitor/core';
 
 
 // Define gtag function for TypeScript and PWA install prompt types
@@ -122,7 +123,7 @@ const CheckoutForm = ({ onSuccessfulPayment, onPaymentProcessing, planType, emai
         {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
         {isProcessing ? 'Processing...' : `Pay ${getAmountText()}`}
       </Button>
-      {errorMessage && <div id="payment-message" className="text-destructive text-sm mt-2 text-center">{errorMessage}</div>}
+      {errorMessage && <div id="payment-message" className="text-sm mt-2 text-center">{errorMessage}</div>}
     </form>
   );
 };
@@ -197,6 +198,8 @@ export default function MealApp() {
 
   // Payment promise state
   const paymentResolver = useRef<{ resolve: (value: boolean) => void } | null>(null);
+  
+  const [isAdLoading, setIsAdLoading] = useState(false);
 
 
   useEffect(() => {
@@ -404,17 +407,6 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = async (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    
-    if (!isPremium) {
-      const paymentSuccess = await openPaymentDialog('single');
-      if (paymentSuccess) {
-          setPremium();
-      } else {
-          setIsPreferencesOpen(false);
-          return;
-      }
-    }
-
     setLoadingMood(mood);
     setGeneratedMeals(null);
     setIsMealSuggestionsOpen(true);
@@ -561,6 +553,11 @@ export default function MealApp() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+  
+  const handleDownloadWithAd = async (meal: MealSuggestion) => {
+    // For web, just download. Ad logic will be for native mobile.
+    handleDownloadRecipe(meal);
   };
 
   const handleDownloadFullPlan = () => {
@@ -859,12 +856,12 @@ export default function MealApp() {
       targetId: "tutorial-step-3",
     },
     {
-      title: "Generate Single Meals (Pay-Per-Use)",
-      description: "Choose one of these cards to get single meal ideas. Each generation requires a 24-hour pass for a small fee.",
+      title: "Generate Single Meals (Free!)",
+      description: "Choose one of these cards to get single meal ideas for free. On the mobile app, you will watch a short video ad to download the recipe.",
       targetId: "tutorial-step-4",
     },
     {
-        title: "Get a 7-Day Plan (Pay-Per-Use)",
+        title: "Get a 7-Day Plan (Paid)",
         description: "Generate a full week's meal plan for a small fee of $7.99. Click this card to open the payment form.",
         targetId: "tutorial-step-5",
     },
@@ -1088,7 +1085,7 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleOpenPreferences('Quick')}
-                costText="$1.99 Pass"
+                costText="Free"
               />
            </div>
            <MoodCard 
@@ -1097,7 +1094,7 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleOpenPreferences('Healthy')}
-              costText="$1.99 Pass"
+              costText="Free"
             />
            <MoodCard 
               mood="Hearty" 
@@ -1105,7 +1102,7 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleOpenPreferences('Hearty')}
-              costText="$1.99 Pass"
+              costText="Free"
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
@@ -1218,7 +1215,6 @@ export default function MealApp() {
               <DialogTitle>Here are your meal ideas!</DialogTitle>
               <DialogDescription>
                 We've generated three options for you based on your preferences.
-                {isPremium && ` Your 24-hour pass is active until ${new Date(premiumExpiry!).toLocaleTimeString()}.`}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -1272,9 +1268,9 @@ export default function MealApp() {
                                       <ClipboardList className="mr-2 h-4 w-4" />
                                       Grocery List
                                   </Button>
-                                  <Button onClick={() => handleDownloadRecipe(meal)} className="w-full sm:w-auto">
-                                      <Download className="mr-2 h-4 w-4" />
-                                      Download Recipe
+                                  <Button onClick={() => handleDownloadWithAd(meal)} disabled={isAdLoading} className="w-full sm:w-auto">
+                                      {isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                      {isAdLoading ? 'Loading...' : 'Download Recipe'}
                                   </Button>
                               </CardFooter>
                           </Card>
@@ -1434,9 +1430,9 @@ export default function MealApp() {
                         <ClipboardList className="mr-2 h-4 w-4" />
                         Grocery List
                     </Button>
-                    <Button onClick={() => handleDownloadRecipe(activeMeal)} className="w-full sm:w-auto">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Recipe
+                    <Button onClick={() => handleDownloadWithAd(activeMeal)} disabled={isAdLoading} className="w-full sm:w-auto">
+                        {isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isAdLoading ? 'Loading...' : 'Download Recipe'}
                     </Button>
                     <DialogClose asChild>
                        <Button variant="secondary" className="w-full sm:w-auto mt-2 sm:mt-0">Close</Button>

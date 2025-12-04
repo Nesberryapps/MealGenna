@@ -23,7 +23,7 @@ export default function TermsPage() {
 
           <h2 className="text-xl font-semibold text-foreground">3. Payments and Services</h2>
           <p>
-            We offer various AI-powered generation features. Generating single meal ideas requires the purchase of a 24-hour pass for $1.99, which grants unlimited single meal generations during that period. Generating a full 7-day meal plan requires a one-time payment of $7.99 per plan. All payments are processed through our third-party payment processor (Stripe) and are final and non-refundable. There are no subscriptions or recurring fees.
+            We offer various AI-powered generation features. Generating single meal ideas is free. On our mobile app, downloading a recipe requires watching a rewarded video advertisement. Generating a full 7-day meal plan requires a one-time payment of $7.99 per plan. All payments are processed through our third-party payment processor (Stripe) and are final and non-refundable. There are no subscriptions or recurring fees.
           </p>
 
           <h2 className="text-xl font-semibold text-foreground">4. User Conduct</h2>
