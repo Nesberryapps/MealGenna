@@ -34,7 +34,7 @@ export async function analyzePantry(input: AnalyzePantryInput): Promise<AnalyzeP
 
 const prompt = ai.definePrompt({
   name: 'analyzePantryPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-1.5-pro-latest',
   input: { schema: AnalyzePantryInputSchema },
   output: { schema: AnalyzePantryOutputSchema },
   prompt: `You are an expert at identifying food items from an image.
