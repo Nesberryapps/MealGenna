@@ -1,16 +1,15 @@
 
 'use client';
 
-import { useState, useRef, useEffect, ReactNode, useCallback } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Camera, ScanLine, Feather, Leaf, Zap, ChefHat, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, User, LogIn, Mail, Gem, Lock, CheckCircle, Video } from 'lucide-react';
+import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, Gem } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
 import { suggestMeals, SuggestMealInput } from '@/ai/flows/suggest-meal-flow';
 import { generateMealPlan, GenerateMealPlanInput } from '@/ai/flows/generate-meal-plan-flow';
@@ -405,33 +404,34 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = async (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
+    
     if (!isPremium) {
       const paymentSuccess = await openPaymentDialog('single');
       if (paymentSuccess) {
-        setPremium(); // Grant premium access
+          setPremium();
       } else {
-        setIsPreferencesOpen(false); // Close preferences if payment fails/is cancelled
-        return; // Stop if payment fails
+          setIsPreferencesOpen(false);
+          return;
       }
     }
-    
+
     setLoadingMood(mood);
     setGeneratedMeals(null);
     setIsMealSuggestionsOpen(true);
-    if(isCameraDialogOpen) setIsCameraDialogOpen(false);
+    if (isCameraDialogOpen) setIsCameraDialogOpen(false);
 
     const input: SuggestMealInput = {
-      mood: mood === 'from pantry' ? 'Quick' : mood,
-      mealTime,
       pantryItems: items,
+      mealTime: mealTime,
+      mood: mood === 'from pantry' ? 'Quick' : mood,
       diet: preferences.diet !== 'none' ? preferences.diet : undefined,
       cuisine: getCuisinePreference(),
-      customRequest: preferences.customRequest || undefined,
+      customRequest: preferences.customRequest || undefined
     };
 
     try {
-      const fullMeals = await suggestMeals(input);
-      setGeneratedMeals(fullMeals);
+      const result = await suggestMeals(input);
+      setGeneratedMeals(result);
     } catch (error) {
         console.error('Error generating meal:', error);
         toast({
@@ -860,7 +860,7 @@ export default function MealApp() {
     },
     {
       title: "Generate Single Meals (Pay-Per-Use)",
-      description: "Choose one of these cards to get single meal ideas. Each generation costs $1.99 and gives you 24-hour access to unlimited single meal generations.",
+      description: "Choose one of these cards to get single meal ideas. Each generation requires a 24-hour pass for a small fee.",
       targetId: "tutorial-step-4",
     },
     {
