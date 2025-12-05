@@ -17,10 +17,10 @@ end
 target 'App' do
   capacitor_pods
   pod 'GoogleUserMessagingPlatform', '2.4.0'
-  pod 'Google-Mobile-Ads-SDK', '11.2.0'
+  pod 'Google-Mobile-Ads-SDK', '11.3.0'
 
   use_frameworks! :linkage => :static
-  
+
 end
 
 post_install do |installer|
