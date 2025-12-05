@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import Script from 'next/script';
 import type { Viewport } from 'next'
+import AdMobInit from "@/components/AdMobInit";
 
 export const viewport: Viewport = {
   themeColor: '#4CAF50',
@@ -36,8 +37,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Google tag (gtag.js) */}
-        <Script async src="https://www.googletagmanager.com/gtag/js?id=AW-17507715969"></Script>
-        <Script id="google-ads-tag">
+        <Script async src="https://www.googletagmanager.com/gtag/js?id=AW-17507715969" strategy="afterInteractive"></Script>
+        <Script id="google-ads-tag" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -46,7 +47,7 @@ export default function RootLayout({
           `}
         </Script>
         {/* Event snippet for Purchase conversion page */}
-        <Script id="google-ads-conversion-snippet">
+        <Script id="google-ads-conversion-snippet" strategy="afterInteractive">
           {`
             function gtag_report_conversion(url, enhanced_conversion_data) {
               var callback = function () {
@@ -66,7 +67,7 @@ export default function RootLayout({
         </Script>
         <meta name="google-adsense-account" content="ca-pub-6191158195654090" />
         {/* Google Tag Manager */}
-        <Script id="google-tag-manager">
+        <Script id="google-tag-manager" strategy="afterInteractive">
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -90,6 +91,7 @@ export default function RootLayout({
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WDJBSQ72"
         height="0" width="0" style={{display:"none", visibility:"hidden"}}></iframe></noscript>
         {/* End Google Tag Manager (noscript) */}
+        <AdMobInit />
 
         <ThemeProvider
             attribute="class"

@@ -33,7 +33,40 @@ import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { usePremium } from '@/hooks/use-premium';
 import { Capacitor } from '@capacitor/core';
+import { showWatchToGenerateAd } from '@/services/admob';
 
+
+  // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
+const checkDailyLimit = () => {
+  if (typeof window === 'undefined') return true; // Server-side safety
+  
+  const TODAY = new Date().toDateString(); 
+  const STORAGE_KEY = 'meal_gen_count';
+  const LIMIT = 3; // Max free meals per day on Web
+
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  
+  // Reset if it's a new day
+  if (data.date !== TODAY) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: TODAY, count: 0 }));
+    return true; 
+  }
+
+  // Check limit
+  return data.count < LIMIT;
+};
+
+const incrementDailyCount = () => {
+  if (typeof window === 'undefined') return;
+
+  const TODAY = new Date().toDateString();
+  const STORAGE_KEY = 'meal_gen_count';
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  
+  const newCount = (data.count || 0) + 1;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: TODAY, count: newCount }));
+};
+// ----------------------------------------
 
 // Define gtag function for TypeScript and PWA install prompt types
 declare global {
@@ -103,9 +136,9 @@ const CheckoutForm = ({ onSuccessfulPayment, onPaymentProcessing, planType, emai
     } else {
       setErrorMessage(null);
       
-      if (typeof window.gtag_report_conversion === 'function') {
+      if (typeof (window as any).gtag_report_conversion === 'function') {
         const enhanced_conversion_data = { "email": email };
-        window.gtag_report_conversion(undefined, enhanced_conversion_data);
+        (window as any).gtag_report_conversion(undefined, enhanced_conversion_data);
       }
 
       onSuccessfulPayment();
@@ -186,7 +219,7 @@ export default function MealApp() {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   // PWA Install state
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [isAlreadyInstalledAlertOpen, setIsAlreadyInstalledAlertOpen] = useState(false);
 
@@ -220,7 +253,7 @@ export default function MealApp() {
 
     setPreferences(prev => ({ ...prev, mealTime: initialMealTime }));
 
-    const handleBeforeInstallPrompt = (event: BeforeInstallPromptEvent) => {
+    const handleBeforeInstallPrompt = (event: any) => {
       event.preventDefault();
       setInstallPrompt(event);
     };
@@ -405,7 +438,21 @@ export default function MealApp() {
     return undefined;
   };
 
-  const handleGenerateMeal = async (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
+  const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
+     if (Capacitor.getPlatform() === 'web') {
+        const isAllowed = checkDailyLimit();
+        if (!isAllowed) {
+          // Show a Toast or Alert telling them to download the app
+          toast({
+            title: "Daily Limit Reached",
+            description: "Download the mobile app for unlimited generations!",
+            variant: "destructive"
+          });
+          // Return early - DO NOT CALL API
+          return; 
+        }
+      }
+    showWatchToGenerateAd(async () => {
     setLoadingMood(mood);
     setGeneratedMeals(null);
     setIsMealSuggestionsOpen(true);
@@ -433,8 +480,13 @@ export default function MealApp() {
         setIsMealSuggestionsOpen(false);
     } finally {
         setLoadingMood(null);
+        }
+      if (Capacitor.getPlatform() === 'web') {
+         incrementDailyCount();
     }
-  };
+  
+  });
+};
 
 
   const handleGeneratePlan = async () => {
