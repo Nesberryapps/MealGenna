@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
@@ -34,7 +35,7 @@ import AdBanner from '@/components/ad-banner';
 import { usePremium } from '@/hooks/use-premium';
 import { Capacitor } from '@capacitor/core';
 import { showWatchToGenerateAd } from '@/services/admob';
-
+import { LimitModal } from "@/components/LimitModal";
 
   // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
 const checkDailyLimit = () => {
@@ -190,6 +191,7 @@ export default function MealApp() {
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   
   // Preferences state
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
@@ -439,54 +441,48 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-     if (Capacitor.getPlatform() === 'web') {
-        const isAllowed = checkDailyLimit();
-        if (!isAllowed) {
-          // Show a Toast or Alert telling them to download the app
-          toast({
-            title: "Daily Limit Reached",
-            description: "Download the mobile app for unlimited generations!",
-            variant: "destructive"
-          });
-          // Return early - DO NOT CALL API
-          return; 
-        }
+    if (Capacitor.getPlatform() === 'web') {
+      const isAllowed = checkDailyLimit();
+      if (!isAllowed) {
+        setIsLimitModalOpen(true);
+        return;
       }
-    showWatchToGenerateAd(async () => {
-    setLoadingMood(mood);
-    setGeneratedMeals(null);
-    setIsMealSuggestionsOpen(true);
-    if (isCameraDialogOpen) setIsCameraDialogOpen(false);
-
-    const input: SuggestMealInput = {
-      pantryItems: items,
-      mealTime: mealTime,
-      mood: mood === 'from pantry' ? 'Quick' : mood,
-      diet: preferences.diet !== 'none' ? preferences.diet : undefined,
-      cuisine: getCuisinePreference(),
-      customRequest: preferences.customRequest || undefined
-    };
-
-    try {
-      const result = await suggestMeals(input);
-      setGeneratedMeals(result);
-    } catch (error) {
-        console.error('Error generating meal:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Generation Failed',
-            description: 'Could not generate meal ideas. Please try again.',
-        });
-        setIsMealSuggestionsOpen(false);
-    } finally {
-        setLoadingMood(null);
-        }
-      if (Capacitor.getPlatform() === 'web') {
-         incrementDailyCount();
     }
-  
-  });
-};
+    
+    showWatchToGenerateAd(async () => {
+      setLoadingMood(mood);
+      setGeneratedMeals(null);
+      setIsMealSuggestionsOpen(true);
+      if (isCameraDialogOpen) setIsCameraDialogOpen(false);
+
+      const input: SuggestMealInput = {
+        pantryItems: items,
+        mealTime: mealTime,
+        mood: mood === 'from pantry' ? 'Quick' : mood,
+        diet: preferences.diet !== 'none' ? preferences.diet : undefined,
+        cuisine: getCuisinePreference(),
+        customRequest: preferences.customRequest || undefined
+      };
+
+      try {
+        const result = await suggestMeals(input);
+        setGeneratedMeals(result);
+        if (Capacitor.getPlatform() === 'web') {
+          incrementDailyCount();
+        }
+      } catch (error) {
+          console.error('Error generating meal:', error);
+          toast({
+              variant: 'destructive',
+              title: 'Generation Failed',
+              description: 'Could not generate meal ideas. Please try again.',
+          });
+          setIsMealSuggestionsOpen(false);
+      } finally {
+          setLoadingMood(null);
+      }
+    });
+  };
 
 
   const handleGeneratePlan = async () => {
@@ -948,6 +944,8 @@ export default function MealApp() {
   return (
     <>
       <div className="container relative py-12 md:py-20">
+        <LimitModal isOpen={isLimitModalOpen} onClose={() => setIsLimitModalOpen(false)} />
+
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
             {heading}
