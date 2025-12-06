@@ -42,7 +42,7 @@ const checkDailyLimit = () => {
   
   const TODAY = new Date().toDateString(); 
   const STORAGE_KEY = 'meal_gen_count';
-  const LIMIT = 3; // Max free meals per day on Web
+  const LIMIT = 1; // Max free meals per day on Web
 
   const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   
