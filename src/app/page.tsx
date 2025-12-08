@@ -1130,7 +1130,6 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleOpenPreferences('Quick')}
-                costText="Watch Ad"
               />
            </div>
            <MoodCard 
@@ -1139,7 +1138,6 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleOpenPreferences('Healthy')}
-              costText="Watch Ad"
             />
            <MoodCard 
               mood="Hearty" 
@@ -1147,7 +1145,6 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleOpenPreferences('Hearty')}
-              costText="Watch Ad"
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
@@ -1670,3 +1667,4 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+

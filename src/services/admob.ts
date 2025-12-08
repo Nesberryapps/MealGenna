@@ -23,25 +23,48 @@ export const initializeAdMob = async () => {
   }
 };
 
-// 2. Show the Ad and run the callback ONLY if successful
+// 2. Show the Ad Every OTHER time (Ad -> Free -> Ad -> Free)
 export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
+  // A. Check Web Platform
   if (Capacitor.getPlatform() === 'web') {
-    console.log("Web Mode: Skipping ad, generating immediately.");
-    onRewardEarned(); 
+    console.log("Web Mode: Skipping ad.");
+    onRewardEarned();
     return;
   }
 
-  const adId = Capacitor.getPlatform() === 'ios'
-    ? 'ca-app-pub-6191158195654090/7842725756' 
-    : 'ca-app-pub-6191158195654090/2827553869';
+  // B. Check the "Frequency" Counter from phone storage
+  // Default to '0' if it doesn't exist yet
+  const currentCount = parseInt(localStorage.getItem('mealGenAdCount') || '0');
 
-  // FIX 3: Changed event name to 'Rewarded'
+  // Logic: If count is ODD (1, 3, 5), skip the ad.
+  // This means: 0 (Ad), 1 (Free), 2 (Ad), 3 (Free)...
+  if (currentCount % 2 !== 0) {
+    console.log(`Count is ${currentCount}: User gets a FREE generation!`);
+    
+    // Increment counter and save
+    localStorage.setItem('mealGenAdCount', (currentCount + 1).toString());
+    
+    // Grant reward immediately without ad
+    onRewardEarned();
+    return; 
+  }
+
+  // C. If we are here, it's time to watch an ad! (Count is 0, 2, 4...)
+  const adId = Capacitor.getPlatform() === 'ios'
+    ? 'ca-app-pub-3940256099942544/1712485313'  // iOS Test ID
+    : 'ca-app-pub-3940256099942544/5224354917'; // Android Test ID
+
+  // FIX: Listener needs to be set up before showing
   const rewardListener = await AdMob.addListener(
-    RewardAdPluginEvents.Rewarded, 
+    RewardAdPluginEvents.Rewarded,
     (reward: AdMobRewardItem) => {
       console.log('User watched the video!', reward);
-      onRewardEarned(); 
-      rewardListener.remove(); 
+      
+      // Increment counter and save so next time is free
+      localStorage.setItem('mealGenAdCount', (currentCount + 1).toString());
+      
+      onRewardEarned();
+      rewardListener.remove();
     }
   );
 
@@ -51,8 +74,9 @@ export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
     await AdMob.showRewardVideoAd();
   } catch (error) {
     console.error('Ad failed to load/show:', error);
-    // Optional: decided if you want to let them generate anyway on error
-    // onRewardEarned(); 
+    // If ad fails (no internet?), usually we let them pass to be nice
+    // But we DON'T increment counter, so they have to try watching again next time
+    onRewardEarned();
     rewardListener.remove();
   }
 };
