@@ -1152,8 +1152,14 @@ export default function MealApp() {
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>}
                 title="Generate a 7-Day Plan" 
                 description="Get a complete breakfast, lunch, and dinner plan for the week for a small one-time fee of $7.99."
-                onClick={() => handleOpenPreferences('7-day-plan')}
-                costText="$7.99"
+                onClick={() => {
+                  if (Capacitor.getPlatform() === 'ios') {
+                    alert("To purchase the 7-Day Plan, please visit www.mealgenna.com on your desktop browser.");
+                    return;
+                  }
+                  handleOpenPreferences('7-day-plan');
+                }}
+                costText={Capacitor.getPlatform() === 'ios' ? "Web Only" : "$7.99"}
               />
            </div>
         </div>
