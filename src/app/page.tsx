@@ -33,8 +33,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { usePremium } from '@/hooks/use-premium';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import { showWatchToGenerateAd } from '@/services/admob';
+import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { LimitModal } from "@/components/LimitModal";
 
   // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
@@ -581,25 +582,50 @@ export default function MealApp() {
       setIsFetchingFullPlan(false);
     }
   };
+  // --- NEW HELPER FUNCTION ---
+  const saveTextFile = async (filename: string, content: string) => {
+    // 1. If on Mobile (iOS/Android), use Filesystem
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Filesystem.writeFile({
+          path: filename,
+          data: content,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+        });
+        alert(`Saved ${filename} to your Documents folder!`);
+      } catch (error) {
+        console.error("Save failed", error);
+        alert("Could not save file. Please check permissions.");
+      }
+    } 
+    // 2. If on Web, use the old "Link Click" method
+    else {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+  // ---------------------------
 
   const handleDownloadRecipe = (meal: MealSuggestion | null) => {
     if (!meal) return;
-    
+
     const { title, description, ingredients, recipe } = meal;
     let content = `${title}\n\n`;
     content += `${description}\n\n`;
     content += `Ingredients:\n${ingredients.map(i => `- ${i}`).join('\n')}\n\n`;
     content += `Recipe:\n${recipe.map((step, index) => `${index + 1}. ${step}`).join('\n')}`;
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${title.replace(/\s+/g, '_').toLowerCase()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const filename = `${title.replace(/\s+/g, '_').toLowerCase()}.txt`;
+
+    saveTextFile(filename, content);
   };
   
 
@@ -625,15 +651,8 @@ export default function MealApp() {
       });
     });
 
-    const blob = new Blob([fullPlanContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'mealgenna_7_day_plan.txt';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const filename = 'mealgenna_7_day_plan.txt';
+    saveTextFile(filename, fullPlanContent);
   };
 
   const handleShopOnline = (store: 'walmart' | 'amazon' | 'instacart') => {
@@ -1153,13 +1172,17 @@ export default function MealApp() {
                 title="Generate a 7-Day Plan" 
                 description="Get a complete breakfast, lunch, and dinner plan for the week for a small one-time fee of $7.99."
                 onClick={() => {
-                  if (Capacitor.getPlatform() === 'ios') {
-                    alert("To purchase the 7-Day Plan, please visit www.mealgenna.com on your desktop browser.");
-                    return;
+                  if (Capacitor.getPlatform() !== 'web') {
+                    // Mobile: Force 2 ads to unlock
+                    showSevenDayPlanAds(() => {
+                      handleOpenPreferences('7-day-plan');
+                    });
+                  } else {
+                    // Web: Standard payment flow
+                    handleOpenPreferences('7-day-plan');
                   }
-                  handleOpenPreferences('7-day-plan');
                 }}
-                costText={Capacitor.getPlatform() === 'ios' ? "Web Only" : "$7.99"}
+                costText={Capacitor.getPlatform() !== 'web' ? "Watch 2 Videos" : "$7.99"}
               />
            </div>
         </div>

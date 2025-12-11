@@ -80,3 +80,64 @@ export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
     rewardListener.remove();
   }
 };
+
+// 3. Special "Double Ad" Logic for High-Value 7-Day Plan
+export const showSevenDayPlanAds = async (onComplete: () => void) => {
+  if (Capacitor.getPlatform() === 'web') {
+    onComplete(); // Web users skip ads (or use Stripe logic elsewhere)
+    return;
+  }
+
+  const adId = Capacitor.getPlatform() === 'ios'
+    ? 'ca-app-pub-3940256099942544/1712485313'  // iOS Test ID
+    : 'ca-app-pub-3940256099942544/5224354917'; // Android Test ID
+
+  // --- Helper to show one ad ---
+  const playAd = async (): Promise<boolean> => {
+    return new Promise(async (resolve) => {
+      let resolved = false;
+      
+      const listener = await AdMob.addListener(
+        RewardAdPluginEvents.Rewarded, 
+        () => {
+          if (!resolved) { resolved = true; resolve(true); }
+          listener.remove();
+        }
+      );
+
+      // Handle close/fail without reward
+      const closeListener = await AdMob.addListener(
+        RewardAdPluginEvents.Dismissed,
+        () => {
+           if (!resolved) { resolved = true; resolve(false); }
+           closeListener.remove();
+        }
+      );
+
+      try {
+        await AdMob.prepareRewardVideoAd({ adId });
+        await AdMob.showRewardVideoAd();
+      } catch (e) {
+        console.error(e);
+        resolve(true); // Fallback: If ad fails to load, let them pass
+      }
+    });
+  };
+
+  // --- EXECUTE THE CHAIN ---
+  // 1. Play First Ad
+  const firstAdSuccess = await playAd();
+  
+  if (firstAdSuccess) {
+    // 2. Alert user
+    alert("Great! Watch 1 more video to unlock your full Weekly Plan.");
+    
+    // 3. Play Second Ad
+    const secondAdSuccess = await playAd();
+    
+    if (secondAdSuccess) {
+      // 4. Success!
+      onComplete();
+    }
+  }
+};
