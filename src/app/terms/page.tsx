@@ -21,14 +21,14 @@ export default function TermsPage() {
             MealGenna provides AI-generated meal plans and recipes. This content is for informational purposes only. We do not guarantee the accuracy, completeness, or suitability of any information provided and are not responsible for any outcomes related to your use of this information. You are responsible for ensuring that any meals or ingredients are appropriate for your dietary needs and health conditions.
           </p>
 
-          <h2 className="text-xl font-semibold text-foreground">3. Payments and Services</h2>
+          <h2 className="text-xl font-semibold text-foreground">3. Access to Features via Advertising</h2>
           <p>
-            We offer various AI-powered generation features. Generating single meal ideas is free. Generating a full 7-day meal plan requires a one-time payment of $7.99 per plan. All payments are processed through our third-party payment processor (Stripe) and are final and non-refundable. There are no subscriptions or recurring fees.
+            MealGenna is a free-to-use application. Access to certain features, such as generating single meal ideas or full 7-day meal plans, is granted in exchange for watching rewarded video advertisements provided by our third-party advertising partners (e.g., Google AdMob). There are no payments, subscriptions, or recurring fees required to use the core features of the app.
           </p>
 
           <h2 className="text-xl font-semibold text-foreground">4. User Conduct</h2>
           <p>
-            You agree not to use the service for any unlawful purpose or to violate any laws in your jurisdiction. You agree not to misuse the AI generation features by submitting inappropriate or malicious prompts.
+            You agree not to use the service for any unlawful purpose or to violate any laws in your jurisdiction. You agree not to misuse the AI generation features by submitting inappropriate or malicious prompts, or to attempt to bypass the advertising mechanisms that grant access to features.
           </p>
 
           <h2 className="text-xl font-semibold text-foreground">5. Intellectual Property</h2>
