@@ -1170,7 +1170,7 @@ export default function MealApp() {
                 mood="7-day-plan" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>}
                 title="Generate a 7-Day Plan" 
-                description="Get a complete breakfast, lunch, and dinner plan for the week for a small one-time fee of $7.99."
+                description="Get a complete breakfast, lunch, and dinner plan for the week. Watch two short video ads to unlock."
                 onClick={() => {
                   if (Capacitor.getPlatform() !== 'web') {
                     // Mobile: Force 2 ads to unlock
@@ -1182,7 +1182,7 @@ export default function MealApp() {
                     handleOpenPreferences('7-day-plan');
                   }
                 }}
-                costText={Capacitor.getPlatform() !== 'web' ? "Watch 2 Videos" : "$7.99"}
+                costText={Capacitor.getPlatform() !== 'web' ? "Watch 2 Videos" : "Watch 2 Videos"}
               />
            </div>
         </div>
@@ -1696,4 +1696,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
 
