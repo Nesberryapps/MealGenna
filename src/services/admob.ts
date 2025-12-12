@@ -51,8 +51,8 @@ export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
 
   // C. If we are here, it's time to watch an ad! (Count is 0, 2, 4...)
   const adId = Capacitor.getPlatform() === 'ios'
-    ? 'ca-app-pub-3940256099942544/1712485313'  // iOS Test ID
-    : 'ca-app-pub-3940256099942544/5224354917'; // Android Test ID
+    ? 'ca-app-pub-6191158195654090/7842725756'  // iOS Test ID
+    : 'ca-app-pub-6191158195654090/2827553869'; // Android Test ID
 
   // FIX: Listener needs to be set up before showing
   const rewardListener = await AdMob.addListener(
