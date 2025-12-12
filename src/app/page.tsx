@@ -923,9 +923,9 @@ export default function MealApp() {
       targetId: "tutorial-step-4",
     },
     {
-        title: "Get a 7-Day Plan (Paid)",
-        description: "Generate a full week's meal plan for a small fee of $7.99. Click this card to open the payment form.",
-        targetId: "tutorial-step-5",
+      title: "Get a 7-Day Plan",
+      description: "Generate a full week's meal plan by watching two short rewarded video ads. Click this card to get started.",
+      targetId: "tutorial-step-5",
     },
     {
       title: "You're All Set!",
@@ -1182,7 +1182,7 @@ export default function MealApp() {
                     handleOpenPreferences('7-day-plan');
                   }
                 }}
-                costText={Capacitor.getPlatform() !== 'web' ? "Watch 2 Videos" : "Watch 2 Videos"}
+                costText={"Watch 2 Videos"}
               />
            </div>
         </div>
@@ -1696,5 +1696,6 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
 
 
