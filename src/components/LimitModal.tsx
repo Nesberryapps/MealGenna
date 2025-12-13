@@ -34,7 +34,7 @@ import {
             
             <div className="flex gap-4 justify-center">
               {/* Google Play Badge */}
-              <Link href="https://play.google.com/store/apps/dev?id=4793443989785532722" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
+              <Link href="https://play.google.com/store/apps/details?id=com.nesberry.mealgenna.pro" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
                 <img 
                   src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" 
                   alt="Get it on Google Play" 

@@ -89,8 +89,8 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
   }
 
   const adId = Capacitor.getPlatform() === 'ios'
-    ? 'ca-app-pub-3940256099942544/1712485313'  // iOS Test ID
-    : 'ca-app-pub-3940256099942544/5224354917'; // Android Test ID
+    ? 'ca-app-pub-6191158195654090/7842725756'  // iOS Test ID
+    : 'ca-app-pub-6191158195654090/2827553869'; // Android Test ID
 
   // --- Helper to show one ad ---
   const playAd = async (): Promise<boolean> => {
