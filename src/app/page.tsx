@@ -37,6 +37,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { LimitModal } from "@/components/LimitModal";
+import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 
   // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
 const checkDailyLimit = () => {
@@ -90,8 +91,6 @@ declare global {
     beforeinstallprompt: BeforeInstallPromptEvent;
   }
 }
-
-const NOTIFICATION_PROMPT_KEY = 'mealgenna_notification_prompt_seen';
 
 let stripePromise: Promise<Stripe | null>;
 
@@ -213,10 +212,6 @@ export default function MealApp() {
   // Premium state
   const { isPremium, setPremium, isInitialized, premiumExpiry } = usePremium();
 
-  // Notification state
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
-  const [isNotificationPromptOpen, setIsNotificationPromptOpen] = useState(false);
-
   // Tutorial state
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -266,17 +261,16 @@ export default function MealApp() {
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsAppInstalled(true);
     }
-
-    if ('Notification' in window) {
-      const permission = Notification.permission;
-      setNotificationPermission(permission);
-      
-      const promptSeen = localStorage.getItem(NOTIFICATION_PROMPT_KEY);
-      if (permission === 'default' && !promptSeen) {
-        setTimeout(() => setIsNotificationPromptOpen(true), 2000);
-      }
-    }
     
+    // Register and schedule notifications on mobile
+    if (Capacitor.isNativePlatform()) {
+      registerNotifications().then(success => {
+        if (success) {
+          scheduleDailyNotifications();
+        }
+      });
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
@@ -749,51 +743,6 @@ export default function MealApp() {
     setIsPaymentDialogOpen(false);
   }
 
-  const scheduleReminderNotification = () => {
-    if (Notification.permission === 'granted') {
-      const title = 'Hungry for new ideas?';
-      const options = {
-        body: 'Your next meal plan awaits at MealGenna!',
-        icon: '/logo.png',
-        tag: 'mealgenna-reminder',
-      };
-
-      setTimeout(() => {
-        if (Notification.permission === 'granted') {
-          new Notification(title, options);
-        }
-      }, 24 * 60 * 60 * 1000);
-    }
-  };
-
-  const handleRequestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      toast({
-        variant: 'destructive',
-        title: 'Notifications Not Supported',
-        description: 'Sorry, your browser does not support notifications.',
-      });
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-
-    if (permission === 'granted') {
-      scheduleReminderNotification();
-      toast({
-        title: 'Reminders Enabled!',
-        description: "You're all set! We'll send you a friendly reminder in 24 hours.",
-      });
-    } else if (permission === 'denied') {
-      toast({
-        variant: 'destructive',
-        title: 'Reminders Blocked',
-        description: 'You have blocked notifications. To enable them, please update your browser settings.',
-      });
-    }
-  };
-
   const handleInstallClick = async () => {
     if (isAppInstalled) {
       setIsAlreadyInstalledAlertOpen(true);
@@ -867,14 +816,6 @@ export default function MealApp() {
     setIsMealDetailOpen(true);
   }
 
-  const handleNotificationPrompt = async (shouldRequest: boolean) => {
-    localStorage.setItem(NOTIFICATION_PROMPT_KEY, 'true');
-    setIsNotificationPromptOpen(false);
-    if (shouldRequest) {
-        await handleRequestNotificationPermission();
-    }
-  };
-
   const getGenerateButtonText = () => {
     if (loadingMood) {
         return 'Generating...';
@@ -919,7 +860,7 @@ export default function MealApp() {
     },
     {
       title: "App Controls",
-      description: "Here you can enable daily reminders, re-run this tutorial, and install the app to your device for easy access.",
+      description: "Here you can re-run this tutorial and install the app to your device for easy access.",
       targetId: "tutorial-step-1",
     },
     {
@@ -994,46 +935,6 @@ export default function MealApp() {
                         </CardDescription>
                     </div>
                      <div className="flex items-center">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-muted-foreground">
-                                    <Bell className="h-5 w-5" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                                <div className="grid gap-4">
-                                    <div className="space-y-2">
-                                        <h4 className="font-medium leading-none">Daily Reminders</h4>
-                                        <p className="text-sm text-muted-foreground">
-                                            Get a daily reminder to come back for new meal ideas.
-                                        </p>
-                                    </div>
-                                    {notificationPermission === 'granted' ? (
-                                         <div className="flex flex-col items-start gap-2">
-                                            <div className="flex items-center text-sm text-green-600 p-2 rounded-md bg-green-500/10 border border-green-500/20 w-full">
-                                                <BellRing className="mr-2 h-4 w-4 flex-shrink-0" />
-                                                <span>Daily reminders are enabled.</span>
-                                            </div>
-                                             <p className="text-xs text-muted-foreground">
-                                                 To disable, click the padlock 🔒 icon in your address bar and change the notification setting to "Block".
-                                             </p>
-                                         </div>
-                                    ) : (
-                                        <div className="flex flex-col items-start gap-2">
-                                            <Button onClick={handleRequestNotificationPermission} disabled={notificationPermission === 'denied'} className="w-full">
-                                                <Bell className="mr-2 h-4 w-4" />
-                                                {notificationPermission === 'denied' ? 'Permissions Blocked' : 'Enable Reminders'}
-                                            </Button>
-                                            {notificationPermission === 'denied' && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    To enable, click the padlock 🔒 icon in your address bar and change the notification setting to "Allow".
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
                         <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsTutorialOpen(true)}>
                             <HelpCircle className="h-5 w-5" />
                         </Button>
@@ -1657,21 +1558,6 @@ export default function MealApp() {
             </DialogContent>
         </Dialog>
 
-        <AlertDialog open={isNotificationPromptOpen} onOpenChange={setIsNotificationPromptOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Get Notified About New Meal Ideas?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Would you like to receive a friendly reminder to come back for new, fresh meal ideas? You can change this in your browser settings at any time.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => handleNotificationPrompt(false)}>No, thanks</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleNotificationPrompt(true)}>Yes, enable reminders</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
          <AlertDialog open={isAlreadyInstalledAlertOpen} onOpenChange={setIsAlreadyInstalledAlertOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -1713,6 +1599,7 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
 
 
 
