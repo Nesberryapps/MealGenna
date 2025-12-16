@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, Gem } from 'lucide-react';
+import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, Gem, Video } from 'lucide-react';
 import Image from 'next/image';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
 import { suggestMeals, SuggestMealInput } from '@/ai/flows/suggest-meal-flow';
@@ -875,11 +875,21 @@ export default function MealApp() {
     }
   };
 
+  const getGenerateButtonText = () => {
+    if (loadingMood) {
+        return 'Generating...';
+    }
+    if (selectedMood === '7-day-plan') {
+        return 'Watch Ads to Generate';
+    }
+    return 'Watch Ad to Generate';
+};
+
 
   const MoodCard = ({ mood, icon, title, description, onClick, costText }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string }) => (
     <Card className="relative flex flex-col text-center h-full">
         {costText && (
-            <Badge variant={costText.startsWith('$') ? 'default' : 'secondary'} className="absolute top-2 right-2 bg-primary text-primary-foreground">
+            <Badge variant={costText.startsWith('Watch') ? 'secondary' : 'default'} className="absolute top-2 right-2">
                 {costText}
             </Badge>
         )}
@@ -1274,9 +1284,13 @@ export default function MealApp() {
               </div>
             </div>
             <DialogFooter className="p-6 pt-4 border-t">
-              <Button onClick={handleFinalGeneration} disabled={!!loadingMood}>
-                {loadingMood ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                {loadingMood ? 'Generating...' : 'Generate'}
+              <Button onClick={handleFinalGeneration} disabled={!!loadingMood} className="w-full sm:w-auto">
+                {loadingMood ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Video className="mr-2 h-4 w-4" />
+                )}
+                {getGenerateButtonText()}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1699,6 +1713,7 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
 
 
 
