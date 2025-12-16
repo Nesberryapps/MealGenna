@@ -1,6 +1,6 @@
 
 import { Capacitor } from '@capacitor/core';
-import { LocalNotifications, PermissionStatus, LocalNotificationSchema, Schedule, DeliveredNotification } from '@capacitor/local-notifications';
+import { LocalNotifications, PermissionStatus, LocalNotificationSchema, Schedule, DeliveredNotifications } from '@capacitor/local-notifications';
 
 const NOTIFICATION_PERMISSION_KEY = 'notification_permission_status';
 
