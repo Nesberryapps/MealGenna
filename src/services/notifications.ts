@@ -1,5 +1,6 @@
+
 import { Capacitor } from '@capacitor/core';
-import { LocalNotifications, PermissionStatus, Notification, Schedule } from '@capacitor/local-notifications';
+import { LocalNotifications, PermissionStatus, LocalNotificationSchema, Schedule, DeliveredNotification } from '@capacitor/local-notifications';
 
 const NOTIFICATION_PERMISSION_KEY = 'notification_permission_status';
 
@@ -37,7 +38,7 @@ export const scheduleDailyNotifications = async () => {
         // Clear any previously scheduled notifications to avoid duplicates
         const pending = await LocalNotifications.getPending();
         if (pending.notifications.length > 0) {
-           await LocalNotifications.cancel(pending);
+           await LocalNotifications.cancel({ notifications: pending.notifications });
         }
 
         // Schedule new notifications
@@ -76,7 +77,7 @@ export const scheduleDailyNotifications = async () => {
 };
 
 // --- OPTIONAL: Handle received notifications while app is open ---
-LocalNotifications.addListener('localNotificationReceived', (notification: Notification) => {
+LocalNotifications.addListener('localNotificationReceived', (notification: LocalNotificationSchema) => {
     console.log('Local notification received: ', notification);
     // You could show an in-app toast or alert here if you want
 });
