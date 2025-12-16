@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications, Token, PermissionStatus, PushNotificationSchema } from '@capacitor/push-notifications';
+import { LocalNotifications, PermissionStatus, Notification, Schedule } from '@capacitor/local-notifications';
 
 const NOTIFICATION_PERMISSION_KEY = 'notification_permission_status';
 
@@ -7,22 +7,17 @@ const NOTIFICATION_PERMISSION_KEY = 'notification_permission_status';
 export const registerNotifications = async (): Promise<boolean> => {
     if (Capacitor.getPlatform() === 'web') return false;
 
-    let permStatus: PermissionStatus = await PushNotifications.checkPermissions();
+    let permStatus: PermissionStatus = await LocalNotifications.checkPermissions();
 
-    if (permStatus.receive === 'prompt') {
-        permStatus = await PushNotifications.requestPermissions();
+    if (permStatus.display === 'prompt') {
+        permStatus = await LocalNotifications.requestPermissions();
     }
 
-    if (permStatus.receive !== 'granted') {
-        // If permission is denied, maybe alert the user that they won't get notifications
-        console.log('User denied push notification permissions.');
+    if (permStatus.display !== 'granted') {
+        console.log('User denied local notification permissions.');
         localStorage.setItem(NOTIFICATION_PERMISSION_KEY, 'denied');
         return false;
     }
-    
-    // This part is for remote push notifications via services like FCM.
-    // For local notifications, we don't need to register with a server.
-    // await PushNotifications.register();
     
     localStorage.setItem(NOTIFICATION_PERMISSION_KEY, 'granted');
     return true;
@@ -40,16 +35,13 @@ export const scheduleDailyNotifications = async () => {
     
     try {
         // Clear any previously scheduled notifications to avoid duplicates
-        const pending = await PushNotifications.getDeliveredNotifications();
+        const pending = await LocalNotifications.getPending();
         if (pending.notifications.length > 0) {
-            await PushNotifications.removeAllDeliveredNotifications();
+           await LocalNotifications.cancel(pending);
         }
-        await PushNotifications.cancel({
-            notifications: (await PushNotifications.getPending()).notifications,
-        });
 
         // Schedule new notifications
-        await PushNotifications.schedule({
+        await LocalNotifications.schedule({
             notifications: [
                 {
                     id: 1, // Breakfast
@@ -84,7 +76,7 @@ export const scheduleDailyNotifications = async () => {
 };
 
 // --- OPTIONAL: Handle received notifications while app is open ---
-PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-    console.log('Push notification received: ', notification);
+LocalNotifications.addListener('localNotificationReceived', (notification: Notification) => {
+    console.log('Local notification received: ', notification);
     // You could show an in-app toast or alert here if you want
 });
