@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications, Token, PermissionState, PushNotificationSchema } from '@capacitor/push-notifications';
+import { PushNotifications, Token, PermissionStatus, PushNotificationSchema } from '@capacitor/push-notifications';
 
 const NOTIFICATION_PERMISSION_KEY = 'notification_permission_status';
 
@@ -7,7 +7,7 @@ const NOTIFICATION_PERMISSION_KEY = 'notification_permission_status';
 export const registerNotifications = async (): Promise<boolean> => {
     if (Capacitor.getPlatform() === 'web') return false;
 
-    let permStatus = await PushNotifications.checkPermissions();
+    let permStatus: PermissionStatus = await PushNotifications.checkPermissions();
 
     if (permStatus.receive === 'prompt') {
         permStatus = await PushNotifications.requestPermissions();
