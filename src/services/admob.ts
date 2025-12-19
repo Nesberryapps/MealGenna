@@ -1,18 +1,24 @@
 import { AdMob, RewardAdOptions, RewardAdPluginEvents, AdMobRewardItem } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
+import { getAnalytics, logEvent } from "firebase/analytics";
 
-// --- NEW: Google Ads Conversion Tracking Function ---
+// --- NEW: Google Ads Conversion Tracking Function via Firebase ---
 const reportAdRewardConversion = () => {
-    // Check if the gtag function is available on the window object
-    if (typeof window.gtag === 'function') {
-        console.log('Reporting ad_reward conversion to Google Ads.');
-        window.gtag('event', 'conversion', {
-            'send_to': 'AW-17507715969/your_conversion_label_here', // IMPORTANT: Replace with your actual conversion label
-            'value': 0.01, // Optional: Assign a nominal value to the conversion
-            'currency': 'USD'
-        });
+    // Check if running in a browser environment where Firebase can be initialized.
+    if (typeof window !== 'undefined') {
+        try {
+            const analytics = getAnalytics();
+            // This is the event name from your Google Ads screenshot.
+            logEvent(analytics, 'ads_conversion_in_app_ad_revenue', {
+                value: 0.01, // Optional: Assign a nominal value
+                currency: 'USD'
+            });
+            console.log('Reported ads_conversion_in_app_ad_revenue event to Firebase Analytics.');
+        } catch (error) {
+            console.error('Failed to log Firebase Analytics event:', error);
+        }
     } else {
-        console.warn('gtag function not found. Could not report ad conversion.');
+        console.warn('Firebase Analytics not available. Could not report ad conversion.');
     }
 };
 
