@@ -821,9 +821,9 @@ export default function MealApp() {
         return 'Generating...';
     }
     if (selectedMood === '7-day-plan') {
-        return 'Watch Ads to Generate';
+        return 'Watch 2 Ads to Generate';
     }
-    return 'Watch Ad to Generate';
+    return 'Watch an Ad to Generate';
 };
 
 
@@ -1060,7 +1060,7 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleOpenPreferences('Quick')}
-                costText={"Watch 1 Video"}
+                costText={"Watch an Ad"}
               />
            </div>
            <MoodCard 
@@ -1069,7 +1069,7 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleOpenPreferences('Healthy')}
-              costText={"Watch 1 Video"}
+              costText={"Watch an Ad"}
             />
            <MoodCard 
               mood="Hearty" 
@@ -1077,7 +1077,7 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleOpenPreferences('Hearty')}
-              costText={"Watch 1 Video"}
+              costText={"Watch an Ad"}
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
@@ -1096,7 +1096,7 @@ export default function MealApp() {
                     handleOpenPreferences('7-day-plan');
                   }
                 }}
-                costText={"Watch 2 Videos"}
+                costText={"Watch 2 Ads"}
               />
            </div>
         </div>
