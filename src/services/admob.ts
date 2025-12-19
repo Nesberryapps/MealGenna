@@ -1,6 +1,21 @@
 import { AdMob, RewardAdOptions, RewardAdPluginEvents, AdMobRewardItem } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
+// --- NEW: Google Ads Conversion Tracking Function ---
+const reportAdRewardConversion = () => {
+    // Check if the gtag function is available on the window object
+    if (typeof window.gtag === 'function') {
+        console.log('Reporting ad_reward conversion to Google Ads.');
+        window.gtag('event', 'conversion', {
+            'send_to': 'AW-17507715969/your_conversion_label_here', // IMPORTANT: Replace with your actual conversion label
+            'value': 0.01, // Optional: Assign a nominal value to the conversion
+            'currency': 'USD'
+        });
+    } else {
+        console.warn('gtag function not found. Could not report ad conversion.');
+    }
+};
+
 // 1. Initialize AdMob
 export const initializeAdMob = async () => {
   // Skip if running in a web browser (like IDX preview)
@@ -63,6 +78,7 @@ export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
       // Increment counter and save so next time is free
       localStorage.setItem('mealGenAdCount', (currentCount + 1).toString());
       
+      reportAdRewardConversion(); // <<< --- TRACK CONVERSION
       onRewardEarned();
       rewardListener.remove();
     }
@@ -100,6 +116,7 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
       const listener = await AdMob.addListener(
         RewardAdPluginEvents.Rewarded, 
         () => {
+          reportAdRewardConversion(); // <<< --- TRACK CONVERSION
           if (!resolved) { resolved = true; resolve(true); }
           listener.remove();
         }
@@ -130,7 +147,7 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
   
   if (firstAdSuccess) {
     // 2. Alert user
-    alert("Great! Watch 1 more video to unlock your full Weekly Plan.");
+    alert("Great! Watch 1 more ad to unlock your full Weekly Plan.");
     
     // 3. Play Second Ad
     const secondAdSuccess = await playAd();
