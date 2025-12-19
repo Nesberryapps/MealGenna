@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "785969036091",
+    "project_id": "meal-genna-mobile-app",
+    "storage_bucket": "meal-genna-mobile-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:785969036091:android:2d2513f59758fc3aeb951e",
+        "android_client_info": {
+          "package_name": "com.mealgenna.appname"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAUmQFtyqDKLKPjd2nSBbiCDsaxxriXO4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

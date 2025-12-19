@@ -35,11 +35,9 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
     "firebase": "^10.12.3",
-    "firebase-admin": "^12.2.0",
-    "firebase-functions": "^5.0.1",
     "genkit": "^1.1.0",
     "lucide-react": "^0.417.0",
-    "next": "14.2.5",
+    "next": "14.2.35",
     "next-themes": "^0.3.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -50,14 +48,12 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@apphosting/adapter-nextjs": "^14.0.18",
-    "@capacitor/assets": "^3.0.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "5.8.3"
+    "typescript": "5.9.3"
   }
 }
