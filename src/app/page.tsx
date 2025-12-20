@@ -32,10 +32,12 @@ import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
-import { LimitModal } from "@/components/LimitModal";
+import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { useSubscription } from '@/hooks/use-subscription';
 import { GoProModal } from '@/components/go-pro-modal';
+import { usePremium } from "@/hooks/use-premium";
+
 
   // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
 const checkDailyLimit = () => {
@@ -120,7 +122,7 @@ export default function MealApp() {
   const [activeMeal, setActiveMeal] = useState<MealSuggestion | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
-  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isPaywallModalOpen, setIsPaywallModalOpen] = useState(false);
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   
   // Preferences state
@@ -135,6 +137,8 @@ export default function MealApp() {
 
   // Subscription state
   const { isPro, getOfferings, makePurchase } = useSubscription();
+  const { isPremium, setPremium } = usePremium();
+
 
   // Tutorial state
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
@@ -350,12 +354,12 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    if (!isPro && Capacitor.getPlatform() === 'web') {
-      const isAllowed = checkDailyLimit();
-      if (!isAllowed) {
-        setIsLimitModalOpen(true);
-        return;
-      }
+    if (!isPro && !isPremium && Capacitor.getPlatform() === 'web') {
+        const isAllowed = checkDailyLimit();
+        if (!isAllowed) {
+            setIsPaywallModalOpen(true);
+            return;
+        }
     }
     
     const generationLogic = async () => {
@@ -376,7 +380,7 @@ export default function MealApp() {
       try {
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
-        if (Capacitor.getPlatform() === 'web' && !isPro) {
+        if (Capacitor.getPlatform() === 'web' && !isPro && !isPremium) {
           incrementDailyCount();
         }
       } catch (error) {
@@ -392,7 +396,7 @@ export default function MealApp() {
       }
     };
     
-    if (isPro) {
+    if (isPro || isPremium) {
       generationLogic();
     } else {
       showWatchToGenerateAd(generationLogic);
@@ -401,6 +405,11 @@ export default function MealApp() {
 
 
   const handleGeneratePlan = async () => {
+    if (!isPro && !isPremium && Capacitor.getPlatform() === 'web') {
+        setIsPaywallModalOpen(true);
+        return;
+    }
+
     const generationLogic = async () => {
       setLoadingMood('7-day-plan');
       setGeneratedPlan(null);
@@ -430,7 +439,7 @@ export default function MealApp() {
       }
     };
     
-    if (isPro) {
+    if (isPro || isPremium) {
       generationLogic();
     } else {
       showSevenDayPlanAds(generationLogic);
@@ -447,8 +456,15 @@ export default function MealApp() {
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    if (isPro) {
+    if (isPro || isPremium) {
         handleOpenPreferences(mood);
+    } else if (Capacitor.getPlatform() === 'web') {
+        const isAllowed = checkDailyLimit();
+        if (isAllowed) {
+            handleOpenPreferences(mood);
+        } else {
+            setIsPaywallModalOpen(true);
+        }
     } else if (mood === '7-day-plan') {
         showSevenDayPlanAds(() => handleOpenPreferences('7-day-plan'));
     } else {
@@ -689,7 +705,10 @@ export default function MealApp() {
     if (loadingMood) {
         return 'Generating...';
     }
-    if (isPro) {
+    if (isPro || isPremium) {
+        return 'Generate';
+    }
+    if (Capacitor.getPlatform() === 'web') {
         return 'Generate';
     }
     if (selectedMood === '7-day-plan') {
@@ -712,35 +731,46 @@ export default function MealApp() {
     }
   };
 
-  const MoodCard = ({ mood, icon, title, description, onClick, costText, isPro }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string, isPro: boolean }) => (
-    <Card className="relative flex flex-col text-center h-full">
-        {!isPro && (
-            <Badge variant={mood === '7-day-plan' ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
-                {costText}
-            </Badge>
-        )}
-        <CardHeader className="p-6">
-            <div className="mx-auto w-24 h-24 mb-2">
-                {icon}
-            </div>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 p-6 pt-0">
-             {!isPro && (
-                <Button variant="link" size="sm" onClick={() => setIsGoProModalOpen(true)}>
-                    or Upgrade to Pro
-                </Button>
+  const MoodCard = ({ mood, icon, title, description, onClick }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void }) => {
+    const isWeb = Capacitor.getPlatform() === 'web';
+    const isProUser = isPro || isPremium;
+    const isPlan = mood === '7-day-plan';
+
+    let costText = 'Watch an ad';
+    if (isPlan) costText = 'Watch 2 ads';
+    if (isWeb) costText = isPlan ? 'Purchase' : '1 Free Daily';
+
+
+    return (
+        <Card className="relative flex flex-col text-center h-full">
+            {!isProUser && (
+                <Badge variant={isPlan ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+                    {costText}
+                </Badge>
             )}
-        </CardContent>
-        <CardFooter className="p-6 pt-0">
-             <Button className="w-full" onClick={onClick}>
-                {isPro ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
-                {isPro ? 'Generate' : (mood === '7-day-plan' ? 'Watch Ads' : 'Watch Ad')}
-             </Button>
-        </CardFooter>
-    </Card>
-  );
+            <CardHeader className="p-6">
+                <div className="mx-auto w-24 h-24 mb-2">
+                    {icon}
+                </div>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 p-6 pt-0">
+                 {!isProUser && (
+                    <Button variant="link" size="sm" onClick={() => isWeb ? setIsPaywallModalOpen(true) : setIsGoProModalOpen(true)}>
+                        or Go Pro
+                    </Button>
+                )}
+            </CardContent>
+            <CardFooter className="p-6 pt-0">
+                 <Button className="w-full" onClick={onClick}>
+                    {(isProUser || (isWeb && checkDailyLimit())) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                    {isProUser ? 'Generate' : (isWeb ? 'Generate' : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
+                 </Button>
+            </CardFooter>
+        </Card>
+    );
+};
 
   const tutorialContent = [
     {
@@ -804,7 +834,7 @@ export default function MealApp() {
   return (
     <>
       <div className="container relative py-12 md:py-20">
-        <LimitModal isOpen={isLimitModalOpen} onClose={() => setIsLimitModalOpen(false)} />
+        <PaywallModal isOpen={isPaywallModalOpen} onClose={() => setIsPaywallModalOpen(false)} setPremium={setPremium} />
         <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
@@ -951,8 +981,6 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleMoodOrPlanClick('Quick')}
-                costText={"Watch an ad"}
-                isPro={isPro}
               />
            </div>
            <MoodCard 
@@ -961,8 +989,6 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleMoodOrPlanClick('Healthy')}
-              costText={"Watch an ad"}
-              isPro={isPro}
             />
            <MoodCard 
               mood="Hearty" 
@@ -970,8 +996,6 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleMoodOrPlanClick('Hearty')}
-              costText={"Watch an ad"}
-              isPro={isPro}
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
@@ -980,8 +1004,6 @@ export default function MealApp() {
                 title="Generate a 7-Day Plan" 
                 description="Get a complete breakfast, lunch, and dinner plan for the week."
                 onClick={() => handleMoodOrPlanClick('7-day-plan')}
-                costText={"Watch 2 ads"}
-                isPro={isPro}
               />
            </div>
         </div>
@@ -1440,3 +1462,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
