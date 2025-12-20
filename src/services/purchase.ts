@@ -6,7 +6,7 @@ import Purchases, { LOG_LEVEL, PurchasesOffering, PurchasesPackage, CustomerInfo
 
 // --- IMPORTANT: ADD YOUR REVENUECAT API KEYS HERE ---
 const REVENUECAT_API_KEY_ANDROID = 'test_kKpwSg0OvpRWVzCGAZGBmUWLzLe';
-const REVENUECAT_API_KEY_IOS = 'appl_YOUR_IOS_API_KEY_HERE';
+const REVENUECAT_API_KEY_IOS = 'appl_HgJWZQBHyaAcXNhibMlDiXzBzKa';
 // ----------------------------------------------------
 
 const ENTITLEMENT_ID = 'pro'; // This should match the Entitlement ID in your RevenueCat dashboard
