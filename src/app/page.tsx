@@ -744,7 +744,7 @@ export default function MealApp() {
     return (
         <Card className="relative flex flex-col text-center h-full">
             {!isProUser && (
-                <Badge variant={isPlan ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+                <Badge variant={isPlan && isWeb ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
                     {costText}
                 </Badge>
             )}
@@ -758,7 +758,7 @@ export default function MealApp() {
             <CardContent className="flex-1 p-6 pt-0">
                  {!isProUser && (
                     <Button variant="link" size="sm" onClick={() => isWeb ? setIsPaywallModalOpen(true) : setIsGoProModalOpen(true)}>
-                        or Go Pro
+                        {isWeb ? 'or Purchase' : 'or Go Pro'}
                     </Button>
                 )}
             </CardContent>
@@ -1464,3 +1464,4 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
 );
 
     
+
