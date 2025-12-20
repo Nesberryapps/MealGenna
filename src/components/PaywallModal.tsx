@@ -132,7 +132,7 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">Unlock More Generations</DialogTitle>
           <DialogDescription className="text-center">
-            You've used your free daily generation. Choose a pack to continue creating.
+            You've used your free daily generation. Choose a one-time pack to continue creating.
           </DialogDescription>
         </DialogHeader>
 
@@ -176,5 +176,3 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
     </Dialog>
   );
 }
-
-    
