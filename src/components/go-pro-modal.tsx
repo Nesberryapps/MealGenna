@@ -3,25 +3,17 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ListChecks, Star } from "lucide-react";
+import { ListChecks, Star, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface GoProModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPurchase: () => void; // We will connect this in the next stage
+  onPurchase: () => void;
+  isLoading: boolean;
 }
 
-export function GoProModal({ isOpen, onClose, onPurchase }: GoProModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handlePurchaseClick = () => {
-    setIsLoading(true);
-    // In the next stage, this will trigger the purchase flow.
-    // For now, it just shows a loading state.
-    console.log("Purchase button clicked. Real logic to be added.");
-    // onPurchase(); 
-  };
+export function GoProModal({ isOpen, onClose, onPurchase, isLoading }: GoProModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -50,7 +42,8 @@ export function GoProModal({ isOpen, onClose, onPurchase }: GoProModalProps) {
         </div>
 
         <DialogFooter className="flex-col gap-2">
-            <Button onClick={handlePurchaseClick} disabled={isLoading} size="lg" className="w-full">
+            <Button onClick={onPurchase} disabled={isLoading} size="lg" className="w-full">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {isLoading ? "Processing..." : "Upgrade Now for $4.99/month"}
             </Button>
             <Button type="button" variant="ghost" onClick={onClose} className="w-full">

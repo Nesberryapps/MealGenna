@@ -134,7 +134,7 @@ export default function MealApp() {
   });
 
   // Subscription state
-  const { isPro, isInitialized: isSubscriptionInitialized } = useSubscription();
+  const { isPro, getOfferings, makePurchase } = useSubscription();
 
   // Tutorial state
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
@@ -152,6 +152,7 @@ export default function MealApp() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   
   const [isAdLoading, setIsAdLoading] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
 
   useEffect(() => {
@@ -575,7 +576,7 @@ export default function MealApp() {
     });
 
     const filename = 'mealgenna_7_day_plan.txt';
-    saveTextFile(filename, fullPlanContent);
+    saveTextFile(filename, content);
   };
 
   const handleShopOnline = (store: 'walmart' | 'amazon' | 'instacart') => {
@@ -695,21 +696,28 @@ export default function MealApp() {
         return 'Watch 2 Ads to Generate';
     }
     return 'Watch an Ad to Generate';
-};
+  };
 
+  const handlePurchase = async () => {
+    setIsPurchasing(true);
+    try {
+        const offerings = await getOfferings();
+        if (offerings && offerings.length > 0) {
+            await makePurchase(offerings[0]);
+        }
+    }
+    finally {
+        setIsPurchasing(false);
+        setIsGoProModalOpen(false);
+    }
+  };
 
   const MoodCard = ({ mood, icon, title, description, onClick, costText, isPro }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string, isPro: boolean }) => (
     <Card className="relative flex flex-col text-center h-full">
-        {isPro ? (
-             <Badge variant="premium" className="absolute top-2 right-2">
-                <Star className="mr-1 h-3 w-3" /> PRO
+        {!isPro && (
+            <Badge variant={mood === '7-day-plan' ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+                {costText}
             </Badge>
-        ) : (
-            costText && (
-                <Badge variant='secondary' className="absolute top-2 right-2">
-                    {costText}
-                </Badge>
-            )
         )}
         <CardHeader className="p-6">
             <div className="mx-auto w-24 h-24 mb-2">
@@ -727,8 +735,8 @@ export default function MealApp() {
         </CardContent>
         <CardFooter className="p-6 pt-0">
              <Button className="w-full" onClick={onClick}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isPro ? 'Generate' : 'Get Meal'}
+                {isPro ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                {isPro ? 'Generate' : (mood === '7-day-plan' ? 'Watch Ads' : 'Watch Ad')}
              </Button>
         </CardFooter>
     </Card>
@@ -797,7 +805,7 @@ export default function MealApp() {
     <>
       <div className="container relative py-12 md:py-20">
         <LimitModal isOpen={isLimitModalOpen} onClose={() => setIsLimitModalOpen(false)} />
-        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={() => { /* will implement in next stage */ }} />
+        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
@@ -943,7 +951,7 @@ export default function MealApp() {
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
                 onClick={() => handleMoodOrPlanClick('Quick')}
-                costText={"Watch an Ad"}
+                costText={"Watch an ad"}
                 isPro={isPro}
               />
            </div>
@@ -953,7 +961,7 @@ export default function MealApp() {
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleMoodOrPlanClick('Healthy')}
-              costText={"Watch an Ad"}
+              costText={"Watch an ad"}
               isPro={isPro}
             />
            <MoodCard 
@@ -962,7 +970,7 @@ export default function MealApp() {
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleMoodOrPlanClick('Hearty')}
-              costText={"Watch an Ad"}
+              costText={"Watch an ad"}
               isPro={isPro}
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
@@ -972,7 +980,7 @@ export default function MealApp() {
                 title="Generate a 7-Day Plan" 
                 description="Get a complete breakfast, lunch, and dinner plan for the week."
                 onClick={() => handleMoodOrPlanClick('7-day-plan')}
-                costText={"Watch 2 Ads"}
+                costText={"Watch 2 ads"}
                 isPro={isPro}
               />
            </div>

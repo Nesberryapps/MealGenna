@@ -1,81 +1,121 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-// We will implement the purchase service in the next stage.
-// For now, we'll mock the functions.
-// import { checkSubscription, restore } from '@/services/purchase';
+import { Capacitor } from '@capacitor/core';
+import {
+  initializePurchases,
+  checkSubscription,
+  restorePurchases as RCRestore,
+  getOfferings as RCGetOfferings,
+  makePurchase as RCMakePurchase,
+  addPurchaseUpdateListener
+} from '@/services/purchase';
+import type { PurchasesOffering, PurchasesPackage } from '@revenuecat/purchases-capacitor';
 
 interface SubscriptionContextType {
   isPro: boolean;
   isInitialized: boolean;
   restorePurchases: () => Promise<void>;
+  getOfferings: () => Promise<PurchasesOffering[]>;
+  makePurchase: (pkg: PurchasesPackage) => Promise<void>;
 }
 
-// Mock functions for now
-const checkSubscription = async () => {
-    console.log("Mocking subscription check. Defaulting to 'Free'.");
-    return { isActive: false };
-};
+const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-const restore = async () => {
-    console.log("Mocking restore purchases.");
-    // In a real scenario, this might return the user's new status
-    return { isActive: false }; 
-};
-
-
-// This hook will manage the user's "Pro" subscription status.
-export const useSubscription = () => {
+export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const [isPro, setIsPro] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
   const checkStatus = useCallback(async () => {
-    try {
-      const { isActive } = await checkSubscription();
-      setIsPro(isActive);
-    } catch (error) {
-      console.error('Failed to check subscription status:', error);
-      // Default to non-pro status on error
-      setIsPro(false);
-    } finally {
-      setIsInitialized(true);
+    if (Capacitor.getPlatform() !== 'web') {
+      const proStatus = await checkSubscription();
+      setIsPro(proStatus);
     }
+    setIsInitialized(true);
   }, []);
 
-  // On initial load, check the user's subscription status.
   useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
+    initializePurchases().then(() => {
+        checkStatus();
+    });
 
-  const restorePurchases = async () => {
-    toast({ title: 'Attempting to restore purchases...' });
-    try {
-      const { isActive } = await restore();
-      setIsPro(isActive);
-      if (isActive) {
+    addPurchaseUpdateListener((proStatus) => {
+      setIsPro(proStatus);
+      if (proStatus) {
         toast({
-          title: 'Purchases Restored!',
-          description: 'Your MealGenna Pro status has been restored.',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'No Active Subscription Found',
-          description: 'We could not find an active subscription to restore.',
+          title: 'Subscription Updated',
+          description: 'You are now a MealGenna Pro member!',
         });
       }
-    } catch (error: any) {
-      console.error('Restore failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Restore Failed',
-        description: error.message || 'An unexpected error occurred.',
-      });
+    });
+
+  }, [checkStatus, toast]);
+
+  const restorePurchases = async () => {
+    if (Capacitor.getPlatform() === 'web') {
+      toast({ title: 'Restore feature is only available on the mobile app.' });
+      return;
+    }
+    try {
+      const customerInfo = await RCRestore();
+      if (customerInfo?.entitlements.active.pro) {
+        setIsPro(true);
+        toast({ title: 'Success!', description: 'Your Pro subscription has been restored.' });
+      } else {
+        toast({ variant: 'destructive', title: 'No Subscription Found', description: 'We couldn\'t find a previous purchase to restore.' });
+      }
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Restore Failed', description: 'An error occurred while trying to restore your purchase.' });
+    }
+  };
+  
+  const handleGetOfferings = async (): Promise<PurchasesOffering[]> => {
+    if (Capacitor.getPlatform() === 'web') {
+      toast({ title: 'In-app purchases are only available on the mobile app.' });
+      return [];
+    }
+    return await RCGetOfferings();
+  };
+
+  const handleMakePurchase = async (pkg: PurchasesPackage) => {
+     if (Capacitor.getPlatform() === 'web') {
+      toast({ title: 'In-app purchases are only available on the mobile app.' });
+      return;
+    }
+    try {
+      const customerInfo = await RCMakePurchase(pkg);
+      if (customerInfo?.entitlements.active.pro) {
+        setIsPro(true);
+        toast({ title: 'Purchase Successful!', description: 'Welcome to MealGenna Pro!' });
+      }
+    } catch (e) {
+       toast({ variant: 'destructive', title: 'Purchase Failed', description: 'Something went wrong. Please try again.' });
     }
   };
 
-  return { isPro, isInitialized, restorePurchases, checkStatus };
+  const value = { 
+    isPro, 
+    isInitialized, 
+    restorePurchases, 
+    getOfferings: handleGetOfferings,
+    makePurchase: handleMakePurchase,
+  };
+
+  return (
+    <SubscriptionContext.Provider value={value}>
+      {children}
+    </SubscriptionContext.Provider>
+  );
+};
+
+
+export const useSubscription = () => {
+  const context = useContext(SubscriptionContext);
+  if (context === undefined) {
+    throw new Error('useSubscription must be used within a SubscriptionProvider');
+  }
+  return context;
 };

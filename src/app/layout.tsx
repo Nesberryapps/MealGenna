@@ -10,6 +10,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import Script from 'next/script';
 import type { Viewport } from 'next'
 import AdMobInit from "@/components/AdMobInit";
+import { SubscriptionProvider } from "@/hooks/use-subscription";
 
 export const viewport: Viewport = {
   themeColor: '#4CAF50',
@@ -99,6 +100,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
+          <SubscriptionProvider>
             <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container flex h-14 items-center">
                   <Link href="/" className="mr-auto flex items-center">
@@ -128,6 +130,7 @@ export default function RootLayout({
               </div>
             </footer>
             <Toaster />
+          </SubscriptionProvider>
         </ThemeProvider>
       </body>
     </html>

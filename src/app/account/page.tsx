@@ -10,9 +10,10 @@ import { useState } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
 
 export default function AccountPage() {
-  const { isPro, isInitialized, restorePurchases } = useSubscription();
+  const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const handleRestore = async () => {
     setIsRestoring(true);
@@ -22,6 +23,20 @@ export default function AccountPage() {
       // Error is handled in the hook
     } finally {
       setIsRestoring(false);
+    }
+  };
+
+  const handlePurchase = async () => {
+    setIsPurchasing(true);
+    try {
+        const offerings = await getOfferings();
+        if (offerings && offerings.length > 0) {
+            await makePurchase(offerings[0]);
+        }
+    }
+    finally {
+        setIsPurchasing(false);
+        setIsGoProModalOpen(false);
     }
   };
   
@@ -34,7 +49,7 @@ export default function AccountPage() {
   
   return (
     <div className="container py-12 md:py-20">
-      <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={() => {}} />
+      <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
       <Card className="max-w-xl mx-auto">
         <CardHeader>
