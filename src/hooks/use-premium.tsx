@@ -3,43 +3,43 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const PREMIUM_EXPIRY_KEY = 'mealgenna_premium_expiry';
+const CREDITS_KEY = 'mealgenna_web_credits';
 
-// This hook manages temporary premium access for web users who make a one-time purchase.
+// This hook manages generation credits for web users who make a one-time purchase.
 export const usePremium = () => {
-  const [isPremium, setIsPremium] = useState<boolean>(false);
-  const [premiumExpiry, setPremiumExpiry] = useState<number | null>(null);
+  const [credits, setCredits] = useState({ single: 0, plan: 0 });
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // On initial load, check for an existing premium session
+  // On initial load, check for existing credits
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const expiryTimestamp = localStorage.getItem(PREMIUM_EXPIRY_KEY);
-      if (expiryTimestamp) {
-        const expiry = parseInt(expiryTimestamp, 10);
-        if (new Date().getTime() < expiry) {
-          setIsPremium(true);
-          setPremiumExpiry(expiry);
-        } else {
-          // Clear expired session
-          localStorage.removeItem(PREMIUM_EXPIRY_KEY);
-        }
+      const storedCredits = localStorage.getItem(CREDITS_KEY);
+      if (storedCredits) {
+        setCredits(JSON.parse(storedCredits));
+      } else {
+        // Give new users 1 free single generation
+        setCredits({ single: 1, plan: 0 });
+        localStorage.setItem(CREDITS_KEY, JSON.stringify({ single: 1, plan: 0 }));
       }
     }
     setIsInitialized(true);
   }, []);
 
-  const setPremium = useCallback((durationInHours: number) => {
+  const addCredits = useCallback((planType: 'single' | 'weekly') => {
     if (typeof window !== 'undefined') {
-      const now = new Date().getTime();
-      const expiryTimestamp = now + durationInHours * 60 * 60 * 1000;
-      localStorage.setItem(PREMIUM_EXPIRY_KEY, expiryTimestamp.toString());
-      setIsPremium(true);
-      setPremiumExpiry(expiryTimestamp);
+      const currentCredits = JSON.parse(localStorage.getItem(CREDITS_KEY) || '{"single":0,"plan":0}');
+      
+      const newCredits = {
+        single: currentCredits.single + (planType === 'single' ? 5 : 0),
+        plan: currentCredits.plan + (planType === 'weekly' ? 1 : 0),
+      };
+
+      localStorage.setItem(CREDITS_KEY, JSON.stringify(newCredits));
+      setCredits(newCredits);
     }
   }, []);
 
-  return { isPremium, setPremium, isInitialized, premiumExpiry };
+  return { credits, addCredits, isInitialized };
 };
 
     

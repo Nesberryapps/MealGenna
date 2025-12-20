@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Zap } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -16,10 +16,10 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 interface PaywallModalProps {
   isOpen: boolean;
   onClose: () => void;
-  setPremium: (durationInHours: number) => void;
+  addCredits: (planType: 'single' | 'weekly') => void;
 }
 
-const CheckoutForm = ({ planType, setPremium, onClose }: { planType: 'single' | 'weekly', setPremium: (durationInHours: number) => void, onClose: () => void }) => {
+const CheckoutForm = ({ planType, addCredits, onClose }: { planType: 'single' | 'weekly', addCredits: (planType: 'single' | 'weekly') => void, onClose: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -41,7 +41,6 @@ const CheckoutForm = ({ planType, setPremium, onClose }: { planType: 'single' | 
       return;
     }
 
-    // Create PaymentIntent
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,10 +68,9 @@ const CheckoutForm = ({ planType, setPremium, onClose }: { planType: 'single' | 
     } else {
       toast({
         title: 'Payment Successful!',
-        description: 'Your premium access has been activated.',
+        description: 'Your credits have been added to your account.',
       });
-      const duration = planType === 'weekly' ? 7 * 24 : 24; // 7 days or 1 day
-      setPremium(duration);
+      addCredits(planType);
       onClose();
     }
     setIsLoading(false);
@@ -91,7 +89,7 @@ const CheckoutForm = ({ planType, setPremium, onClose }: { planType: 'single' | 
 };
 
 
-export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps) {
+export function PaywallModal({ isOpen, onClose, addCredits }: PaywallModalProps) {
     const [selectedPlan, setSelectedPlan] = useState<'single' | 'weekly' | null>(null);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -130,9 +128,9 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Unlock More Generations</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center">Get More Generations</DialogTitle>
           <DialogDescription className="text-center">
-            You've used your free daily generation. Choose a one-time pack to continue creating.
+            You're out of free generations. Choose a one-time pack to continue creating.
           </DialogDescription>
         </DialogHeader>
 
@@ -142,14 +140,14 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
                     <CardContent className="p-6 text-center">
                         <h3 className="text-lg font-semibold">Single Meal Pack</h3>
                         <p className="text-2xl font-bold">$1.99</p>
-                        <p className="text-sm text-muted-foreground">Get 5 generations. Valid for 24 hours.</p>
+                        <p className="text-sm text-muted-foreground">Get 5 generations for single meals.</p>
                     </CardContent>
                 </Card>
                  <Card className="cursor-pointer hover:border-primary" onClick={() => handlePlanSelect('weekly')}>
                     <CardContent className="p-6 text-center">
-                        <h3 className="text-lg font-semibold">7-Day Access Pass</h3>
+                        <h3 className="text-lg font-semibold">Full Meal Plan Pack</h3>
                         <p className="text-2xl font-bold">$7.99</p>
-                        <p className="text-sm text-muted-foreground">Unlock unlimited generations for 7 days.</p>
+                        <p className="text-sm text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
                     </CardContent>
                 </Card>
             </div>
@@ -157,7 +155,7 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
             <div className="py-4">
                 {clientSecret ? (
                      <Elements stripe={stripePromise} options={{ clientSecret }}>
-                        <CheckoutForm planType={selectedPlan} setPremium={setPremium} onClose={handleClose}/>
+                        <CheckoutForm planType={selectedPlan} addCredits={addCredits} onClose={handleClose}/>
                     </Elements>
                 ) : (
                     <div className="flex justify-center items-center h-24">
@@ -176,3 +174,5 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
     </Dialog>
   );
 }
+
+    
