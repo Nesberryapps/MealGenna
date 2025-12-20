@@ -150,6 +150,7 @@ export default function MealApp() {
 
 
   useEffect(() => {
+    // This effect runs only on the client, preventing hydration errors
     const date = new Date();
     const hour = date.getHours();
     let initialMealTime = 'lunch';
