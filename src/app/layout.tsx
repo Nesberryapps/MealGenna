@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import Link from "next/link";
-import { ChefHat } from "lucide-react";
+import { ChefHat, User } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import Script from 'next/script';
@@ -105,7 +105,13 @@ export default function RootLayout({
                     <ChefHat className="h-6 w-6 mr-2 text-primary" />
                     <span className="font-bold">MealGenna</span>
                   </Link>
-                  <ModeToggle />
+                  <nav className="flex items-center gap-2">
+                    <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                      <User className="h-5 w-5" />
+                      <span className="sr-only">Account</span>
+                    </Link>
+                    <ModeToggle />
+                  </nav>
                 </div>
             </header>
             <main className="flex-1">{children}</main>
@@ -117,7 +123,7 @@ export default function RootLayout({
                     <Link href="/blog" className="text-sm hover:underline">Blog</Link>
                     <Link href="/terms" className="text-sm hover:underline">Terms & Conditions</Link>
                     <Link href="/privacy" className="text-sm hover:underline">Privacy Policy</Link>
-                    <Link href="/contact" className="text-sm hover:underline">Contact Us</Link>
+                    <Link href="/contact" className="text-sm hover-underline">Contact Us</Link>
                 </nav>
               </div>
             </footer>

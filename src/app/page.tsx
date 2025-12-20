@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
@@ -9,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, Gem, Video } from 'lucide-react';
+import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, Gem, Video, Star } from 'lucide-react';
 import Image from 'next/image';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
 import { suggestMeals, SuggestMealInput } from '@/ai/flows/suggest-meal-flow';
@@ -26,18 +25,17 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { loadStripe, Stripe, StripeElementsOptions } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
-import { usePremium } from '@/hooks/use-premium';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { LimitModal } from "@/components/LimitModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
+import { useSubscription } from '@/hooks/use-subscription';
+import { GoProModal } from '@/components/go-pro-modal';
 
   // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
 const checkDailyLimit = () => {
@@ -92,76 +90,8 @@ declare global {
   }
 }
 
-let stripePromise: Promise<Stripe | null>;
-
 type Mood = 'Quick' | 'Healthy' | 'Hearty';
-type PlanType = 'single' | 'weekly';
 type ScanStep = 'scanning' | 'selectingMeal';
-
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-if (stripeKey) {
-  stripePromise = loadStripe(stripeKey);
-}
-
-const CheckoutForm = ({ onSuccessfulPayment, onPaymentProcessing, planType, email }: { onSuccessfulPayment: () => void, onPaymentProcessing: (isProcessing: boolean) => void, planType: PlanType, email: string }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { toast } = useToast();
-  
-  const getAmountText = () => {
-    if (planType === 'weekly') return '$7.99';
-    return '$1.99';
-  }
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsProcessing(true);
-    onPaymentProcessing(true);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required" // Prevent automatic redirect
-    });
-
-    if (error) {
-      setErrorMessage(error.message || 'An unexpected error occurred.');
-      setIsProcessing(false);
-      onPaymentProcessing(false);
-    } else {
-      setErrorMessage(null);
-      
-      if (typeof (window as any).gtag_report_conversion === 'function') {
-        const enhanced_conversion_data = { "email": email };
-        (window as any).gtag_report_conversion(undefined, enhanced_conversion_data);
-      }
-
-      onSuccessfulPayment();
-      toast({
-        title: 'Payment Successful!',
-        description: `Your purchase is complete. Your content is being generated.`,
-      });
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} id="payment-form">
-      <PaymentElement id="payment-element" />
-      <Button disabled={isProcessing || !stripe || !elements} className="w-full mt-6">
-        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-        {isProcessing ? 'Processing...' : `Pay ${getAmountText()}`}
-      </Button>
-      {errorMessage && <div id="payment-message" className="text-sm mt-2 text-center">{errorMessage}</div>}
-    </form>
-  );
-};
-
 
 export default function MealApp() {
   const [pantryItems, setPantryItems] = useState<string[]>([]);
@@ -190,8 +120,8 @@ export default function MealApp() {
   const [activeMeal, setActiveMeal] = useState<MealSuggestion | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   
   // Preferences state
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
@@ -203,14 +133,8 @@ export default function MealApp() {
     customRequest: ''
   });
 
-  // Stripe state
-  const [stripeOptions, setStripeOptions] = useState<StripeElementsOptions | null>(null);
-  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
-  const [currentPlanType, setCurrentPlanType] = useState<PlanType>('single');
-  const [paymentEmail, setPaymentEmail] = useState('');
-
-  // Premium state
-  const { isPremium, setPremium, isInitialized, premiumExpiry } = usePremium();
+  // Subscription state
+  const { isPro, isInitialized: isSubscriptionInitialized } = useSubscription();
 
   // Tutorial state
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
@@ -226,9 +150,6 @@ export default function MealApp() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-
-  // Payment promise state
-  const paymentResolver = useRef<{ resolve: (value: boolean) => void } | null>(null);
   
   const [isAdLoading, setIsAdLoading] = useState(false);
 
@@ -316,15 +237,7 @@ export default function MealApp() {
         setGroceryListItems([]);
         setCheckedGroceryItems(new Set());
     }
-    if (!isPaymentDialogOpen) {
-      setIsPaymentProcessing(false);
-      setPaymentEmail(''); // Clear email when dialog closes
-      if (paymentResolver.current) {
-        paymentResolver.current.resolve(false);
-        paymentResolver.current = null;
-      }
-    }
-  }, [isMealSuggestionsOpen, isMealPlanOpen, isMealDetailOpen, isGroceryListOpen, isPaymentDialogOpen]);
+  }, [isMealSuggestionsOpen, isMealPlanOpen, isMealDetailOpen, isGroceryListOpen]);
 
   useEffect(() => {
     if (!isTutorialOpen) {
@@ -436,7 +349,7 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    if (Capacitor.getPlatform() === 'web') {
+    if (!isPro && Capacitor.getPlatform() === 'web') {
       const isAllowed = checkDailyLimit();
       if (!isAllowed) {
         setIsLimitModalOpen(true);
@@ -444,7 +357,7 @@ export default function MealApp() {
       }
     }
     
-    showWatchToGenerateAd(async () => {
+    const generationLogic = async () => {
       setLoadingMood(mood);
       setGeneratedMeals(null);
       setIsMealSuggestionsOpen(true);
@@ -462,7 +375,7 @@ export default function MealApp() {
       try {
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
-        if (Capacitor.getPlatform() === 'web') {
+        if (Capacitor.getPlatform() === 'web' && !isPro) {
           incrementDailyCount();
         }
       } catch (error) {
@@ -476,13 +389,18 @@ export default function MealApp() {
       } finally {
           setLoadingMood(null);
       }
-    });
+    };
+    
+    if (isPro) {
+      generationLogic();
+    } else {
+      showWatchToGenerateAd(generationLogic);
+    }
   };
 
 
   const handleGeneratePlan = async () => {
-    const paymentSuccess = await openPaymentDialog('weekly');
-    if (paymentSuccess) {
+    const generationLogic = async () => {
       setLoadingMood('7-day-plan');
       setGeneratedPlan(null);
       setDetailedPlan(null);
@@ -509,9 +427,12 @@ export default function MealApp() {
       } finally {
           setLoadingMood(null);
       }
+    };
+    
+    if (isPro) {
+      generationLogic();
     } else {
-        setIsPreferencesOpen(false);
-        setLoadingMood(null);
+      showSevenDayPlanAds(generationLogic);
     }
   };
 
@@ -523,6 +444,17 @@ export default function MealApp() {
       await handleGenerateMeal(selectedMood, preferences.mealTime, pantryItems);
     }
   };
+  
+  const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
+    if (isPro) {
+        handleOpenPreferences(mood);
+    } else if (mood === '7-day-plan') {
+        showSevenDayPlanAds(() => handleOpenPreferences('7-day-plan'));
+    } else {
+        showWatchToGenerateAd(() => handleOpenPreferences(mood));
+    }
+  };
+
 
   const handleFetchMealDetails = async (meal: SimpleMeal) => {
     setIsFetchingDetails(true);
@@ -576,9 +508,8 @@ export default function MealApp() {
       setIsFetchingFullPlan(false);
     }
   };
-  // --- NEW HELPER FUNCTION ---
+  
   const saveTextFile = async (filename: string, content: string) => {
-    // 1. If on Mobile (iOS/Android), use Filesystem
     if (Capacitor.isNativePlatform()) {
       try {
         await Filesystem.writeFile({
@@ -593,7 +524,6 @@ export default function MealApp() {
         alert("Could not save file. Please check permissions.");
       }
     } 
-    // 2. If on Web, use the old "Link Click" method
     else {
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -606,7 +536,6 @@ export default function MealApp() {
       URL.revokeObjectURL(url);
     }
   };
-  // ---------------------------
 
   const handleDownloadRecipe = (meal: MealSuggestion | null) => {
     if (!meal) return;
@@ -681,67 +610,6 @@ export default function MealApp() {
         }
     });
   };
-
-  const openPaymentDialog = (planType: PlanType): Promise<boolean> => {
-    return new Promise(async (resolve) => {
-      paymentResolver.current = { resolve };
-      setCurrentPlanType(planType);
-      setIsPaymentDialogOpen(true);
-    });
-  };
-
-  const handleSetupStripe = async () => {
-    if (!paymentEmail) {
-        toast({
-            variant: 'destructive',
-            title: 'Email Required',
-            description: 'Please enter your email address to proceed.',
-        });
-        return;
-    }
-      
-    setStripeOptions(null);
-    setIsPaymentProcessing(true);
-
-    try {
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planType: currentPlanType, email: paymentEmail }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.clientSecret) {
-        setStripeOptions({
-          clientSecret: data.clientSecret,
-          appearance: { theme: 'night' },
-          loader: 'always'
-        });
-      } else {
-        throw new Error(data.error || 'Could not initialize payment.');
-      }
-    } catch (error: any) {
-      console.error("Stripe setup error:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Payment Error',
-        description: error.message || 'Could not connect to the payment service.',
-      });
-      setIsPaymentDialogOpen(false); // Close dialog on setup failure
-      if (paymentResolver.current) paymentResolver.current.resolve(false);
-    } finally {
-        setIsPaymentProcessing(false);
-    }
-  }
-
-  const handleSuccessfulPayment = () => {
-    if (paymentResolver.current) {
-        paymentResolver.current.resolve(true);
-        paymentResolver.current = null;
-    }
-    setIsPaymentDialogOpen(false);
-  }
 
   const handleInstallClick = async () => {
     if (isAppInstalled) {
@@ -820,6 +688,9 @@ export default function MealApp() {
     if (loadingMood) {
         return 'Generating...';
     }
+    if (isPro) {
+        return 'Generate';
+    }
     if (selectedMood === '7-day-plan') {
         return 'Watch 2 Ads to Generate';
     }
@@ -827,12 +698,18 @@ export default function MealApp() {
 };
 
 
-  const MoodCard = ({ mood, icon, title, description, onClick, costText }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string }) => (
+  const MoodCard = ({ mood, icon, title, description, onClick, costText, isPro }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, costText?: string, isPro: boolean }) => (
     <Card className="relative flex flex-col text-center h-full">
-        {costText && (
-            <Badge variant={costText.startsWith('Watch') ? 'secondary' : 'default'} className="absolute top-2 right-2">
-                {costText}
+        {isPro ? (
+             <Badge variant="premium" className="absolute top-2 right-2">
+                <Star className="mr-1 h-3 w-3" /> PRO
             </Badge>
+        ) : (
+            costText && (
+                <Badge variant='secondary' className="absolute top-2 right-2">
+                    {costText}
+                </Badge>
+            )
         )}
         <CardHeader className="p-6">
             <div className="mx-auto w-24 h-24 mb-2">
@@ -842,11 +719,16 @@ export default function MealApp() {
             <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 p-6 pt-0">
+             {!isPro && (
+                <Button variant="link" size="sm" onClick={() => setIsGoProModalOpen(true)}>
+                    or Upgrade to Pro
+                </Button>
+            )}
         </CardContent>
         <CardFooter className="p-6 pt-0">
              <Button className="w-full" onClick={onClick}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate
+                {isPro ? 'Generate' : 'Get Meal'}
              </Button>
         </CardFooter>
     </Card>
@@ -860,7 +742,7 @@ export default function MealApp() {
     },
     {
       title: "App Controls",
-      description: "Here you can re-run this tutorial and install the app to your device for easy access.",
+      description: "Here you can manage your account, re-run this tutorial, and install the app to your device for easy access.",
       targetId: "tutorial-step-1",
     },
     {
@@ -870,12 +752,12 @@ export default function MealApp() {
     },
     {
       title: "Generate Single Meals",
-      description: "Choose one of these cards to get single meal ideas. You'll watch a short video ad to generate the recipes on mobile.",
+      description: "Choose one of these cards to get single meal ideas. Free users watch a short ad to generate recipes.",
       targetId: "tutorial-step-4",
     },
     {
       title: "Get a 7-Day Plan",
-      description: "Generate a full week's meal plan by watching two short rewarded video ads. Click this card to get started.",
+      description: "Generate a full week's meal plan. Free users watch two short rewarded ads to unlock.",
       targetId: "tutorial-step-5",
     },
     {
@@ -915,6 +797,7 @@ export default function MealApp() {
     <>
       <div className="container relative py-12 md:py-20">
         <LimitModal isOpen={isLimitModalOpen} onClose={() => setIsLimitModalOpen(false)} />
+        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={() => { /* will implement in next stage */ }} />
 
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
@@ -1059,8 +942,9 @@ export default function MealApp() {
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Quick-meal.png" alt="Quick Meal" layout="fill" objectFit="cover" data-ai-hint="fast food" /></div>}
                 title="Something Quick" 
                 description="Short on time? Get delicious meal ideas in seconds."
-                onClick={() => handleOpenPreferences('Quick')}
+                onClick={() => handleMoodOrPlanClick('Quick')}
                 costText={"Watch an Ad"}
+                isPro={isPro}
               />
            </div>
            <MoodCard 
@@ -1068,35 +952,28 @@ export default function MealApp() {
               icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Healthy-meal.png" alt="Healthy Meal" layout="fill" objectFit="cover" /></div>}
               title="Something Healthy" 
               description="Nourish your body with a wholesome and tasty recipe."
-              onClick={() => handleOpenPreferences('Healthy')}
+              onClick={() => handleMoodOrPlanClick('Healthy')}
               costText={"Watch an Ad"}
+              isPro={isPro}
             />
            <MoodCard 
               mood="Hearty" 
               icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Hearty-meal.png" alt="Hearty Meal" layout="fill" objectFit="cover" data-ai-hint="steak dinner" /></div>}
               title="Something Hearty" 
               description="Craving comfort food? Find a satisfying and filling meal."
-              onClick={() => handleOpenPreferences('Hearty')}
+              onClick={() => handleMoodOrPlanClick('Hearty')}
               costText={"Watch an Ad"}
+              isPro={isPro}
             />
            <div id="tutorial-step-5" className="lg:col-span-2">
               <MoodCard 
                 mood="7-day-plan" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>}
                 title="Generate a 7-Day Plan" 
-                description="Get a complete breakfast, lunch, and dinner plan for the week. Watch two short video ads to unlock."
-                onClick={() => {
-                  if (Capacitor.getPlatform() !== 'web') {
-                    // Mobile: Force 2 ads to unlock
-                    showSevenDayPlanAds(() => {
-                      handleOpenPreferences('7-day-plan');
-                    });
-                  } else {
-                    // Web: Standard payment flow
-                    handleOpenPreferences('7-day-plan');
-                  }
-                }}
+                description="Get a complete breakfast, lunch, and dinner plan for the week."
+                onClick={() => handleMoodOrPlanClick('7-day-plan')}
                 costText={"Watch 2 Ads"}
+                isPro={isPro}
               />
            </div>
         </div>
@@ -1189,7 +1066,7 @@ export default function MealApp() {
                 {loadingMood ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                    <Video className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                 )}
                 {getGenerateButtonText()}
               </Button>
@@ -1350,8 +1227,7 @@ export default function MealApp() {
              {isFetchingDetails && !activeMeal && (
                   <div className="flex flex-col items-center justify-center flex-1 min-h-[400px]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    <p className="mt-4 text-muted-foreground">Fetching recipe details...</p>
-                  </div>
+                    <p className="mt-4 text-muted-foreground">Fetching recipe details...</p>                  </div>
               )}
              {activeMeal && (
                 <>
@@ -1483,49 +1359,6 @@ export default function MealApp() {
             </DialogContent>
         </Dialog>
 
-        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-            <DialogContent className="max-h-[90vh] flex flex-col" onPointerDownOutside={(e) => { if(isPaymentProcessing || stripeOptions) e.preventDefault(); }}>
-                <DialogHeader>
-                    <DialogTitle>
-                        {currentPlanType === 'single' ? 'Unlock 24-Hour Access' : 'Generate 7-Day Meal Plan'}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {currentPlanType === 'single'
-                            ? 'A one-time payment of $1.99 is required for 24 hours of unlimited single meal generations.'
-                            : 'A one-time payment of $7.99 is required to generate a full week\'s meal plan.'
-                        }
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="overflow-y-auto -mx-6 px-6">
-                    <div className="py-4">
-                        {stripeOptions?.clientSecret && stripePromise ? (
-                            <Elements stripe={stripePromise} options={stripeOptions}>
-                                <CheckoutForm onSuccessfulPayment={handleSuccessfulPayment} onPaymentProcessing={setIsPaymentProcessing} planType={currentPlanType} email={paymentEmail} />
-                            </Elements>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email Address</Label>
-                                    <Input 
-                                        id="email" 
-                                        type="email" 
-                                        placeholder="Enter your email for receipt" 
-                                        value={paymentEmail}
-                                        onChange={(e) => setPaymentEmail(e.target.value)}
-                                        disabled={isPaymentProcessing}
-                                    />
-                                </div>
-                                <Button onClick={handleSetupStripe} className="w-full" disabled={isPaymentProcessing || !paymentEmail}>
-                                    {isPaymentProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                                    {isPaymentProcessing ? 'Initializing...' : 'Continue to Payment'}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-
         <Dialog open={isTutorialOpen} onOpenChange={setIsTutorialOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -1599,12 +1432,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-
-
-
-
-
-
-
-    
