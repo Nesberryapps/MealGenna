@@ -142,14 +142,14 @@ export function PaywallModal({ isOpen, onClose, setPremium }: PaywallModalProps)
                     <CardContent className="p-6 text-center">
                         <h3 className="text-lg font-semibold">Single Meal Pack</h3>
                         <p className="text-2xl font-bold">$1.99</p>
-                        <p className="text-sm text-muted-foreground">5 generations, valid for 24 hours.</p>
+                        <p className="text-sm text-muted-foreground">Get 5 generations. Valid for 24 hours.</p>
                     </CardContent>
                 </Card>
                  <Card className="cursor-pointer hover:border-primary" onClick={() => handlePlanSelect('weekly')}>
                     <CardContent className="p-6 text-center">
-                        <h3 className="text-lg font-semibold">Weekly Plan Pack</h3>
+                        <h3 className="text-lg font-semibold">7-Day Access Pass</h3>
                         <p className="text-2xl font-bold">$7.99</p>
-                        <p className="text-sm text-muted-foreground">Unlimited generations for 7 days.</p>
+                        <p className="text-sm text-muted-foreground">Unlock unlimited generations for 7 days.</p>
                     </CardContent>
                 </Card>
             </div>
