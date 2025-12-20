@@ -174,5 +174,3 @@ export function PaywallModal({ isOpen, onClose, addCredits }: PaywallModalProps)
     </Dialog>
   );
 }
-
-    

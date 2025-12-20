@@ -17,11 +17,7 @@ export async function POST(request: Request) {
     apiVersion: '2024-06-20',
   });
 
-  const { planType, email } = await request.json();
-
-  if (!email) {
-    return NextResponse.json({ error: 'Email is required for payment.' }, { status: 400 });
-  }
+  const { planType } = await request.json();
 
   let amount: number;
   
@@ -40,7 +36,7 @@ export async function POST(request: Request) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: 'usd',
-      receipt_email: email, // Add email for Stripe receipt
+      // The receipt_email is now optional and will be collected by Stripe's payment form if needed.
       automatic_payment_methods: {
         enabled: true,
       },
