@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@capacitor-community/admob": "5.5.1",
+    "@capacitor-community/admob": "latest",
     "@capacitor/android": "^5.7.4",
     "@capacitor/cli": "^5.7.4",
     "@capacitor/core": "^5.7.4",
@@ -29,7 +29,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
-    "@revenuecat/purchases-capacitor": "5.7.0",
+    "@revenuecat/purchases-capacitor": "^7.7.1",
     "@stripe/react-stripe-js": "^2.9.0",
     "@stripe/stripe-js": "^4.1.0",
     "class-variance-authority": "^0.7.0",
