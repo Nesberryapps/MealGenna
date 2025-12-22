@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "785969036091",
-    "project_id": "meal-genna-mobile-app",
-    "storage_bucket": "meal-genna-mobile-app.firebasestorage.app"
+    "project_number": "813307831387",
+    "project_id": "mealmind-4a40a",
+    "storage_bucket": "mealmind-4a40a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:785969036091:android:2d2513f59758fc3aeb951e",
+        "mobilesdk_app_id": "1:813307831387:android:5a9c488b88fb3a79040b7e",
         "android_client_info": {
           "package_name": "com.nesberry.mealgenna.pro"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "813307831387-ccnma4ljvi2aqan815gr2lklo15s9pur.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSy...REDACTED"
+          "current_key": "AIzaSyBFZheP5iqHROOrgwF_VNTtrl4VJ0iZO7A"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "813307831387-ccnma4ljvi2aqan815gr2lklo15s9pur.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

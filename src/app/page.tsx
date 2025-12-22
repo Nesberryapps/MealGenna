@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
@@ -192,21 +193,18 @@ export default function MealApp() {
     }
 
     const initAnalytics = async () => {
-        console.log("⚡ Analytics: Attempting to initialize...");
+        if (Capacitor.getPlatform() === 'web') return;
         try {
-          // CORRECTION 1: Use 'setEnabled' instead of 'setCollectionEnabled'
-          await FirebaseAnalytics.setEnabled({ enabled: true });
-          
-          // 2. Log the event
+          await FirebaseAnalytics.setCollectionEnabled({ enabled: true });
           await FirebaseAnalytics.logEvent({
-            name: 'first_open_verified',
-            params: { // If this stays red, change to 'parameters'
-              method: 'native_capacitor_v5', 
-            },
+            name: "screen_view",
+            params: {
+              screen_name: "home",
+            }
           });
-          console.log("✅ Analytics: Success! Check Firebase DebugView.");
+          console.log("Firebase Analytics initialized and screen_view logged.");
         } catch (error) {
-          console.error("❌ Analytics: Failed", error);
+          console.error("Error initializing Firebase Analytics", error);
         }
     };
 
@@ -1500,3 +1498,6 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
 
     
 
+
+
+    
