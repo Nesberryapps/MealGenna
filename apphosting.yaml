@@ -19,7 +19,7 @@ runConfig:
     - variable: 'NEXT_PUBLIC_STRIPE_MODE'
       value: 'live'
     - variable: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
-      value: 'pk_live_51RlFiGA8YbEpMywSHICqmEnyf3RP5T9Wp4dL6RmyGunYIaiAwWpN4YJub6evw0iaTViS1W5d8NZeefLtDQAl9KjK00M5U0HA43'
+      secret: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
     - variable: 'STRIPE_WEBHOOK_SECRET'
       secret: 'STRIPE_WEBHOOK_SECRET'
 
