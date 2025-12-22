@@ -155,18 +155,20 @@ export default function MealApp() {
     const date = new Date();
     const hour = date.getHours();
     let initialMealTime = 'lunch';
+    let initialHeading = "Good afternoon! What's for lunch?";
 
     if (hour < 12) {
-      setHeading("Good morning! What's for breakfast?");
+      initialHeading = "Good morning! What's for breakfast?";
       initialMealTime = 'breakfast';
     } else if (hour < 18) {
-      setHeading("Good afternoon! What's for lunch?");
+      initialHeading = "Good afternoon! What's for lunch?";
       initialMealTime = 'lunch';
     } else {
-      setHeading("Good evening! What's for dinner?");
+      initialHeading = "Good evening! What's for dinner?";
       initialMealTime = 'dinner';
     }
-
+    
+    setHeading(initialHeading);
     setPreferences(prev => ({ ...prev, mealTime: initialMealTime }));
 
     const handleBeforeInstallPrompt = (event: any) => {
@@ -606,7 +608,7 @@ export default function MealApp() {
     });
 
     const filename = 'mealgenna_7_day_plan.txt';
-    saveTextFile(filename, content);
+    saveTextFile(filename, fullPlanContent);
   };
 
   const handleShopOnline = (store: 'walmart' | 'amazon' | 'instacart') => {
@@ -1497,3 +1499,4 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
     
 
     
+
