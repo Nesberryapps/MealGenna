@@ -17,7 +17,6 @@ export const initializePurchases = async () => {
 
   try {
     const apiKey = Capacitor.getPlatform() === 'ios' ? REVENUECAT_API_KEY_IOS : REVENUECAT_API_KEY_ANDROID;
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG); // Use DEBUG for development
     await Purchases.configure({ apiKey });
     console.log('RevenueCat configured successfully.');
   } catch (e) {
@@ -62,7 +61,7 @@ export const restorePurchases = async (): Promise<CustomerInfo | null> => {
   if (Capacitor.getPlatform() === 'web') return null;
 
   try {
-    const { customerInfo } = await Purchases.restorePurchases();
+    const { customerInfo } = await Purchases.restore();
     return customerInfo;
   } catch (e) {
     console.error('Error restoring purchases:', e);
