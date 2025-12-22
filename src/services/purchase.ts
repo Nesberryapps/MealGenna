@@ -34,7 +34,7 @@ export const initializePurchases = async () => {
 };
 
 // 2. Get Subscription Offerings
-export const getOfferings = async (): Promise<PurchasesPackage[]> => {
+export const getOfferings = async (): Promise<any> => {
   if (Capacitor.getPlatform() === 'web') return [];
 
   try {
