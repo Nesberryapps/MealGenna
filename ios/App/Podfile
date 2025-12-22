@@ -15,8 +15,8 @@ end
 
 target 'App' do
   capacitor_pods
-  pod 'Firebase/Core'
-  pod 'Firebase/Analytics'
+  pod 'Firebase/Core', '10.29.0'
+  pod 'Firebase/Analytics', '10.29.0'
 
   use_frameworks! :linkage => :static
 end
