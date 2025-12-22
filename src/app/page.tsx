@@ -155,22 +155,23 @@ export default function MealApp() {
     // This effect runs only on the client, preventing hydration errors
     const date = new Date();
     const hour = date.getHours();
-    let initialMealTime = 'lunch';
-    let initialHeading = "Good afternoon! What's for lunch?";
+    let newHeading = "What's on the menu?";
+    let newMealTime = 'lunch';
 
     if (hour < 12) {
-      initialHeading = "Good morning! What's for breakfast?";
-      initialMealTime = 'breakfast';
+      newHeading = "Good morning! What's for breakfast?";
+      newMealTime = 'breakfast';
     } else if (hour < 18) {
-      initialHeading = "Good afternoon! What's for lunch?";
-      initialMealTime = 'lunch';
+      newHeading = "Good afternoon! What's for lunch?";
+      newMealTime = 'lunch';
     } else {
-      initialHeading = "Good evening! What's for dinner?";
-      initialMealTime = 'dinner';
+      newHeading = "Good evening! What's for dinner?";
+      newMealTime = 'dinner';
     }
     
-    setHeading(initialHeading);
-    setPreferences(prev => ({ ...prev, mealTime: initialMealTime }));
+    setHeading(newHeading);
+    setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
+
 
     const handleBeforeInstallPrompt = (event: any) => {
       event.preventDefault();
