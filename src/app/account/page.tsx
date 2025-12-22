@@ -8,12 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Star, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function AccountPage() {
   const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const { toast } = useToast();
 
   const handleRestore = async () => {
     setIsRestoring(true);
@@ -29,10 +31,16 @@ export default function AccountPage() {
   const handlePurchase = async () => {
     setIsPurchasing(true);
     try {
-        const offerings = await getOfferings();
-        if (offerings && offerings.length > 0) {
-            await makePurchase(offerings[0]);
-        }
+      const offerings = await getOfferings();
+      if (offerings && offerings.length > 0 && offerings[0].monthly) {
+        await makePurchase(offerings[0].monthly);
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Purchase Unavailable',
+            description: 'Could not find a monthly subscription to purchase.'
+        });
+      }
     }
     finally {
         setIsPurchasing(false);
