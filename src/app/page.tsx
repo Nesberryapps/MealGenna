@@ -195,7 +195,7 @@ export default function MealApp() {
     const initAnalytics = async () => {
         if (Capacitor.getPlatform() === 'web') return;
         try {
-          await FirebaseAnalytics.setCollectionEnabled({ enabled: true });
+          await FirebaseAnalytics.setEnabled({ enabled: true });
           await FirebaseAnalytics.logEvent({
             name: "screen_view",
             params: {
