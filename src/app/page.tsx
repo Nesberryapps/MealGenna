@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
@@ -187,6 +188,27 @@ export default function MealApp() {
         }
       });
     }
+
+    const initAnalytics = async () => {
+        console.log("⚡ Analytics: Attempting to initialize...");
+        try {
+          // CORRECTION 1: Use 'setEnabled' instead of 'setCollectionEnabled'
+          await FirebaseAnalytics.setEnabled({ enabled: true });
+          
+          // 2. Log the event
+          await FirebaseAnalytics.logEvent({
+            name: 'first_open_verified',
+            params: { // If this stays red, change to 'parameters'
+              method: 'native_capacitor_v5', 
+            },
+          });
+          console.log("✅ Analytics: Success! Check Firebase DebugView.");
+        } catch (error) {
+          console.error("❌ Analytics: Failed", error);
+        }
+    };
+
+    initAnalytics();
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -715,8 +737,14 @@ export default function MealApp() {
     setIsPurchasing(true);
     try {
         const offerings = await getOfferings();
-        if (offerings && offerings.length > 0) {
-            await makePurchase(offerings[0]);
+        if (offerings && offerings.length > 0 && offerings[0].monthly) {
+            await makePurchase(offerings[0].monthly);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Purchase Unavailable',
+                description: 'Could not find a monthly subscription to purchase.'
+            });
         }
     }
     finally {
