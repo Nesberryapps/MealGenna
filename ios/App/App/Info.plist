@@ -46,25 +46,13 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>GADApplicationIdentifier</key>
-<string>ca-app-pub-6191158195654090~8707594177</string>
-<key>SKAdNetworkItems</key>
-<array>
-  <dict>
-    <key>SKAdNetworkIdentifier</key>
-    <string>cstr6suwn9.skadnetwork</string>
-  </dict>
-</array>
-<key>NSCameraUsageDescription</key>
-<string>MealGenna needs access to your camera to scan food items.</string>
-<key>NSPhotoLibraryUsageDescription</key>
-<string>MealGenna needs access to your photos to upload food images.</string>
-<key>NSPhotoLibraryAddUsageDescription</key>
-<string>MealGenna needs access to save meal plans to your photos.</string>
-<key>NSUserTrackingUsageDescription</key>
-    <string>This identifier will be used to deliver personalized ads to you.</string>
-<key>UIFileSharingEnabled</key>
-<true/>
-<key>LSSupportsOpeningDocumentsInPlace</key>
-<true/>	
+    <string>ca-app-pub-3940256099942544~1458002511</string>
+    <key>SKAdNetworkItems</key>
+    <array>
+        <dict>
+            <key>SKAdNetworkIdentifier</key>
+            <string>cstr6suwn9.skadnetwork</string>
+        </dict>
+    </array>
 </dict>
 </plist>
