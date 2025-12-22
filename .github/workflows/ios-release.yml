@@ -64,7 +64,7 @@ jobs:
           project_path = 'ios/App/App.xcodeproj'
           project = Xcodeproj::Project.open(project_path)
           
-          # Iterate through EVERY target (App + AdMob + Pods)
+          # Iterate through EVERY target (App + AdMob + RevenueCat + Push)
           project.targets.each do |target|
             target.build_configurations.each do |config|
               # 1. Apply Team ID to EVERYTHING
@@ -75,13 +75,17 @@ jobs:
                 config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
                 config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
                 config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
-                config.build_settings['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = 'Apple Distribution'
+                
+                # Enable Push Notifications (Since you added the plugin)
+                target.attributes['SystemCapabilities'] = {
+                  'com.apple.Push' => { 'enabled' => 1 }
+                }
               end
             end
           end
           
           project.save
-          puts '✅ Team ID applied to all targets (App + Pods)!'
+          puts '✅ Signing settings updated successfully for App target!'
           "
 
       - name: Build iOS App
