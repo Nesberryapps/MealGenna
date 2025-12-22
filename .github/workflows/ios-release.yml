@@ -64,28 +64,32 @@ jobs:
           project_path = 'ios/App/App.xcodeproj'
           project = Xcodeproj::Project.open(project_path)
           
-          # Iterate through EVERY target (App + AdMob + RevenueCat + Push)
           project.targets.each do |target|
+            # 1. Update Build Settings (Loop through configs)
             target.build_configurations.each do |config|
-              # 1. Apply Team ID to EVERYTHING
+              # Apply Team ID to EVERYTHING
               config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
               
-              # 2. Specific settings ONLY for the Main App
               if target.name == 'App'
                 config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
                 config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
                 config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
-                
-                # Enable Push Notifications (Since you added the plugin)
-                target.attributes['SystemCapabilities'] = {
-                  'com.apple.Push' => { 'enabled' => 1 }
-                }
               end
+            end
+
+            # 2. Update Target Attributes (Capabilities) - OUTSIDE the config loop
+            if target.name == 'App'
+               # Ensure attributes hash exists
+               target.attributes = {} unless target.attributes
+               # Enable Push Notifications
+               target.attributes['SystemCapabilities'] = {
+                 'com.apple.Push' => { 'enabled' => 1 }
+               }
             end
           end
           
           project.save
-          puts '✅ Signing settings updated successfully for App target!'
+          puts '✅ Signing and Capabilities updated successfully!'
           "
 
       - name: Build iOS App
