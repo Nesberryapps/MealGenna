@@ -1,11 +1,6 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '13.0'
-
-# workaround to avoid Xcode caching of Pods that requires
-# Product -> Clean Build Folder after new Cordova plugins installed
-# Requires CocoaPods 1.6 or newer
-install! 'cocoapods', :disable_input_output_paths => true
+platform :ios, '14.0' # <--- UPDATED TO 14.0
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
@@ -20,9 +15,8 @@ end
 
 target 'App' do
   capacitor_pods
-  pod 'Firebase/Core'
-  pod 'Firebase/Analytics'
-  
+  # NOTE: No manual Firebase pods here. We let the plugin handle it.
+
   use_frameworks! :linkage => :static
 end
 
