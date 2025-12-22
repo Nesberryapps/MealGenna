@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 export async function POST(request: Request) {
-  // This ensures the key is only accessed on the server.
+  // This ensures the key is only accessed on the server from the environment variable.
   const key = process.env.STRIPE_SECRET_KEY;
 
   if (!key) {
