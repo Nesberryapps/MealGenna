@@ -10,17 +10,11 @@ runConfig:
   env:
     - variable: 'GEMINI_API_KEY'
       secret: 'GEMINI_API_KEY'
-    - variable: 'NO_PROXY'
-      value: '127.0.0.1,169.254.0.0/16,localhost,*.google.internal,*.googleapis.com,*.appspot.com,*.run.app,*.cloudfunctions.net,*.gateway.dev,*.googleusercontent.com,*.pkg.dev,*.gcr.io'
-    - variable: 'STRIPE_SECRET_KEY'
-      secret: 'STRIPE_SECRET_KEY'
-    - variable: 'FIREBASE_ADMIN_SDK_CONFIG'
-      secret: 'FIREBASE_ADMIN_SDK_CONFIG'
-    - variable: 'NEXT_PUBLIC_STRIPE_MODE'
-      value: 'live'
     - variable: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
       secret: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
+    - variable: 'STRIPE_SECRET_KEY'
+      secret: 'STRIPE_SECRET_KEY'
     - variable: 'STRIPE_WEBHOOK_SECRET'
       secret: 'STRIPE_WEBHOOK_SECRET'
-
-    
+    - variable: 'FIREBASE_ADMIN_SDK_CONFIG'
+      secret: 'FIREBASE_ADMIN_SDK_CONFIG'
