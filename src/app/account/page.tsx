@@ -32,13 +32,13 @@ export default function AccountPage() {
     setIsPurchasing(true);
     try {
       const offerings = await getOfferings();
-      if (offerings && offerings.length > 0 && offerings[0].monthly) {
-        await makePurchase(offerings[0].monthly);
+      if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
+        await makePurchase(offerings[0].availablePackages[0]);
       } else {
         toast({
             variant: 'destructive',
             title: 'Purchase Unavailable',
-            description: 'Could not find a monthly subscription to purchase.'
+            description: 'Could not find a subscription to purchase.'
         });
       }
     }
