@@ -15,7 +15,8 @@ end
 
 target 'App' do
   capacitor_pods
-  # NOTE: No manual Firebase pods here. We let the plugin handle it.
+  pod 'Firebase/Core'
+  pod 'Firebase/Analytics'
 
   use_frameworks! :linkage => :static
 end
