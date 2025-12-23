@@ -65,9 +65,7 @@ jobs:
             -archivePath $PWD/build/App.xcarchive \
             clean archive \
             DEVELOPMENT_TEAM='5BYJT9QTKZ' \
-            CODE_SIGN_STYLE='Manual' \
-            PROVISIONING_PROFILE_SPECIFIER='MealGenna Pro Store' \
-            CODE_SIGN_IDENTITY='Apple Distribution'
+            CODE_SIGN_STYLE='Automatic'
 
       - name: Export IPA
         run: |
