@@ -3,7 +3,8 @@ import {
   Purchases, 
   PurchasesPackage, 
   CustomerInfo,
-  PurchasesOfferings
+  PurchasesOfferings,
+  LOG_LEVEL
 } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 
@@ -22,10 +23,8 @@ export const initializePurchases = async () => {
       ? REVENUECAT_API_KEY_IOS 
       : REVENUECAT_API_KEY_ANDROID;
 
-    // FIX: Use simple object syntax instead of 'new PurchasesConfiguration'
+    await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
     await Purchases.configure({ apiKey });
-
-    // Removed setLogLevel to prevent type errors (it's optional anyway)
     
     console.log('RevenueCat configured successfully.');
   } catch (e) {
@@ -34,16 +33,16 @@ export const initializePurchases = async () => {
 };
 
 // 2. Get Subscription Offerings
-export const getOfferings = async (): Promise<any> => {
+export const getOfferings = async (): Promise<PurchasesOffering[]> => {
   if (Capacitor.getPlatform() === 'web') return [];
 
   try {
     const offerings: PurchasesOfferings = await Purchases.getOfferings();
     
-    // We usually want the "current" offering
-    if (offerings.current && offerings.current.availablePackages.length > 0) {
-      return offerings.current.availablePackages;
+    if (offerings.all && offerings.all.default) {
+        return [offerings.all.default];
     }
+    
     return [];
   } catch (e) {
     console.error('Error getting offerings:', e);
@@ -56,13 +55,10 @@ export const makePurchase = async (pkg: PurchasesPackage): Promise<CustomerInfo 
   if (Capacitor.getPlatform() === 'web') return null;
 
   try {
-    // FIX: The syntax for purchasing has changed slightly
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
     return customerInfo;
   } catch (e: any) {
-    if (e.userCancelled) {
-      console.log("User cancelled purchase");
-    } else {
+    if (!e.userCancelled) {
       console.error('Purchase error:', e);
     }
     return null;
@@ -87,15 +83,10 @@ export const checkSubscription = async (): Promise<boolean> => {
   if (Capacitor.getPlatform() === 'web') return false;
 
   try {
-    const { customerInfo } = await Purchases.getCustomerInfo();
+    const customerInfo = await Purchases.getCustomerInfo();
     
-    // Check if the specific entitlement is active
-    if (
-      customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined
-    ) {
-      return true;
-    }
-    return false;
+    return customerInfo?.entitlements.active[ENTITLEMENT_ID] !== undefined;
+
   } catch (e) {
     console.error('Error checking subscription:', e);
     return false;
