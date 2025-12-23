@@ -65,10 +65,13 @@ jobs:
           project_path = 'ios/App/App.xcodeproj'
           project = Xcodeproj::Project.open(project_path)
           
-          # 1. Update Build Settings for all targets
+          # 1. Update Settings for ALL targets (App + Pods)
           project.targets.each do |target|
             target.build_configurations.each do |config|
+              # Force Team ID
               config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
+              # Force Deployment Target to 14.0 (Fixes the Swift Compile Error)
+              config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
               
               if target.name == 'App'
                 config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
@@ -78,26 +81,19 @@ jobs:
             end
           end
 
-          # 2. Enable Push Notifications for 'App' Target (The Correct Way)
+          # 2. Enable Push Notifications
           target = project.targets.find { |t| t.name == 'App' }
           if target
-            # Get the TargetAttributes dictionary from the Project Root
             attributes = project.root_object.attributes['TargetAttributes'] || {}
-            
-            # Get (or create) the attributes for this specific target UUID
             target_attrs = attributes[target.uuid] || {}
-            
-            # Enable Push
             target_attrs['SystemCapabilities'] ||= {}
             target_attrs['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
-            
-            # Save back to the project root
             attributes[target.uuid] = target_attrs
             project.root_object.attributes['TargetAttributes'] = attributes
           end
           
           project.save
-          puts '✅ Signing and Push Capabilities updated successfully!'
+          puts '✅ Signing, Deployment Target (14.0), and Push Capabilities updated!'
           "
 
       - name: Build iOS App
