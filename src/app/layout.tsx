@@ -12,53 +12,7 @@ import type { Viewport } from 'next'
 import AdMobInit from "@/components/AdMobInit";
 import { SubscriptionProvider } from "@/hooks/use-subscription";
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
-import { getMessaging, getToken } from 'firebase/messaging'; // Web SDK
 
-export const initializeNotifications = async () => {
-  
-  // --- PATH A: MOBILE APP (Native) ---
-  if (Capacitor.isNativePlatform()) {
-    console.log("Initializing Native Push...");
-    
-    // 1. Request Permission
-    let permStatus = await PushNotifications.checkPermissions();
-    if (permStatus.receive === 'prompt') {
-      permStatus = await PushNotifications.requestPermissions();
-    }
-    
-    // 2. Register with Apple/Google
-    if (permStatus.receive === 'granted') {
-      await PushNotifications.register();
-    }
-
-    // 3. Listen for Token
-    PushNotifications.addListener('registration', (token) => {
-      console.log('Native Token:', token.value);
-      // TODO: Save this token to your database user profile
-    });
-
-    PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      console.log('Push received:', notification);
-    });
-  } 
-  
-  // --- PATH B: WEBSITE (Browser) ---
-  else {
-    console.log("Initializing Web Push...");
-    
-    try {
-      const messaging = getMessaging();
-      const token = await getToken(messaging, { 
-        vapidKey: "YOUR_PUBLIC_VAPID_KEY" // You likely already have this
-      });
-      console.log('Web Token:', token);
-      // TODO: Save this token to your database user profile
-    } catch (error) {
-      console.log("Web push not supported or blocked", error);
-    }
-  }
-};
 
 export const viewport: Viewport = {
   themeColor: '#4CAF50',
