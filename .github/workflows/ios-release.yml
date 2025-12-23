@@ -47,56 +47,43 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
-      - name: Install Provisioning Profile
-        env:
-          PROFILE_BASE64: ${{ secrets.PROFILE_BASE64 }}
-        run: |
-          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
-          echo -n "$PROFILE_BASE64" | base64 --decode -o $PP_PATH
-          
-          # Extract UUID
-          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i $PP_PATH))
-          
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-
       - name: Configure Project Signing (Ruby)
         run: |
           sudo gem install xcodeproj
-          
           ruby -e "
           require 'xcodeproj'
           project_path = 'ios/App/App.xcodeproj'
           project = Xcodeproj::Project.open(project_path)
-          
-          project.targets.each do |target|
-            if target.name == 'App'
-              # 1. Update Build Settings
-              target.build_configurations.each do |config|
-                config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
-                config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
-                config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
-              end
 
-              # 2. Enable Push Notifications (Safe Method)
-              attributes = target.attributes
-              
-              sys_caps = attributes['SystemCapabilities']
-              if sys_caps.nil?
-                sys_caps = {}
-              end
-              
-              sys_caps['com.apple.Push'] = { 'enabled' => 1 }
-              attributes['SystemCapabilities'] = sys_caps
-              
-              target.attributes = attributes
+          # Find the target named 'App'
+          target = project.targets.find { |t| t.name == 'App' }
 
+          if target
+            # 1. Update Build Settings (Signing)
+            target.build_configurations.each do |config|
+              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
+              config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+              config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
+              config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
             end
+
+            # 2. Enable Push Notifications (The Correct Way)
+            root_attrs = project.root_object.attributes
+            root_attrs['TargetAttributes'] ||= {}
+            
+            # Get attributes specific to this target's UUID
+            target_attrs = root_attrs['TargetAttributes'][target.uuid] || {}
+            
+            # Enable the Push Capability
+            target_attrs['SystemCapabilities'] ||= {}
+            target_attrs['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
+
+            # Save it back to the project structure
+            root_attrs['TargetAttributes'][target.uuid] = target_attrs
+            project.root_object.attributes = root_attrs
           end
-          
+
           project.save
-          puts '✅ Signing and Push Capabilities updated successfully!'
           "
 
       - name: Build iOS App
