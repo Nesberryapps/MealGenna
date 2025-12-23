@@ -70,24 +70,28 @@ jobs:
           project = Xcodeproj::Project.open(project_path)
           
           project.targets.each do |target|
-            # 1. Update Build Settings
-            target.build_configurations.each do |config|
-              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
-              
-              if target.name == 'App'
+            if target.name == 'App'
+              # 1. Update Build Settings
+              target.build_configurations.each do |config|
+                config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
                 config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
                 config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
                 config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
               end
-            end
 
-            # 2. Enable Push Notifications (Safety Wrapper)
-            if target.name == 'App'
-               # Use a safer way to assign attributes to avoid TypeErrors
-               attributes = target.attributes || {}
-               attributes['SystemCapabilities'] ||= {}
-               attributes['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
-               target.attributes = attributes
+              # 2. Enable Push Notifications (Safe Method)
+              attributes = target.attributes
+              
+              sys_caps = attributes['SystemCapabilities']
+              if sys_caps.nil?
+                sys_caps = {}
+              end
+              
+              sys_caps['com.apple.Push'] = { 'enabled' => 1 }
+              attributes['SystemCapabilities'] = sys_caps
+              
+              target.attributes = attributes
+
             end
           end
           
