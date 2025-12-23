@@ -1,0 +1,82 @@
+
+name: Deploy iOS to App Store
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+
+      - name: Configure Xcode Project
+        run: |
+          sudo gem install xcodeproj
+          ruby scripts/update_project_team.rb
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          
+      - name: Sync iOS Project
+        run: npx cap sync ios
+
+      - name: Install Apple Certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.P12_BASE64 }}
+          p12-password: ${{ secrets.P12_PASSWORD }}
+          
+      - name: Install Provisioning Profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo -n "${{ secrets.PROFILE_BASE64 }}" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/build_profile.mobileprovision
+
+      - name: Build iOS App
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $PWD/build/App.xcarchive \
+            clean archive
+
+      - name: Export IPA
+        run: |
+          cd ios/App
+          xcodebuild -exportArchive \
+            -archivePath $PWD/build/App.xcarchive \
+            -exportOptionsPlist App/export_options.plist \
+            -exportPath $PWD/build \
+            -allowProvisioningUpdates
+            
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MealGenna.ipa
+          path: ios/App/build/App.ipa
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v2
+        with:
+          app-path: 'ios/App/build/App.ipa'
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
