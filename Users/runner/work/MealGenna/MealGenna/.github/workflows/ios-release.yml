@@ -26,75 +26,12 @@ jobs:
       - name: Sync iOS Project
         run: npx cap sync ios
 
-      - name: Install Apple Certificate
-        env:
-          P12_BASE64: ${{ secrets.P12_BASE64 }}
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          KEYCHAIN_PASSWORD: "temporary_build_password" 
-        run: |
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-
-          echo -n "$P12_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
-
-      - name: Install Provisioning Profile
-        env:
-          PROFILE_BASE64: ${{ secrets.PROFILE_BASE64 }}
-        run: |
-          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
-          echo -n "$PROFILE_BASE64" | base64 --decode -o $PP_PATH
-          
-          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i $PP_PATH))
-          
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-
-      - name: Configure Project Signing (Ruby)
-        run: |
-          sudo gem install xcodeproj
-          
-          ruby -e "
-          require 'xcodeproj'
-          project_path = 'ios/App/App.xcodeproj'
-          project = Xcodeproj::Project.open(project_path)
-          
-          # 1. Update Settings for ALL targets (App + Pods)
-          project.targets.each do |target|
-            target.build_configurations.each do |config|
-              # Force Team ID
-              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
-              # Force Deployment Target to 14.0 (Fixes the Swift Compile Error)
-              config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-              
-              if target.name == 'App'
-                config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
-                config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
-              end
-            end
-          end
-
-          # 2. Enable Push Notifications
-          target = project.targets.find { |t| t.name == 'App' }
-          if target
-            attributes = project.root_object.attributes['TargetAttributes'] || {}
-            target_attrs = attributes[target.uuid] || {}
-            target_attrs['SystemCapabilities'] ||= {}
-            target_attrs['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
-            attributes[target.uuid] = target_attrs
-            project.root_object.attributes['TargetAttributes'] = attributes
-          end
-          
-          project.save
-          puts '✅ Signing, Deployment Target (14.0), and Push Capabilities updated!'
-          "
+      - name: Install Apple Certificate and Provisioning Profile
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.P12_BASE64 }}
+          p12-password: ${{ secrets.P12_PASSWORD }}
+          provisioning-profile-base64: ${{ secrets.PROFILE_BASE64 }}
 
       - name: Build iOS App
         run: |
