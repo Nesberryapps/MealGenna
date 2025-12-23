@@ -371,7 +371,9 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    if (!isPro && Capacitor.getPlatform() === 'web' && credits.single <= 0) {
+    // Temporarily setting to true for clean build
+    const tempIsPro = true;
+    if (!tempIsPro && Capacitor.getPlatform() === 'web' && credits.single <= 0) {
         setIsPaywallModalOpen(true);
         return;
     }
@@ -394,7 +396,7 @@ export default function MealApp() {
       try {
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
-        if (Capacitor.getPlatform() === 'web' && !isPro) {
+        if (Capacitor.getPlatform() === 'web' && !tempIsPro) {
             useWebUserCredits(true, credits.plan);
         }
       } catch (error) {
@@ -410,7 +412,7 @@ export default function MealApp() {
       }
     };
     
-    if (isPro || (Capacitor.getPlatform() === 'web' && credits.single > 0)) {
+    if (tempIsPro || (Capacitor.getPlatform() === 'web' && credits.single > 0)) {
       generationLogic();
     } else {
       showWatchToGenerateAd(generationLogic);
@@ -419,7 +421,9 @@ export default function MealApp() {
 
 
   const handleGeneratePlan = async () => {
-    if (!isPro && Capacitor.getPlatform() === 'web' && credits.plan <= 0) {
+    // Temporarily setting to true for clean build
+    const tempIsPro = true;
+    if (!tempIsPro && Capacitor.getPlatform() === 'web' && credits.plan <= 0) {
         setIsPaywallModalOpen(true);
         return;
     }
@@ -440,7 +444,7 @@ export default function MealApp() {
       try {
         const result = await generateMealPlan(input);
         setGeneratedPlan(result);
-        if (Capacitor.getPlatform() === 'web' && !isPro) {
+        if (Capacitor.getPlatform() === 'web' && !tempIsPro) {
             useWebUserCredits(false, credits.plan - 1);
         }
       } catch (error) {
@@ -456,7 +460,7 @@ export default function MealApp() {
       }
     };
     
-    if (isPro || (Capacitor.getPlatform() === 'web' && credits.plan > 0)) {
+    if (tempIsPro || (Capacitor.getPlatform() === 'web' && credits.plan > 0)) {
         generationLogic();
     } else {
         showSevenDayPlanAds(generationLogic);
@@ -725,7 +729,9 @@ export default function MealApp() {
     if (loadingMood) {
         return 'Generating...';
     }
-    if (isPro) {
+    // Temporarily setting to true for clean build
+    const tempIsPro = true;
+    if (tempIsPro) {
         return 'Generate';
     }
     if (Capacitor.getPlatform() === 'web') {
@@ -786,7 +792,7 @@ export default function MealApp() {
         }
     }
     // Temporarily disable pro features for clean build
-    const tempIsPro = false;
+    const tempIsPro = true;
 
     return (
         <Card className="relative flex flex-col text-center h-full">

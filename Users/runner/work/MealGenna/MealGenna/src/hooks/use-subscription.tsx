@@ -22,8 +22,8 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
-  const [isPro] = useState<boolean>(false); // Default to false
-  const [isInitialized] = useState(true); // Default to true
+  const [isPro, setIsPro] = useState<boolean>(false); // Default to false
+  const [isInitialized, setIsInitialized] = useState(true); // Default to true
   const { toast } = useToast();
 
   const disabledAction = async (feature: string) => {
