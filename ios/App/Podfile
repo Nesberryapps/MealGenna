@@ -18,10 +18,10 @@ target 'App' do
 
   # --- THE FIX: Bridge Firebase and AdMob ---
   # These lines force Firebase to expose its headers so the plugin can see them
-  pod 'Firebase', :modular_headers => true
-  pod 'FirebaseCore', :modular_headers => true
-  pod 'FirebaseAnalytics', :modular_headers => true
-  pod 'GoogleUtilities', :modular_headers => true
+  pod 'Firebase', '10.29.0'
+  pod 'Firebase/Analytics', '10.29.0'
+  pod 'FirebaseCore', '10.29.0'
+  pod 'GoogleUtilities', '7.13.3'
   
   # AdMob requires static linking
   use_frameworks! :linkage => :static
