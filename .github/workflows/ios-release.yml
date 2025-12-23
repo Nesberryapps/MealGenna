@@ -25,21 +25,6 @@ jobs:
       - name: Sync iOS Project
         run: npx cap sync ios
 
-      - name: Configure Xcode Project
-        run: |
-          sudo gem install xcodeproj
-          ruby -e "
-          require 'xcodeproj'
-          project_path = './ios/App/App.xcodeproj'
-          project = Xcodeproj::Project.open(project_path)
-          project.targets.each do |target|
-            target.build_configurations.each do |config|
-              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
-            end
-          end
-          project.save
-          "
-        
       - name: Install Apple Certificate and Provisioning Profile
         uses: apple-actions/import-codesign-certs@v3
         with:
