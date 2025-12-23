@@ -26,8 +26,6 @@ jobs:
         run: npx cap sync ios
 
       - name: Configure Xcode Project
-        env:
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
         run: |
           sudo gem install xcodeproj
           ruby -e "
@@ -36,7 +34,7 @@ jobs:
           project = Xcodeproj::Project.open(project_path)
           project.targets.each do |target|
             target.build_configurations.each do |config|
-              config.build_settings['DEVELOPMENT_TEAM'] = ENV['DEVELOPMENT_TEAM']
+              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
             end
           end
           project.save
