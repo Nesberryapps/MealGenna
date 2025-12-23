@@ -21,6 +21,8 @@ target 'App' do
   pod 'Firebase/Analytics', '10.29.0'
   pod 'FirebaseCore', '10.29.0'
   pod 'FirebaseInstallations', '10.29.0'
+  pod 'GoogleUserMessagingPlatform', '2.4.0'
+  pod 'Google-Mobile-Ads-SDK', '11.3.0'
 
   # AdMob often requires static linking. We'll keep it for now.
   use_frameworks! :linkage => :static
