@@ -85,7 +85,8 @@ jobs:
             if target.name == 'App'
                # Use a safer way to assign attributes to avoid TypeErrors
                attributes = target.attributes || {}
-               attributes['SystemCapabilities'] = { 'com.apple.Push' => { 'enabled' => 1 } }
+               attributes['SystemCapabilities'] ||= {}
+               attributes['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
                target.attributes = attributes
             end
           end
