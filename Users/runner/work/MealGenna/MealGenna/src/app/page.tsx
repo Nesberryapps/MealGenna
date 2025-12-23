@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
@@ -36,8 +35,8 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
-// import { useSubscription } from '@/hooks/use-subscription';
-// import { GoProModal } from '@/components/go-pro-modal';
+import { useSubscription } from '@/hooks/use-subscription';
+import { GoProModal } from '@/components/go-pro-modal';
 import { usePremium } from "@/hooks/use-premium";
 
 
@@ -128,8 +127,7 @@ export default function MealApp() {
   });
 
   // Subscription state
-  // const { isPro, getOfferings, makePurchase } = useSubscription();
-  const isPro = false; // Temporarily disable Pro features
+  const { isPro, getOfferings, makePurchase } = useSubscription();
   const { credits, addCredits, isInitialized: isPremiumInitialized } = usePremium();
 
 
@@ -608,7 +606,7 @@ export default function MealApp() {
     });
 
     const filename = 'mealgenna_7_day_plan.txt';
-    saveTextFile(filename, content);
+    saveTextFile(filename, fullPlanContent);
   };
 
   const handleShopOnline = (store: 'walmart' | 'amazon' | 'instacart') => {
@@ -737,28 +735,22 @@ export default function MealApp() {
 
   const handlePurchase = async () => {
     setIsPurchasing(true);
-    toast({
-        title: 'Feature Disabled',
-        description: 'Subscription features are temporarily disabled.',
-    });
-    setIsPurchasing(false);
-    setIsGoProModalOpen(false);
-    // try {
-    //     const offerings = await getOfferings();
-    //     if (offerings && offerings.length > 0 && offerings[0].monthly) {
-    //         await makePurchase(offerings[0].monthly);
-    //     } else {
-    //         toast({
-    //             variant: 'destructive',
-    //             title: 'Purchase Unavailable',
-    //             description: 'Could not find a monthly subscription to purchase.'
-    //         });
-    //     }
-    // }
-    // finally {
-    //     setIsPurchasing(false);
-    //     setIsGoProModalOpen(false);
-    // }
+    try {
+        const offerings = await getOfferings();
+        if (offerings && offerings.length > 0 && offerings[0].monthly) {
+            await makePurchase(offerings[0].monthly);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Purchase Unavailable',
+                description: 'Could not find a monthly subscription to purchase.'
+            });
+        }
+    }
+    finally {
+        setIsPurchasing(false);
+        setIsGoProModalOpen(false);
+    }
   };
 
   const MoodCard = ({ mood, icon, title, description, onClick }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void }) => {
@@ -874,7 +866,7 @@ export default function MealApp() {
     <>
       <div className="container relative py-12 md:py-20">
         <PaywallModal isOpen={isPaywallModalOpen} onClose={() => setIsPaywallModalOpen(false)} addCredits={addCredits} />
-        {/* <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} /> */}
+        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
@@ -1509,4 +1501,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
 
 
     
+
 

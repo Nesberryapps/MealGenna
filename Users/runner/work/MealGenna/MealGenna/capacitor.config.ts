@@ -19,7 +19,8 @@ const config: CapacitorConfig = {
       'FirebaseAnalyticsPlugin',
       'FilesystemPlugin',
       'LocalNotificationsPlugin',
-      'PushNotificationsPlugin'
+      'PushNotificationsPlugin',
+      'PurchasesPlugin' // Correct name for the latest SDK
     ]
   }
 };

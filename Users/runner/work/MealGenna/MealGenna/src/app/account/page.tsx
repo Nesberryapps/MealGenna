@@ -3,63 +3,49 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-// import { useSubscription } from '@/hooks/use-subscription';
+import { useSubscription } from '@/hooks/use-subscription';
 import { Badge } from '@/components/ui/badge';
 import { Star, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-// import { GoProModal } from '@/components/go-pro-modal';
+import { GoProModal } from '@/components/go-pro-modal';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function AccountPage() {
-  // const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
+  const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const { toast } = useToast();
 
-  const isPro = false;
-  const isInitialized = true;
-
   const handleRestore = async () => {
     setIsRestoring(true);
-    toast({
-        title: 'Feature Disabled',
-        description: 'Subscription features are temporarily disabled.',
-    });
-    setIsRestoring(false);
-    // try {
-    //   await restorePurchases();
-    // } catch (e) {
-    //   // Error is handled in the hook
-    // } finally {
-    //   setIsRestoring(false);
-    // }
+    try {
+      await restorePurchases();
+    } catch (e) {
+      // Error is handled in the hook
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   const handlePurchase = async () => {
     setIsPurchasing(true);
-    toast({
-        title: 'Feature Disabled',
-        description: 'Subscription features are temporarily disabled.',
-    });
-    setIsPurchasing(false);
-    setIsGoProModalOpen(false);
-    // try {
-    //   const offerings = await getOfferings();
-    //   if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
-    //     await makePurchase(offerings[0].availablePackages[0]);
-    //   } else {
-    //     toast({
-    //         variant: 'destructive',
-    //         title: 'Purchase Unavailable',
-    //         description: 'Could not find a subscription to purchase.'
-    //     });
-    //   }
-    // }
-    // finally {
-    //     setIsPurchasing(false);
-    //     setIsGoProModalOpen(false);
-    // }
+    try {
+      const offerings = await getOfferings();
+      if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
+        await makePurchase(offerings[0].availablePackages[0]);
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Purchase Unavailable',
+            description: 'Could not find a subscription to purchase.'
+        });
+      }
+    }
+    finally {
+        setIsPurchasing(false);
+        setIsGoProModalOpen(false);
+    }
   };
   
   const getStatusText = () => {
@@ -71,7 +57,7 @@ export default function AccountPage() {
   
   return (
     <div className="container py-12 md:py-20">
-      {/* <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} /> */}
+      <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
       <Card className="max-w-xl mx-auto">
         <CardHeader>
