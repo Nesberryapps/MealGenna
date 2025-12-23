@@ -25,12 +25,16 @@ jobs:
       - name: Sync iOS Project
         run: npx cap sync ios
 
-      - name: Install Apple Certificate and Provisioning Profile
+      - name: Install Apple Certificate
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.P12_BASE64 }}
           p12-password: ${{ secrets.P12_PASSWORD }}
-          provisioning-profile-base64: ${{ secrets.PROFILE_BASE64 }}
+          
+      - name: Install Provisioning Profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo -n "${{ secrets.PROFILE_BASE64 }}" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/build_profile.mobileprovision
 
       - name: Build iOS App
         run: |
@@ -40,10 +44,6 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             -archivePath $PWD/build/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="MealGenna Pro Store" \
-            DEVELOPMENT_TEAM="5BYJT9QTKZ" \
             clean archive
 
       - name: Export IPA
