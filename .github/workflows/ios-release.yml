@@ -30,7 +30,7 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.P12_BASE64 }}
           p12-password: ${{ secrets.P12_PASSWORD }}
-          
+
       - name: Install Provisioning Profile
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -44,7 +44,8 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             -archivePath $PWD/build/App.xcarchive \
-            clean archive
+            clean archive \
+            DEVELOPMENT_TEAM=${{ secrets.DEVELOPMENT_TEAM }}
 
       - name: Export IPA
         run: |
@@ -54,7 +55,7 @@ jobs:
             -exportOptionsPlist App/export_options.plist \
             -exportPath $PWD/build \
             -allowProvisioningUpdates
-            
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -62,7 +63,7 @@ jobs:
           path: ios/App/build/App.ipa
 
       - name: Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v1
+        uses: apple-actions/upload-testflight-build@v2
         with:
           app-path: 'ios/App/build/App.ipa'
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
