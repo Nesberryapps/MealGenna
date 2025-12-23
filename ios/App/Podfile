@@ -7,14 +7,12 @@ def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
-  # Other plugins are loaded automatically by the script below, 
-  # but these are explicit to ensure order.
 end
 
 target 'App' do
   capacitor_pods
   
-  # --- PIN GOOGLE ADS (Prevents Breaking Changes) ---
+  # --- PIN GOOGLE ADS (Critical) ---
   pod 'GoogleUserMessagingPlatform', '2.4.0'
   pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
@@ -22,11 +20,14 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # 1. Force every plugin to use iOS 14.0 (Fixes version mismatches)
+      # 1. Force iOS 14.0
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       
-      # 2. THE MAGIC FIX: Fixes RevenueCat/Swift errors with Static Linking
-      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      # 2. Disable Bitcode (Standard fix for AdMob/RevenueCat conflicts)
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      
+      # 3. Ensure Swift Version is set
+      config.build_settings['SWIFT_VERSION'] = '5.0'
     end
   end
 end
