@@ -38,6 +38,7 @@ import { registerNotifications, scheduleDailyNotifications } from '@/services/no
 import { useSubscription } from '@/hooks/use-subscription';
 import { GoProModal } from '@/components/go-pro-modal';
 import { usePremium } from "@/hooks/use-premium";
+import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 
 
 // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
@@ -738,7 +739,7 @@ export default function MealApp() {
     try {
         const offerings = await getOfferings();
         if (offerings && offerings.length > 0 && offerings[0].monthly) {
-            await makePurchase(offerings[0].monthly);
+            await makePurchase(offerings[0].monthly as PurchasesPackage);
         } else {
             toast({
                 variant: 'destructive',
@@ -1493,13 +1494,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-    
-
-    
-
-
-
-    
-
-

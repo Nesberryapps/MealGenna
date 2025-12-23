@@ -9,6 +9,7 @@ import { Star, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
 import { useToast } from '@/components/ui/use-toast';
+import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 
 export default function AccountPage() {
   const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
@@ -33,7 +34,16 @@ export default function AccountPage() {
     try {
       const offerings = await getOfferings();
       if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
-        await makePurchase(offerings[0].availablePackages[0]);
+        const monthlyPackage = offerings[0].availablePackages.find(p => p.identifier === '$rc_monthly');
+        if (monthlyPackage) {
+            await makePurchase(monthlyPackage as PurchasesPackage);
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Purchase Unavailable',
+                description: 'Could not find a monthly subscription to purchase.'
+            });
+        }
       } else {
         toast({
             variant: 'destructive',
