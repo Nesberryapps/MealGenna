@@ -65,10 +65,7 @@ jobs:
             -configuration Release \
             -archivePath $PWD/build/App.xcarchive \
             clean archive \
-            DEVELOPMENT_TEAM='5BYJT9QTKZ' \
-            CODE_SIGN_STYLE='Manual' \
-            PROVISIONING_PROFILE_SPECIFIER='MealGenna Pro Store' \
-            CODE_SIGN_IDENTITY='Apple Distribution'
+            DEVELOPMENT_TEAM='5BYJT9QTKZ'
 
       - name: Export IPA
         run: |
@@ -91,6 +88,7 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+
 
 
 
