@@ -21,16 +21,31 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-
+        
       - name: Sync iOS Project
         run: npx cap sync ios
 
-      - name: Install Apple Certificate
+      - name: Configure Xcode Project
+        run: |
+          sudo gem install xcodeproj
+          ruby -e "
+          require 'xcodeproj'
+          project_path = './ios/App/App.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          project.targets.each do |target|
+            target.build_configurations.each do |config|
+              config.build_settings['DEVELOPMENT_TEAM'] = '${{ secrets.DEVELOPMENT_TEAM }}'
+            end
+          end
+          project.save
+          "
+        
+      - name: Install Apple Certificate and Provisioning Profile
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.P12_BASE64 }}
           p12-password: ${{ secrets.P12_PASSWORD }}
-
+          
       - name: Install Provisioning Profile
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -44,8 +59,7 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             -archivePath $PWD/build/App.xcarchive \
-            clean archive \
-            DEVELOPMENT_TEAM=${{ secrets.DEVELOPMENT_TEAM }}
+            clean archive
 
       - name: Export IPA
         run: |
@@ -55,7 +69,7 @@ jobs:
             -exportOptionsPlist App/export_options.plist \
             -exportPath $PWD/build \
             -allowProvisioningUpdates
-
+            
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -69,3 +83,4 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+
