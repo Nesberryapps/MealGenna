@@ -472,7 +472,9 @@ export default function MealApp() {
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    if (isPro) {
+    // Temporarily setting to true for clean build
+    const tempIsPro = true;
+    if (tempIsPro) {
         handleOpenPreferences(mood);
     } else if (Capacitor.getPlatform() === 'web') {
         const currentCredits = getWebUserCredits();
@@ -739,16 +741,25 @@ export default function MealApp() {
   const handlePurchase = async () => {
     setIsPurchasing(true);
     try {
-        const offerings = await getOfferings();
-        if (offerings && offerings.length > 0 && offerings[0].monthly) {
-            await makePurchase(offerings[0].monthly as PurchasesPackage);
+      const offerings = await getOfferings();
+      if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
+        const monthlyPackage = offerings[0].availablePackages.find(p => p.identifier === '$rc_monthly');
+        if (monthlyPackage) {
+            await makePurchase(monthlyPackage as PurchasesPackage);
         } else {
-            toast({
+             toast({
                 variant: 'destructive',
                 title: 'Purchase Unavailable',
                 description: 'Could not find a monthly subscription to purchase.'
             });
         }
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Purchase Unavailable',
+            description: 'Could not find a subscription to purchase.'
+        });
+      }
     }
     finally {
         setIsPurchasing(false);
@@ -758,7 +769,6 @@ export default function MealApp() {
 
   const MoodCard = ({ mood, icon, title, description, onClick }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void }) => {
     const isWeb = Capacitor.getPlatform() === 'web';
-    const isProUser = isPro;
     const isPlan = mood === '7-day-plan';
 
     const currentCredits = getWebUserCredits();
