@@ -22,22 +22,10 @@ jobs:
       - name: Install Dependencies
         run: npm install
         
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-
-      - name: Configure Xcode Project
-        run: |
-          sudo gem install xcodeproj
-          ruby scripts/update_project_team.rb
-        env:
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-          
       - name: Sync iOS Project
         run: npx cap sync ios
 
-      - name: Install Apple Certificate
+      - name: Install Apple Certificate and Provisioning Profile
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.P12_BASE64 }}
