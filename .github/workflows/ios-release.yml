@@ -55,34 +55,6 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
 
-      - name: Configure Project Signing (Ruby)
-        run: |
-          sudo gem install xcodeproj
-          
-          ruby -e "
-          require 'xcodeproj'
-          project_path = 'ios/App/App.xcodeproj'
-          project = Xcodeproj::Project.open(project_path)
-          
-          project.targets.each do |target|
-            target.build_configurations.each do |config|
-              # 1. Apply Team ID to EVERYTHING
-              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
-              
-              if target.name == 'App'
-                # 2. Main App Settings
-                config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
-                # CORRECT PROFILE NAME FOR MEALGENNA:
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
-                config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
-              end
-            end
-          end
-          
-          project.save
-          puts '✅ Signing settings updated successfully for App target!'
-          "
-
       - name: Build iOS App
         run: |
           cd ios/App
@@ -91,7 +63,11 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             -archivePath $PWD/build/App.xcarchive \
-            clean archive
+            clean archive \
+            DEVELOPMENT_TEAM='5BYJT9QTKZ' \
+            CODE_SIGN_STYLE='Manual' \
+            PROVISIONING_PROFILE_SPECIFIER='MealGenna Pro Store' \
+            CODE_SIGN_IDENTITY='Apple Distribution'
 
       - name: Export IPA
         run: |
