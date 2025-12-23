@@ -1,12 +1,6 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '13.0'
-use_frameworks!
-
-# workaround to avoid Xcode caching of Pods that requires
-# Product -> Clean Build Folder after new Cordova plugins installed
-# Requires CocoaPods 1.6 or newer
-install! 'cocoapods', :disable_input_output_paths => true
+platform :ios, '14.0'
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
@@ -21,12 +15,14 @@ end
 
 target 'App' do
   capacitor_pods
-  
-  # FIX: Use Modular Headers to allow Firebase to work with Static AdMob
+
+  # --- THE FIX: Bridge Firebase and AdMob ---
+  # These lines force Firebase to expose its headers so the plugin can see them
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
-  pod 'Google-Mobile-Ads-SDK', :modular_headers => true
-
+  pod 'FirebaseAnalytics', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  
   # AdMob requires static linking
   use_frameworks! :linkage => :static
 end
