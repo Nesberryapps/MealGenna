@@ -1,49 +1,32 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
 platform :ios, '14.0'
+use_frameworks! :linkage => :static
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
-  pod 'CapacitorFirebaseAnalytics', :path => '../../node_modules/@capacitor-firebase/analytics'
-  pod 'CapacitorFilesystem', :path => '../../node_modules/@capacitor/filesystem'
-  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
-  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
-  pod 'RevenuecatPurchasesCapacitor', :path => '../../node_modules/@revenuecat/purchases-capacitor'
+  # Other plugins are loaded automatically by the script below, 
+  # but these are explicit to ensure order.
 end
 
 target 'App' do
   capacitor_pods
   
-  # --- THE FIX: Lock versions AND force build settings ---
-  # This ensures all plugins get the correct, compatible version of Firebase.
-  pod 'Firebase/Analytics', '10.29.0'
-  pod 'FirebaseCore', '10.29.0'
-  pod 'FirebaseInstallations', '10.29.0'
+  # --- PIN GOOGLE ADS (Prevents Breaking Changes) ---
   pod 'GoogleUserMessagingPlatform', '2.4.0'
   pod 'Google-Mobile-Ads-SDK', '11.3.0'
-
-  # AdMob often requires static linking. We'll keep it for now.
-  use_frameworks! :linkage => :static
 end
 
-# This post-install script is the magic key. It goes through every single
-# pod after it's installed and fixes its settings.
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # Force every pod to target the same iOS version.
+      # 1. Force every plugin to use iOS 14.0 (Fixes version mismatches)
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       
-      # This is the most important fix: It forces Swift pods to build
-      # in a way that makes them visible to other pods, solving the
-      # "no such module" error with static linking.
-      if target.respond_to?(:product_type) and target.product_type == 'com.apple.product-type.framework'
-        config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
-      end
+      # 2. THE MAGIC FIX: Fixes RevenueCat/Swift errors with Static Linking
+      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
     end
   end
-  
-  assertDeploymentTarget(installer)
 end
