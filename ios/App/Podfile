@@ -15,13 +15,13 @@ end
 
 target 'App' do
   capacitor_pods
-
-  # --- THE FIX: Bridge Firebase and AdMob ---
-  # These lines force Firebase to expose its headers so the plugin can see them
-  pod 'Firebase', '10.29.0'
-  pod 'Firebase/Analytics', '10.29.0'
-  pod 'FirebaseCore', '10.29.0'
-  pod 'GoogleUtilities', '7.13.3'
+ 
+  # --- THE FIX: Version Lock + Modular Headers ---
+    # We combine version 10.29.0 (to fit the plugin) with modular_headers (to fit static linking)
+    pod 'Firebase', '10.29.0', :modular_headers => true
+    pod 'FirebaseCore', '10.29.0', :modular_headers => true
+    pod 'Firebase/Analytics', '10.29.0', :modular_headers => true
+    pod 'GoogleUtilities', '7.13.3', :modular_headers => true
   
   # AdMob requires static linking
   use_frameworks! :linkage => :static
