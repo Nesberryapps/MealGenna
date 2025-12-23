@@ -12,7 +12,7 @@ end
 target 'App' do
   capacitor_pods
   
-  # --- PIN GOOGLE ADS (Critical) ---
+  # --- PIN GOOGLE ADS (Critical Fix) ---
   pod 'GoogleUserMessagingPlatform', '2.4.0'
   pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
@@ -20,14 +20,9 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # 1. Force iOS 14.0
+      # Force settings for compatibility
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-      
-      # 2. Disable Bitcode (Standard fix for AdMob/RevenueCat conflicts)
       config.build_settings['ENABLE_BITCODE'] = 'NO'
-      
-      # 3. Ensure Swift Version is set
-      config.build_settings['SWIFT_VERSION'] = '5.0'
     end
   end
 end
