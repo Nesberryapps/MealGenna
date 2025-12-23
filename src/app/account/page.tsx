@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Badge } from '@/components/ui/badge';
-import { Star, Loader2 } from 'lucide-react';
+import { Star, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
 import { useToast } from '@/components/ui/use-toast';
+import Link from 'next/link';
 
 export default function AccountPage() {
   const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
@@ -59,8 +60,14 @@ export default function AccountPage() {
     <div className="container py-12 md:py-20">
       <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
-      <Card className="max-w-xl mx-auto">
+      <Card className="max-w-xl mx-auto relative">
         <CardHeader>
+          <Link href="/" className="absolute top-4 right-4">
+              <Button variant="ghost" size="icon">
+                  <X className="h-5 w-5 text-muted-foreground" />
+                  <span className="sr-only">Close</span>
+              </Button>
+          </Link>
           <CardTitle className="text-3xl">Your Account</CardTitle>
           <CardDescription>
             Manage your subscription and app settings.
