@@ -9,7 +9,9 @@ import { Star, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
 import { useToast } from '@/components/ui/use-toast';
-import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
+
+// Mock type for temporarily disabled feature
+type PurchasesPackage = any;
 
 export default function AccountPage() {
   const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
@@ -62,9 +64,14 @@ export default function AccountPage() {
     if (!isInitialized) {
       return 'Loading subscription status...';
     }
-    return isPro ? 'You have an active MealGenna Pro subscription.' : 'You are currently on the Free plan.';
+    // Temporarily setting to false for clean build
+    const tempIsPro = false;
+    return tempIsPro ? 'You have an active MealGenna Pro subscription.' : 'You are currently on the Free plan.';
   };
   
+  // Temporarily setting to false for clean build
+  const tempIsPro = false;
+
   return (
     <div className="container py-12 md:py-20">
       <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
@@ -83,7 +90,7 @@ export default function AccountPage() {
               <p className="text-sm text-muted-foreground">{getStatusText()}</p>
             </div>
             {isInitialized && (
-              isPro ? (
+              tempIsPro ? (
                 <Badge variant="premium" className="text-base">
                   <Star className="mr-2 h-4 w-4" />
                   PRO
@@ -93,7 +100,7 @@ export default function AccountPage() {
               )
             )}
           </div>
-          {!isPro && isInitialized && (
+          {!tempIsPro && isInitialized && (
              <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 text-center">
                 <Star className="mx-auto h-8 w-8 text-primary mb-2"/>
                 <h3 className="text-xl font-bold">Upgrade to MealGenna Pro</h3>

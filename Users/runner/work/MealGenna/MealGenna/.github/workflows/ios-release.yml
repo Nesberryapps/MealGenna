@@ -22,7 +22,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # Note: Skipping 'npm run build' for Live Server app
       - name: Sync iOS Project
         run: npx cap sync ios
 

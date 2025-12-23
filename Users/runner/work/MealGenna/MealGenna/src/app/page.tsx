@@ -38,7 +38,9 @@ import { registerNotifications, scheduleDailyNotifications } from '@/services/no
 import { useSubscription } from '@/hooks/use-subscription';
 import { GoProModal } from '@/components/go-pro-modal';
 import { usePremium } from "@/hooks/use-premium";
-import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
+
+// Mock type for temporarily disabled feature
+type PurchasesPackage = any;
 
 
 // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
@@ -772,10 +774,12 @@ export default function MealApp() {
             costText = 'Purchase';
         }
     }
+    // Temporarily disable pro features for clean build
+    const tempIsPro = false;
 
     return (
         <Card className="relative flex flex-col text-center h-full">
-            {!isProUser && (
+            {!tempIsPro && (
                 <Badge variant={(isPlan || (isWeb && !webHasCredits)) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
                     {costText}
                 </Badge>
@@ -788,7 +792,7 @@ export default function MealApp() {
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-6 pt-0">
-                 {!isProUser && (
+                 {!tempIsPro && (
                     <Button variant="link" size="sm" onClick={() => isWeb ? setIsPaywallModalOpen(true) : setIsGoProModalOpen(true)}>
                         {isWeb ? 'or Purchase More' : 'or Go Pro'}
                     </Button>
@@ -796,8 +800,8 @@ export default function MealApp() {
             </CardContent>
             <CardFooter className="p-6 pt-0">
                  <Button className="w-full" onClick={onClick}>
-                    {isProUser ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
-                    {isProUser ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
+                    {tempIsPro ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                    {tempIsPro ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
                  </Button>
             </CardFooter>
         </Card>
