@@ -32,6 +32,10 @@ jobs:
           p12-password: ${{ secrets.P12_PASSWORD }}
           provisioning-profile-base64: ${{ secrets.PROFILE_BASE64 }}
 
+      - name: Disable Automatic Signing for Pods
+        run: |
+          sed -i.bak 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGNING_ALLOWED = NO;/g' ios/App/Pods/Pods.xcodeproj/project.pbxproj
+          
       - name: Build iOS App
         run: |
           cd ios/App
