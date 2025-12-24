@@ -17,7 +17,7 @@ target 'App' do
   capacitor_pods
   
   # Pin Google Ads to a stable version that supports Dynamic Frameworks
-  pod 'Google-Mobile-Ads-SDK', '11.13.0'
+  pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
 
 post_install do |installer|
