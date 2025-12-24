@@ -38,6 +38,7 @@ import { registerNotifications, scheduleDailyNotifications } from '@/services/no
 import { useSubscription } from '@/hooks/use-subscription';
 import { GoProModal } from '@/components/go-pro-modal';
 import { usePremium } from "@/hooks/use-premium";
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock type for temporarily disabled feature
 type PurchasesPackage = any;
@@ -781,10 +782,36 @@ export default function MealApp() {
         setIsClient(true);
     }, []);
 
-    const isWeb = isClient && Capacitor.getPlatform() === 'web';
-    const isPlan = mood === '7-day-plan';
+    // Temporarily setting to true for clean build
+    const tempIsPro = true;
 
-    const currentCredits = isClient ? getWebUserCredits() : { single: 0, plan: 0 };
+    if (!isClient) {
+        // Render a placeholder or loading state on the server to prevent hydration mismatch
+        return (
+            <Card className="relative flex flex-col text-center h-full">
+                <CardHeader className="p-6">
+                    <div className="mx-auto w-24 h-24 mb-2">
+                      {icon}
+                    </div>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 p-6 pt-0">
+                  <Skeleton className="h-6 w-24 mx-auto" />
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                     <Button className="w-full" disabled>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                     </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    const isWeb = Capacitor.getPlatform() === 'web';
+    const isPlan = mood === '7-day-plan';
+    const currentCredits = getWebUserCredits();
     const webHasCredits = isPlan ? currentCredits.plan > 0 : currentCredits.single > 0;
     
     let costText = 'Watch an ad';
@@ -797,29 +824,7 @@ export default function MealApp() {
             costText = 'Purchase';
         }
     }
-    // Temporarily disable pro features for clean build
-    const tempIsPro = true;
-
-    if (!isClient) {
-        // Render a placeholder or loading state on the server
-        return (
-            <Card className="relative flex flex-col text-center h-full">
-                <CardHeader className="p-6">
-                    <div className="mx-auto w-24 h-24 mb-2 bg-muted rounded-full"></div>
-                    <CardTitle>{title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 p-6 pt-0"></CardContent>
-                <CardFooter className="p-6 pt-0">
-                     <Button className="w-full" disabled>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                     </Button>
-                </CardFooter>
-            </Card>
-        );
-    }
-
+    
     return (
         <Card className="relative flex flex-col text-center h-full">
             {!tempIsPro && (
@@ -1542,3 +1547,4 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
     </button>
 );
 
+    
