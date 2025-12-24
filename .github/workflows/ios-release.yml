@@ -42,7 +42,6 @@ jobs:
             -archivePath $PWD/build/App.xcarchive \
             CODE_SIGN_STYLE="Manual" \
             CODE_SIGN_IDENTITY="Apple Distribution: Nesberry LLC (5BYJT9QTKZ)" \
-            PROVISIONING_PROFILE_SPECIFIER="MealGenna Pro Store" \
             DEVELOPMENT_TEAM="5BYJT9QTKZ" \
             clean archive
 
