@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
@@ -32,13 +31,17 @@ import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+// import { FirebaseAnalytics } from '@capacitor-firebase/analytics'; // Temporarily removed
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { useSubscription } from '@/hooks/use-subscription';
 import { GoProModal } from '@/components/go-pro-modal';
 import { usePremium } from "@/hooks/use-premium";
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Mock type for temporarily disabled feature
+type PurchasesPackage = any;
 
 
 // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
@@ -194,19 +197,20 @@ export default function MealApp() {
     }
 
     const initAnalytics = async () => {
-        if (Capacitor.getPlatform() === 'web') return;
-        try {
-          await FirebaseAnalytics.setEnabled({ enabled: true });
-          await FirebaseAnalytics.logEvent({
-            name: "screen_view",
-            params: {
-              screen_name: "home",
-            }
-          });
-          console.log("Firebase Analytics initialized and screen_view logged.");
-        } catch (error) {
-          console.error("Error initializing Firebase Analytics", error);
-        }
+        // Temporarily disabled
+        // if (Capacitor.getPlatform() === 'web') return;
+        // try {
+        //   await FirebaseAnalytics.setEnabled({ enabled: true });
+        //   await FirebaseAnalytics.logEvent({
+        //     name: "screen_view",
+        //     params: {
+        //       screen_name: "home",
+        //     }
+        //   });
+        //   console.log("Firebase Analytics initialized and screen_view logged.");
+        // } catch (error) {
+        //   console.error("Error initializing Firebase Analytics", error);
+        // }
     };
 
     initAnalytics();
@@ -737,16 +741,25 @@ export default function MealApp() {
   const handlePurchase = async () => {
     setIsPurchasing(true);
     try {
-        const offerings = await getOfferings();
-        if (offerings && offerings.length > 0 && offerings[0].monthly) {
-            await makePurchase(offerings[0].monthly);
+      const offerings = await getOfferings();
+      if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
+        const monthlyPackage = offerings[0].availablePackages.find(p => p.identifier === '$rc_monthly');
+        if (monthlyPackage) {
+            await makePurchase(monthlyPackage as PurchasesPackage);
         } else {
-            toast({
+             toast({
                 variant: 'destructive',
                 title: 'Purchase Unavailable',
                 description: 'Could not find a monthly subscription to purchase.'
             });
         }
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Purchase Unavailable',
+            description: 'Could not find a subscription to purchase.'
+        });
+      }
     }
     finally {
         setIsPurchasing(false);
@@ -755,10 +768,37 @@ export default function MealApp() {
   };
 
   const MoodCard = ({ mood, icon, title, description, onClick }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void }) => {
-    const isWeb = Capacitor.getPlatform() === 'web';
-    const isProUser = isPro;
-    const isPlan = mood === '7-day-plan';
+    const [isClient, setIsClient] = useState(false);
+    
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
+    if (!isClient) {
+        return (
+            <Card className="relative flex flex-col text-center h-full">
+                <CardHeader className="p-6">
+                    <div className="mx-auto w-24 h-24 mb-2">
+                      {icon}
+                    </div>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 p-6 pt-0">
+                  <Skeleton className="h-6 w-24 mx-auto" />
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                     <Button className="w-full" disabled>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                     </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    const isWeb = Capacitor.getPlatform() === 'web';
+    const isPlan = mood === '7-day-plan';
     const currentCredits = getWebUserCredits();
     const webHasCredits = isPlan ? currentCredits.plan > 0 : currentCredits.single > 0;
     
@@ -772,10 +812,10 @@ export default function MealApp() {
             costText = 'Purchase';
         }
     }
-
+    
     return (
         <Card className="relative flex flex-col text-center h-full">
-            {!isProUser && (
+            {!isPro && (
                 <Badge variant={(isPlan || (isWeb && !webHasCredits)) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
                     {costText}
                 </Badge>
@@ -788,7 +828,7 @@ export default function MealApp() {
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-6 pt-0">
-                 {!isProUser && (
+                 {!isPro && (
                     <Button variant="link" size="sm" onClick={() => isWeb ? setIsPaywallModalOpen(true) : setIsGoProModalOpen(true)}>
                         {isWeb ? 'or Purchase More' : 'or Go Pro'}
                     </Button>
@@ -796,8 +836,8 @@ export default function MealApp() {
             </CardContent>
             <CardFooter className="p-6 pt-0">
                  <Button className="w-full" onClick={onClick}>
-                    {isProUser ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
-                    {isProUser ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
+                    {isPro ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                    {isPro ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
                  </Button>
             </CardFooter>
         </Card>
@@ -878,7 +918,7 @@ export default function MealApp() {
           </p>
         </section>
         
-        <section id="tutorial-step-1" className="mx-auto max-w-2xl mb-12">
+        <section className="mx-auto max-w-2xl mb-12">
             <Card className="p-6 bg-gradient-to-br from-primary/20 via-background to-background border-primary/30">
                 <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
                     <div>
@@ -901,9 +941,9 @@ export default function MealApp() {
             </Card>
         </section>
         
-        <div id="tutorial-step-0" className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
+        <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
            <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
-                <Card id="tutorial-step-3" className="relative flex flex-col text-center h-full">
+                <Card className="relative flex flex-col text-center h-full">
                     <CardHeader className="p-6">
                         <div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden">
                            <Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" />
@@ -1006,7 +1046,7 @@ export default function MealApp() {
               </DialogContent>
            </Dialog>
 
-           <div id="tutorial-step-4">
+           <div>
              <MoodCard 
                 mood="Quick" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Quick-meal.png" alt="Quick Meal" layout="fill" objectFit="cover" data-ai-hint="fast food" /></div>}
@@ -1029,7 +1069,7 @@ export default function MealApp() {
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleMoodOrPlanClick('Hearty')}
             />
-           <div id="tutorial-step-5" className="lg:col-span-2">
+           <div className="lg:col-span-2">
               <MoodCard 
                 mood="7-day-plan" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>}
@@ -1495,10 +1535,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
     </button>
 );
 
-    
-
-    
-
-
-
-    
