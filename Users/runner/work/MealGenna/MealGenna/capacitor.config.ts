@@ -14,9 +14,7 @@ const config: CapacitorConfig = {
   },
   // Temporarily removed AdMob and Purchases for a clean iOS build
   ios: {
-    packageClassList: [
-      'FilesystemPlugin'
-    ]
+    packageClassList: []
   }
 };
 
