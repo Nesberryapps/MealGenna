@@ -19,8 +19,7 @@ end
 
 target 'App' do
   capacitor_pods
-  pod 'Firebase/Core'
-  pod 'Firebase/Analytics'
+  pod 'CapacitorFirebaseAnalytics/Analytics', :path => '../../node_modules/@capacitor-firebase/analytics'
 end
 
 post_install do |installer|
