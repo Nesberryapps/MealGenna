@@ -10,9 +10,7 @@ import { useState, useEffect } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
-
-// Mock type for temporarily disabled feature
-type PurchasesPackage = any;
+import type { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 
 export default function AccountPage() {
   const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
@@ -43,9 +41,9 @@ export default function AccountPage() {
     try {
       const offerings = await getOfferings();
       if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
-        const monthlyPackage = offerings[0].availablePackages.find(p => p.identifier === '$rc_monthly');
+        const monthlyPackage = offerings[0].availablePackages.find(p => p.packageType === 'MONTHLY');
         if (monthlyPackage) {
-            await makePurchase(monthlyPackage as PurchasesPackage);
+            await makePurchase(monthlyPackage);
         } else {
              toast({
                 variant: 'destructive',

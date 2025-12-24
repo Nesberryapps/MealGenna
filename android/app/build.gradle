@@ -6,9 +6,9 @@ android {
     defaultConfig {
         applicationId "com.nesberry.mealgenna.pro"
 
-        minSdkVersion 74
+        minSdkVersion 75
         targetSdkVersion 35
-        versionCode 61
+        versionCode 62
         versionName "1.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
