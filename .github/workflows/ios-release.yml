@@ -32,8 +32,7 @@ jobs:
           p12-password: ${{ secrets.P12_PASSWORD }}
           provisioning-profile-base64: ${{ secrets.PROFILE_BASE64 }}
 
-      - name
-: Build iOS App
+      - name: Build iOS App
         run: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
