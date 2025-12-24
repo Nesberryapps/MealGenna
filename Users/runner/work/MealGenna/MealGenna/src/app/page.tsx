@@ -31,7 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-// import { FirebaseAnalytics } from '@capacitor-firebase/analytics'; // Temporarily removed
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
@@ -39,10 +39,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { GoProModal } from '@/components/go-pro-modal';
 import { usePremium } from "@/hooks/use-premium";
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Mock type for temporarily disabled feature
-type PurchasesPackage = any;
-
+import type { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 
 // --- HELPER FUNCTIONS FOR DAILY LIMIT ---
 const getWebUserCredits = () => {
@@ -197,20 +194,19 @@ export default function MealApp() {
     }
 
     const initAnalytics = async () => {
-        // Temporarily disabled
-        // if (Capacitor.getPlatform() === 'web') return;
-        // try {
-        //   await FirebaseAnalytics.setEnabled({ enabled: true });
-        //   await FirebaseAnalytics.logEvent({
-        //     name: "screen_view",
-        //     params: {
-        //       screen_name: "home",
-        //     }
-        //   });
-        //   console.log("Firebase Analytics initialized and screen_view logged.");
-        // } catch (error) {
-        //   console.error("Error initializing Firebase Analytics", error);
-        // }
+        if (Capacitor.getPlatform() === 'web') return;
+        try {
+          await FirebaseAnalytics.setEnabled({ enabled: true });
+          await FirebaseAnalytics.logEvent({
+            name: "screen_view",
+            params: {
+              screen_name: "home",
+            }
+          });
+          console.log("Firebase Analytics initialized and screen_view logged.");
+        } catch (error) {
+          console.error("Error initializing Firebase Analytics", error);
+        }
     };
 
     initAnalytics();
@@ -372,9 +368,7 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    // Temporarily setting to true for clean build
-    const tempIsPro = true;
-    if (!tempIsPro && Capacitor.getPlatform() === 'web' && credits.single <= 0) {
+    if (!isPro && Capacitor.getPlatform() === 'web' && credits.single <= 0) {
         setIsPaywallModalOpen(true);
         return;
     }
@@ -397,7 +391,7 @@ export default function MealApp() {
       try {
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
-        if (Capacitor.getPlatform() === 'web' && !tempIsPro) {
+        if (Capacitor.getPlatform() === 'web' && !isPro) {
             useWebUserCredits(true, credits.plan);
         }
       } catch (error) {
@@ -413,7 +407,7 @@ export default function MealApp() {
       }
     };
     
-    if (tempIsPro || (Capacitor.getPlatform() === 'web' && credits.single > 0)) {
+    if (isPro || (Capacitor.getPlatform() === 'web' && credits.single > 0)) {
       generationLogic();
     } else {
       showWatchToGenerateAd(generationLogic);
@@ -422,9 +416,7 @@ export default function MealApp() {
 
 
   const handleGeneratePlan = async () => {
-    // Temporarily setting to true for clean build
-    const tempIsPro = true;
-    if (!tempIsPro && Capacitor.getPlatform() === 'web' && credits.plan <= 0) {
+    if (!isPro && Capacitor.getPlatform() === 'web' && credits.plan <= 0) {
         setIsPaywallModalOpen(true);
         return;
     }
@@ -445,7 +437,7 @@ export default function MealApp() {
       try {
         const result = await generateMealPlan(input);
         setGeneratedPlan(result);
-        if (Capacitor.getPlatform() === 'web' && !tempIsPro) {
+        if (Capacitor.getPlatform() === 'web' && !isPro) {
             useWebUserCredits(false, credits.plan - 1);
         }
       } catch (error) {
@@ -461,7 +453,7 @@ export default function MealApp() {
       }
     };
     
-    if (tempIsPro || (Capacitor.getPlatform() === 'web' && credits.plan > 0)) {
+    if (isPro || (Capacitor.getPlatform() === 'web' && credits.plan > 0)) {
         generationLogic();
     } else {
         showSevenDayPlanAds(generationLogic);
@@ -478,9 +470,7 @@ export default function MealApp() {
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    // Temporarily setting to true for clean build
-    const tempIsPro = true;
-    if (tempIsPro) {
+    if (isPro) {
         handleOpenPreferences(mood);
     } else if (Capacitor.getPlatform() === 'web') {
         const currentCredits = getWebUserCredits();
@@ -730,9 +720,7 @@ export default function MealApp() {
     if (loadingMood) {
         return 'Generating...';
     }
-    // Temporarily setting to true for clean build
-    const tempIsPro = true;
-    if (tempIsPro) {
+    if (isPro) {
         return 'Generate';
     }
     if (Capacitor.getPlatform() === 'web') {
@@ -782,9 +770,6 @@ export default function MealApp() {
         setIsClient(true);
     }, []);
 
-    // Temporarily setting to true for clean build
-    const tempIsPro = true;
-
     if (!isClient) {
         // Render a placeholder or loading state on the server to prevent hydration mismatch
         return (
@@ -827,7 +812,7 @@ export default function MealApp() {
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-            {!tempIsPro && (
+            {!isPro && (
                 <Badge variant={(isPlan || (isWeb && !webHasCredits)) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
                     {costText}
                 </Badge>
@@ -840,7 +825,7 @@ export default function MealApp() {
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 p-6 pt-0">
-                 {!tempIsPro && (
+                 {!isPro && (
                     <Button variant="link" size="sm" onClick={() => isWeb ? setIsPaywallModalOpen(true) : setIsGoProModalOpen(true)}>
                         {isWeb ? 'or Purchase More' : 'or Go Pro'}
                     </Button>
@@ -848,8 +833,8 @@ export default function MealApp() {
             </CardContent>
             <CardFooter className="p-6 pt-0">
                  <Button className="w-full" onClick={onClick}>
-                    {tempIsPro ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
-                    {tempIsPro ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
+                    {isPro ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                    {isPro ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
                  </Button>
             </CardFooter>
         </Card>
@@ -1546,5 +1531,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-    

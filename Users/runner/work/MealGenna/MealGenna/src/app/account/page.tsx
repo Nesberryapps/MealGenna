@@ -5,13 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Badge } from '@/components/ui/badge';
-import { Star, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Star, Loader2, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { GoProModal } from '@/components/go-pro-modal';
 import { useToast } from '@/components/ui/use-toast';
-
-// Mock type for temporarily disabled feature
-type PurchasesPackage = any;
+import Link from 'next/link';
+import type { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 
 export default function AccountPage() {
   const { isPro, isInitialized, restorePurchases, getOfferings, makePurchase } = useSubscription();
@@ -19,6 +18,12 @@ export default function AccountPage() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This ensures that browser-specific logic runs only on the client
+    setIsClient(true);
+  }, []);
 
   const handleRestore = async () => {
     setIsRestoring(true);
@@ -38,7 +43,7 @@ export default function AccountPage() {
       if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
         const monthlyPackage = offerings[0].availablePackages.find(p => p.identifier === '$rc_monthly');
         if (monthlyPackage) {
-            await makePurchase(monthlyPackage as PurchasesPackage);
+            await makePurchase(monthlyPackage);
         } else {
              toast({
                 variant: 'destructive',
@@ -61,22 +66,23 @@ export default function AccountPage() {
   };
   
   const getStatusText = () => {
-    if (!isInitialized) {
+    if (!isInitialized || !isClient) {
       return 'Loading subscription status...';
     }
-    // Temporarily setting to false for clean build
-    const tempIsPro = false;
-    return tempIsPro ? 'You have an active MealGenna Pro subscription.' : 'You are currently on the Free plan.';
+    return isPro ? 'You have an active MealGenna Pro subscription.' : 'You are currently on the Free plan.';
   };
-  
-  // Temporarily setting to false for clean build
-  const tempIsPro = false;
 
   return (
     <div className="container py-12 md:py-20">
       <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
 
-      <Card className="max-w-xl mx-auto">
+      <Card className="max-w-xl mx-auto relative">
+         <Link href="/" className="absolute top-4 right-4">
+              <Button variant="ghost" size="icon">
+                  <X className="h-5 w-5 text-muted-foreground" />
+                  <span className="sr-only">Close</span>
+              </Button>
+          </Link>
         <CardHeader>
           <CardTitle className="text-3xl">Your Account</CardTitle>
           <CardDescription>
@@ -89,8 +95,8 @@ export default function AccountPage() {
               <p className="font-semibold">Subscription Status</p>
               <p className="text-sm text-muted-foreground">{getStatusText()}</p>
             </div>
-            {isInitialized && (
-              tempIsPro ? (
+            {isInitialized && isClient && (
+              isPro ? (
                 <Badge variant="premium" className="text-base">
                   <Star className="mr-2 h-4 w-4" />
                   PRO
@@ -99,8 +105,11 @@ export default function AccountPage() {
                 <Badge variant="secondary" className="text-base">Free</Badge>
               )
             )}
+             {(!isInitialized || !isClient) && (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            )}
           </div>
-          {!tempIsPro && isInitialized && (
+          {isClient && !isPro && isInitialized && (
              <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 text-center">
                 <Star className="mx-auto h-8 w-8 text-primary mb-2"/>
                 <h3 className="text-xl font-bold">Upgrade to MealGenna Pro</h3>
