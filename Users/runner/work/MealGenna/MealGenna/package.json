@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "reset-ios": "npx cap sync ios && npx cap open ios && cd ios/App && pod install && cd ../.."
   },
   "dependencies": {
     "@capacitor-community/admob": "^6.0.0",

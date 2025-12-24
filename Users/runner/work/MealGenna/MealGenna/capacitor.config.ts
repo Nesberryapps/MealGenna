@@ -17,8 +17,7 @@ const config: CapacitorConfig = {
       "AdMobPlugin",
       "FirebaseAnalyticsPlugin",
       "FilesystemPlugin",
-      "LocalNotificationsPlugin",
-      "PurchasesPlugin"
+      "LocalNotificationsPlugin"
     ]
   }
 };
