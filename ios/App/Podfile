@@ -1,27 +1,29 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
 platform :ios, '14.0'
-use_frameworks! # <--- No ":static" here. This enables Dynamic frameworks for everyone.
+
+# 1. Use Static Linking (Keeps Firebase & AdMob happy)
+use_frameworks! :linkage => :static
+
+# 2. Use Modular Headers (Keeps RevenueCat happy in Static mode)
+use_modular_headers!
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
-  # Other plugins load automatically
 end
 
 target 'App' do
   capacitor_pods
-  
-  # Keep Google Ads pinned to stable versions
-  pod 'GoogleUserMessagingPlatform', '2.4.0'
-  pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
+      # Force iOS 14.0 for everything
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      # Disable Bitcode (Crucial for AdMob)
       config.build_settings['ENABLE_BITCODE'] = 'NO'
     end
   end
