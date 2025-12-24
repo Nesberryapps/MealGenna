@@ -12,9 +12,13 @@ const config: CapacitorConfig = {
   plugins: {
     // Firebase Analytics and other plugins are configured here now
   },
-  // Temporarily removed AdMob and Purchases for a clean iOS build
   ios: {
-    packageClassList: []
+    packageClassList: [
+      "AdMobPlugin",
+      "FirebaseAnalyticsPlugin",
+      "FilesystemPlugin",
+      "LocalNotificationsPlugin"
+    ]
   }
 };
 
