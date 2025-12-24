@@ -31,7 +31,6 @@ import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-// import { FirebaseAnalytics } from '@capacitor-firebase/analytics'; // Temporarily removed
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
@@ -195,26 +194,7 @@ export default function MealApp() {
         }
       });
     }
-
-    const initAnalytics = async () => {
-        // Temporarily disabled
-        // if (Capacitor.getPlatform() === 'web') return;
-        // try {
-        //   await FirebaseAnalytics.setEnabled({ enabled: true });
-        //   await FirebaseAnalytics.logEvent({
-        //     name: "screen_view",
-        //     params: {
-        //       screen_name: "home",
-        //     }
-        //   });
-        //   console.log("Firebase Analytics initialized and screen_view logged.");
-        // } catch (error) {
-        //   console.error("Error initializing Firebase Analytics", error);
-        // }
-    };
-
-    initAnalytics();
-
+    
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
