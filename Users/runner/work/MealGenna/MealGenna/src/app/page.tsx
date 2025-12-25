@@ -113,8 +113,24 @@ export default function MealApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const { user } = useAuth();
-  const { credits, hasFreebie, useCredit, useFreebie, isInitialized: premiumInitialized } = usePremium();
+  const { user, hasFreebie, useFreebie, verifySignInLink } = useAuth();
+  const { credits, useCredit, isInitialized: premiumInitialized } = usePremium();
+  
+  useEffect(() => {
+    // This effect runs once on mount to check for a sign-in link
+    const checkLink = async () => {
+      if (window.location.href.includes('oobCode')) {
+        const result = await verifySignInLink(window.location.href);
+        if (result.success) {
+          toast({ title: 'Sign-in Successful!', description: result.message });
+        } else if (result.message !== 'Not a sign-in link.') {
+          toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+        }
+      }
+    };
+    checkLink();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const date = new Date();
@@ -312,9 +328,14 @@ export default function MealApp() {
         // Logged-in web user
         const hasCredits = (credits?.[generationType] ?? 0) > 0;
         if (hasCredits) {
-          const creditUsed = await useCredit(generationType);
-          if (creditUsed) await handleGenerateMeal(items);
-          else setIsPaywallOpen(true);
+          const result = await useCredit(generationType);
+          if (result.success) {
+            toast({ title: 'Credit Used', description: 'Your meal is being generated.' });
+            await handleGenerateMeal(items);
+          } else {
+            toast({ variant: 'destructive', title: 'Out of Credits', description: result.message });
+            setIsPaywallOpen(true);
+          }
         } else {
           setIsPaywallOpen(true);
         }
@@ -322,6 +343,7 @@ export default function MealApp() {
         // Guest web user
         if (hasFreebie) {
           useFreebie();
+          toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
           await handleGenerateMeal(items);
         } else {
           setIsLimitModalOpen(true);
@@ -568,13 +590,11 @@ export default function MealApp() {
         
         <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
            <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
-              <DialogTrigger asChild>
-                  <Card className="relative flex flex-col text-center h-full cursor-pointer hover:bg-muted/50 transition-colors">
-                      <CardHeader className="p-6"><div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden"><Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" /></div><CardTitle>Use My Ingredients</CardTitle><CardDescription>Scan your pantry or fridge to get a meal idea from what you have.</CardDescription></CardHeader>
-                      <CardContent className="flex-1 p-6 pt-0" />
-                      <CardFooter className="p-6 pt-0"><Button className="w-full" variant="outline"><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></CardFooter>
-                  </Card>
-              </DialogTrigger>
+                <Card className="relative flex flex-col text-center h-full">
+                    <CardHeader className="p-6"><div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden"><Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" /></div><CardTitle>Use My Ingredients</CardTitle><CardDescription>Scan your pantry or fridge to get a meal idea from what you have.</CardDescription></CardHeader>
+                    <CardContent className="flex-1 p-6 pt-0" />
+                    <CardFooter className="p-6 pt-0"><DialogTrigger asChild><Button className="w-full" onClick={() => handleOpenPreferences('from pantry')}><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></DialogTrigger></CardFooter>
+                </Card>
               <DialogContent className="max-w-3xl">
                 {scanStep === 'scanning' && ( <>
                     <DialogHeader><DialogTitle>Scan Your Pantry</DialogTitle><DialogDescription>Point your camera at ingredients and click "Analyze Image". Scan as many times as you need.</DialogDescription></DialogHeader>
@@ -586,10 +606,7 @@ export default function MealApp() {
                     <div className="my-4"><h4 className="font-semibold mb-2">Found Items ({sessionItems.length})</h4><div className="max-h-24 overflow-y-auto rounded-md border p-2 bg-muted/50">{sessionItems.length > 0 ? ( <ul className="space-y-1">{sessionItems.map((item, index) => <li key={index} className="text-sm text-muted-foreground">{item}</li>)}</ul> ) : ( <p className="text-sm text-center text-muted-foreground py-2">No items scanned yet.</p> )}</div></div>
                     <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
                         <Button onClick={handleCaptureAndAnalyze} disabled={isScanning || hasCameraPermission !== true}>{isScanning ? 'Analyzing...' : 'Analyze Image'}</Button>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                           <Button onClick={handleProceedToMealSelection} disabled={sessionItems.length === 0}>Next: Choose Meal Type</Button>
-                           <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2"><Button onClick={handleProceedToMealSelection} disabled={sessionItems.length === 0}>Next: Choose Meal Type</Button><Button variant="outline" onClick={() => setIsCameraDialogOpen(false)}>Cancel</Button></div>
                     </DialogFooter>
                 </> )}
                 {scanStep === 'selectingMeal' && ( <>

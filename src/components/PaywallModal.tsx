@@ -16,7 +16,6 @@ import { Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutForm } from './CheckoutForm';
-import { usePremium } from '@/hooks/use-premium';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -27,8 +26,7 @@ interface PaywallModalProps {
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
   const { toast } = useToast();
-  const { user, firebaseUser } = useAuth();
-  const { refreshCredits } = usePremium();
+  const { user, firebaseUser, refreshCredits } = useAuth();
   
   const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -131,7 +129,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {clientSecret ? (
+        {clientSecret && stripePromise && options.clientSecret ? (
           <div className="pt-4">
             <Elements options={options} stripe={stripePromise}>
               <CheckoutForm onSuccess={handlePaymentSuccess} />
@@ -151,7 +149,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
                 </div>
                 <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
                     <div className="text-center">
-                        <h3 className="text-lg font-bold">Full Meal Plan Pack</h3>
+                        <h3 className="text-lg font-bold">7-Day Plan Pack</h3>
                         <p className="text-3xl font-extrabold my-2">$7.99</p>
                         <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
                     </div>

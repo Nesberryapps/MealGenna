@@ -25,7 +25,7 @@ import {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Free Generation Used</DialogTitle>
             <DialogDescription className="pt-2 text-base">
-              You've used your free meal generation. Please purchase a pack to continue.
+              You've used your free meal generation. To continue, please purchase a credit pack or get unlimited generations on our mobile app.
             </DialogDescription>
           </DialogHeader>
   

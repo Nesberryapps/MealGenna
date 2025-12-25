@@ -2,11 +2,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { useAuth } from './use-auth';
 import { app } from '@/lib/firebase-client';
-import { useToast } from '@/components/ui/use-toast';
-import { Capacitor } from '@capacitor/core';
 
 interface Credits {
   single: number;
@@ -16,32 +14,17 @@ interface Credits {
 interface PremiumContextType {
   credits: Credits | null;
   isInitialized: boolean;
-  hasFreebie: boolean;
-  useCredit: (type: 'single' | '7-day-plan') => Promise<boolean>;
-  useFreebie: () => void;
+  useCredit: (type: 'single' | '7-day-plan') => Promise<{ success: boolean; message: string }>;
   refreshCredits: () => void;
 }
 
 const PremiumContext = createContext<PremiumContextType | undefined>(undefined);
 
-const FREEBIE_KEY = 'mealgenna_freebie_used';
-
 export const PremiumProvider = ({ children }: { children: ReactNode }) => {
   const { firebaseUser, isInitialized: authInitialized } = useAuth();
   const [credits, setCredits] = useState<Credits | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [hasFreebie, setHasFreebie] = useState(true);
-  const { toast } = useToast();
   const db = getFirestore(app);
-
-  useEffect(() => {
-    if (Capacitor.getPlatform() === 'web') {
-      const freebieUsed = localStorage.getItem(FREEBIE_KEY);
-      setHasFreebie(freebieUsed !== 'true');
-    } else {
-      setHasFreebie(false);
-    }
-  }, []);
 
   const fetchCredits = useCallback(() => {
     if (authInitialized && firebaseUser) {
@@ -71,10 +54,9 @@ export const PremiumProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [fetchCredits]);
 
-  const useCredit = useCallback(async (type: 'single' | '7-day-plan') => {
+  const useCredit = useCallback(async (type: 'single' | '7-day-plan'): Promise<{ success: boolean; message: string }> => {
     if (!firebaseUser) {
-      toast({ variant: 'destructive', title: 'Please sign in to use credits.' });
-      return false;
+      return { success: false, message: 'Please sign in to use credits.' };
     }
 
     const creditsRef = doc(db, 'user_credits', firebaseUser.uid);
@@ -95,33 +77,33 @@ export const PremiumProvider = ({ children }: { children: ReactNode }) => {
           throw new Error(`No credits of type "${type}" available.`);
         }
       });
-      toast({ title: 'Credit Used', description: 'Your meal is being generated.' });
-      return true;
+      return { success: true, message: 'Credit Used. Your meal is being generated.' };
     } catch (error: any) {
       console.error("Failed to use credit:", error);
-      toast({ variant: 'destructive', title: 'Out of Credits', description: `You have no ${type === 'single' ? 'Single Meal' : 'Meal Plan'} credits left.` });
-      return false;
+      const friendlyType = type === 'single' ? 'Single Meal' : 'Meal Plan';
+      return { success: false, message: `You have no ${friendlyType} credits left.` };
     }
-  }, [firebaseUser, db, toast]);
-  
-  const useFreebie = () => {
-    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
-      localStorage.setItem(FREEBIE_KEY, 'true');
-      setHasFreebie(false);
-      toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
-    }
-  };
+  }, [firebaseUser, db]);
 
   const refreshCredits = () => {
-    fetchCredits();
+    // This is a bit of a hack to force a re-fetch.
+    // A better implementation might use a different state to trigger the effect.
+    if(firebaseUser) {
+        const creditsRef = doc(db, 'user_credits', firebaseUser.uid);
+        onSnapshot(creditsRef, (snap) => {
+            if (snap.exists()) {
+                setCredits(snap.data() as Credits);
+            } else {
+                setCredits({ single: 0, '7-day-plan': 0 });
+            }
+        });
+    }
   };
-
+  
   const value = {
     credits,
     isInitialized,
-    hasFreebie,
     useCredit,
-    useFreebie,
     refreshCredits,
   };
 

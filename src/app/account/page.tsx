@@ -10,14 +10,12 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { usePremium } from '@/hooks/use-premium';
 import { PaywallModal } from '@/components/PaywallModal';
 import { Capacitor } from '@capacitor/core';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, beginRecovery, signOut, isRecovering } = useAuth();
-  const { credits, isInitialized: premiumInitialized } = usePremium();
+  const { user, isInitialized, credits, beginRecovery, signOut, isRecovering, refreshCredits } = useAuth();
   
   const [email, setEmail] = useState('');
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
@@ -31,28 +29,34 @@ export default function AccountPage() {
       toast({ variant: 'destructive', title: 'Email is required' });
       return;
     }
-    await beginRecovery(email);
+    const result = await beginRecovery(email);
+    if (result.success) {
+        toast({ title: 'Check your email!', description: result.message });
+    } else {
+        toast({ variant: 'destructive', title: 'Recovery Failed', description: result.message });
+    }
     setEmail('');
   };
+  
+  const handleSignOut = async () => {
+      await signOut();
+      toast({ title: 'Signed Out', description: 'You have been signed out.' });
+  }
 
-  const handlePaymentSuccess = () => {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment_success') === 'true') {
       toast({
         title: "Payment Successful!",
         description: "Your credits have been added. It may take a moment for them to appear.",
       });
-      // Clean up the URL
+      refreshCredits();
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }
-
-  useEffect(() => {
-    handlePaymentSuccess();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isLoading = !isInitialized || (user && !premiumInitialized);
+  const isLoading = !isInitialized;
 
   const getStatusContent = () => {
       if (isLoading) {
@@ -117,7 +121,7 @@ export default function AccountPage() {
                      <Button onClick={() => setIsPaywallOpen(true)} className="w-full">
                         Purchase More Credits
                     </Button>
-                    <Button onClick={signOut} variant="outline" className="w-full">
+                    <Button onClick={handleSignOut} variant="outline" className="w-full">
                         <LogOut className="mr-2 h-4 w-4" /> Sign Out
                     </Button>
                 </div>

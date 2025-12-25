@@ -35,7 +35,6 @@ import { registerNotifications, scheduleDailyNotifications } from '@/services/no
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaywallModal } from '@/components/PaywallModal';
 import { useAuth } from '@/hooks/use-auth';
-import { usePremium } from '@/hooks/use-premium';
 import { LimitModal } from '@/components/LimitModal';
 
 
@@ -113,8 +112,23 @@ export default function MealApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const { user } = useAuth();
-  const { credits, hasFreebie, useCredit, useFreebie, isInitialized: premiumInitialized } = usePremium();
+  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized } = useAuth();
+  
+  useEffect(() => {
+    // This effect runs once on mount to check for a sign-in link
+    const checkLink = async () => {
+      if (window.location.href.includes('oobCode')) {
+        const result = await verifySignInLink(window.location.href);
+        if (result.success) {
+          toast({ title: 'Sign-in Successful!', description: result.message });
+        } else if (result.message !== 'Not a sign-in link.') {
+          toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+        }
+      }
+    };
+    checkLink();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const date = new Date();
@@ -312,9 +326,14 @@ export default function MealApp() {
         // Logged-in web user
         const hasCredits = (credits?.[generationType] ?? 0) > 0;
         if (hasCredits) {
-          const creditUsed = await useCredit(generationType);
-          if (creditUsed) await handleGenerateMeal(items);
-          else setIsPaywallOpen(true);
+          const result = await useCredit(generationType);
+          if (result.success) {
+            toast({ title: 'Credit Used', description: 'Your meal is being generated.' });
+            await handleGenerateMeal(items);
+          } else {
+            toast({ variant: 'destructive', title: 'Out of Credits', description: result.message });
+            setIsPaywallOpen(true);
+          }
         } else {
           setIsPaywallOpen(true);
         }
@@ -322,6 +341,7 @@ export default function MealApp() {
         // Guest web user
         if (hasFreebie) {
           useFreebie();
+          toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
           await handleGenerateMeal(items);
         } else {
           setIsLimitModalOpen(true);
@@ -487,7 +507,7 @@ export default function MealApp() {
     const [isClient, setIsClient] = useState(false);
     useEffect(() => { setIsClient(true); }, []);
     
-    if (!isClient || !premiumInitialized) {
+    if (!isClient || !isInitialized) {
       return (
           <Card className="relative flex flex-col text-center h-full">
               <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center"><Skeleton className="w-full h-full rounded-full" /></div><CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle><CardDescription><Skeleton className="h-4 w-full mx-auto" /><Skeleton className="h-4 w-5/6 mx-auto mt-1" /></CardDescription></CardHeader>
@@ -570,7 +590,8 @@ export default function MealApp() {
            <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
                 <Card className="relative flex flex-col text-center h-full">
                     <CardHeader className="p-6"><div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden"><Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" /></div><CardTitle>Use My Ingredients</CardTitle><CardDescription>Scan your pantry or fridge to get a meal idea from what you have.</CardDescription></CardHeader>
-                    <CardContent className="flex-1 p-6 pt-0" /><CardFooter className="p-6 pt-0"><DialogTrigger asChild><Button className="w-full" onClick={() => handleOpenPreferences('from pantry')}><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></DialogTrigger></CardFooter>
+                    <CardContent className="flex-1 p-6 pt-0" />
+                    <CardFooter className="p-6 pt-0"><DialogTrigger asChild><Button className="w-full" onClick={() => handleOpenPreferences('from pantry')}><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></DialogTrigger></CardFooter>
                 </Card>
               <DialogContent className="max-w-3xl">
                 {scanStep === 'scanning' && ( <>
@@ -608,7 +629,7 @@ export default function MealApp() {
             <div className="lg:col-span-1">
              <MoodCard mood="Hearty" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Hearty-meal.png" alt="Hearty Meal" layout="fill" objectFit="cover" data-ai-hint="steak dinner" /></div>} title="Something Hearty" description="Craving comfort food? Find a satisfying and filling meal." onClick={() => handleMoodOrPlanClick('Hearty')} />
             </div>
-           <div className="lg:col-span-3">
+           <div className="md:col-span-2 lg:col-span-3">
               <MoodCard mood="7-day-plan" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>} title="Generate a 7-Day Plan" description="Get a complete breakfast, lunch, and dinner plan for the week." onClick={() => handleMoodOrPlanClick('7-day-plan')} isPlan={true} />
            </div>
         </div>
@@ -718,5 +739,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-    

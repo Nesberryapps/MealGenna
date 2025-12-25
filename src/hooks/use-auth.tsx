@@ -1,71 +1,136 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { getAuth, onAuthStateChanged, signInWithCustomToken, User as FirebaseUser } from 'firebase/auth';
+import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
+import { app } from '@/lib/firebase-client';
+import { Capacitor } from '@capacitor/core';
 
-// This hook manages the user's authentication state.
-export const useAuth = () => {
+interface Credits {
+  single: number;
+  '7-day-plan': number;
+}
+
+interface AuthContextType {
+  user: { email: string } | null;
+  firebaseUser: FirebaseUser | null;
+  credits: Credits | null;
+  isInitialized: boolean;
+  isRecovering: boolean;
+  isSigningIn: boolean;
+  hasFreebie: boolean;
+  useFreebie: () => void;
+  useCredit: (type: 'single' | '7-day-plan') => Promise<{ success: boolean; message: string }>;
+  beginRecovery: (email: string) => Promise<{ success: boolean; message: string }>;
+  signOut: () => Promise<void>;
+  verifySignInLink: (href: string) => Promise<{ success: boolean; message: string; email?: string }>;
+  refreshCredits: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const FREEBIE_KEY = 'mealgenna_freebie_used_v2';
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<{ email: string } | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [credits, setCredits] = useState<Credits | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const { toast } = useToast();
+  const [hasFreebie, setHasFreebie] = useState(true);
+  
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-  // On initial load, check for a recovery token and user session
   useEffect(() => {
-    const handleToken = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('recoveryToken');
-
-      if (token) {
-        setIsSigningIn(true);
-        toast({ title: 'Verifying your sign-in link...' });
-        
-        try {
-          const response = await fetch('/api/account/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token }),
-          });
-
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.error || 'Invalid or expired sign-in link.');
-          }
-
-          // On successful verification, we get user and credit info
-          localStorage.setItem('user_email', data.email);
-          setUser({ email: data.email });
-
-          toast({
-            title: 'Sign-in Successful!',
-            description: `Welcome back!`,
-          });
-        } catch (error: any) {
-          toast({
-            variant: 'destructive',
-            title: 'Sign-in Failed',
-            description: error.message,
-          });
-        } finally {
-          setIsSigningIn(false);
-          // Clean up the URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      }
-    };
-
-    handleToken();
-    
-    // Check for existing session in local storage
-    const storedEmail = localStorage.getItem('user_email');
-    if (storedEmail) {
-      setUser({ email: storedEmail });
+    if (Capacitor.getPlatform() === 'web') {
+      const freebieUsed = localStorage.getItem(FREEBIE_KEY);
+      setHasFreebie(freebieUsed !== 'true');
+    } else {
+      setHasFreebie(false); // No freebies on mobile
     }
-    setIsInitialized(true);
+  }, []);
 
-  }, [toast]);
+  const useFreebie = () => {
+    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
+      localStorage.setItem(FREEBIE_KEY, 'true');
+      setHasFreebie(false);
+    }
+  };
+
+  const verifySignInLink = useCallback(async (href: string) => {
+    if (auth.isSignInWithEmailLink(href)) {
+      setIsSigningIn(true);
+      let email = window.localStorage.getItem('emailForSignIn');
+      if (!email) {
+        setIsSigningIn(false);
+        return { success: false, message: 'Please use the same device and browser you used to request the sign-in link.' };
+      }
+      
+      try {
+        const response = await fetch('/api/account/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: href }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
+
+        await signInWithCustomToken(auth, data.customToken);
+        
+        window.localStorage.removeItem('emailForSignIn');
+        return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
+
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      } finally {
+        setIsSigningIn(false);
+        const cleanUrl = window.location.href.split('?')[0];
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+    return { success: false, message: 'Not a sign-in link.' };
+  }, [auth]);
+
+  const fetchCredits = useCallback((fbUser: FirebaseUser | null) => {
+      if (fbUser) {
+          const creditsRef = doc(db, 'user_credits', fbUser.uid);
+          return onSnapshot(creditsRef, (snap) => {
+              if (snap.exists()) {
+                  setCredits(snap.data() as Credits);
+              } else {
+                  setCredits({ single: 0, '7-day-plan': 0 });
+              }
+              if (!isInitialized) setIsInitialized(true);
+          }, (error) => {
+              console.error("Error fetching credits:", error);
+              setCredits({ single: 0, '7-day-plan': 0 });
+              if (!isInitialized) setIsInitialized(true);
+          });
+      } else {
+          setCredits(null);
+          if (!isInitialized) setIsInitialized(true);
+      }
+      return () => {};
+  }, [db, isInitialized]);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+      setFirebaseUser(fbUser);
+      setUser(fbUser ? { email: fbUser.email! } : null);
+      fetchCredits(fbUser); // Fetch credits when auth state changes
+    });
+    return () => unsubscribeAuth();
+  }, [auth, fetchCredits]);
+  
+  useEffect(() => {
+    if (isInitialized && !firebaseUser && window.location.search.includes('oobCode')) {
+      verifySignInLink(window.location.href);
+    }
+  }, [isInitialized, firebaseUser, verifySignInLink]);
 
   const beginRecovery = async (email: string) => {
     setIsRecovering(true);
@@ -76,42 +141,81 @@ export const useAuth = () => {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
-      }
-      toast({
-        title: 'Check your email!',
-        description: "We've sent a secure sign-in link to your email address.",
-      });
+      if (!response.ok) throw new Error(data.error || 'Something went wrong');
+
+      window.localStorage.setItem('emailForSignIn', email);
+      return { success: true, message: "We've sent a secure sign-in link to your email address." };
     } catch (error: any) {
-      console.error('Recovery error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Recovery Failed',
-        description: error.message,
-      });
+      return { success: false, message: error.message };
     } finally {
       setIsRecovering(false);
     }
   };
 
-  const signOut = () => {
-    localStorage.removeItem('user_email');
-    // For this app, we might also want to clear credits on sign out
-    // or prompt the user. For now, just sign out.
+  const signOut = async () => {
+    await auth.signOut();
     setUser(null);
-    toast({
-      title: 'Signed Out',
-      description: 'You have been signed out.',
-    });
+    setFirebaseUser(null);
+    setCredits(null);
   };
 
-  return {
+  const useCredit = useCallback(async (type: 'single' | '7-day-plan'): Promise<{ success: boolean; message: string }> => {
+    if (!firebaseUser) {
+      return { success: false, message: 'Please sign in to use credits.' };
+    }
+    const creditsRef = doc(db, 'user_credits', firebaseUser.uid);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userCreditsSnap = await transaction.get(creditsRef);
+        let currentCredits: Credits = { single: 0, '7-day-plan': 0 };
+        if (userCreditsSnap.exists()) {
+          currentCredits = userCreditsSnap.data() as Credits;
+        }
+        if ((currentCredits[type] || 0) > 0) {
+          currentCredits[type] -= 1;
+          transaction.set(creditsRef, currentCredits, { merge: true });
+        } else {
+          throw new Error(`No credits of type "${type}" available.`);
+        }
+      });
+      return { success: true, message: 'Credit Used. Your meal is being generated.' };
+    } catch (error: any) {
+      console.error("Failed to use credit:", error);
+      const friendlyType = type === 'single' ? 'Single Meal' : 'Meal Plan';
+      return { success: false, message: `You have no ${friendlyType} credits left.` };
+    }
+  }, [firebaseUser, db]);
+  
+  const refreshCredits = useCallback(() => {
+    if (firebaseUser) {
+        fetchCredits(firebaseUser);
+    }
+  }, [firebaseUser, fetchCredits]);
+
+
+  const value = {
     user,
+    firebaseUser,
+    credits,
     isInitialized,
     isRecovering,
     isSigningIn,
+    hasFreebie,
+    useFreebie,
+    useCredit,
     beginRecovery,
     signOut,
+    verifySignInLink,
+    refreshCredits,
   };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

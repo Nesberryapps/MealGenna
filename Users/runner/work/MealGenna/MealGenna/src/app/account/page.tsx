@@ -31,9 +31,19 @@ export default function AccountPage() {
       toast({ variant: 'destructive', title: 'Email is required' });
       return;
     }
-    await beginRecovery(email);
+    const result = await beginRecovery(email);
+    if (result.success) {
+        toast({ title: 'Check your email!', description: result.message });
+    } else {
+        toast({ variant: 'destructive', title: 'Recovery Failed', description: result.message });
+    }
     setEmail('');
   };
+  
+  const handleSignOut = async () => {
+      await signOut();
+      toast({ title: 'Signed Out', description: 'You have been signed out.' });
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -113,7 +123,7 @@ export default function AccountPage() {
                      <Button onClick={() => setIsPaywallOpen(true)} className="w-full">
                         Purchase More Credits
                     </Button>
-                    <Button onClick={signOut} variant="outline" className="w-full">
+                    <Button onClick={handleSignOut} variant="outline" className="w-full">
                         <LogOut className="mr-2 h-4 w-4" /> Sign Out
                     </Button>
                 </div>
