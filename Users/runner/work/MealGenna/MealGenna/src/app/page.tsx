@@ -120,80 +120,84 @@ export default function MealApp() {
   
   useEffect(() => {
     setIsClient(true);
-    
-    const checkLink = async () => {
-      if (window.location.href.includes('oobCode')) {
-        const result = await verifySignInLink(window.location.href);
-        if (result.success) {
-          toast({ title: 'Sign-in Successful!', description: result.message });
-        } else if (result.message !== 'Not a sign-in link.') {
-          toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      const checkLink = async () => {
+        if (window.location.href.includes('oobCode')) {
+          const result = await verifySignInLink(window.location.href);
+          if (result.success) {
+            toast({ title: 'Sign-in Successful!', description: result.message });
+          } else if (result.message !== 'Not a sign-in link.') {
+            toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+          }
         }
+      };
+      checkLink();
+      
+      const date = new Date();
+      const hour = date.getHours();
+      let newHeading = "What's on the menu?";
+      let newMealTime = 'lunch';
+
+      if (hour < 12) {
+        newHeading = "Good morning! What's for breakfast?";
+        newMealTime = 'breakfast';
+      } else if (hour < 18) {
+        newHeading = "Good afternoon! What's for lunch?";
+        newMealTime = 'lunch';
+      } else {
+        newHeading = "Good evening! What's for dinner?";
+        newMealTime = 'dinner';
       }
-    };
-    checkLink();
-    
-    const date = new Date();
-    const hour = date.getHours();
-    let newHeading = "What's on the menu?";
-    let newMealTime = 'lunch';
+      
+      setHeading(newHeading);
+      setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
 
-    if (hour < 12) {
-      newHeading = "Good morning! What's for breakfast?";
-      newMealTime = 'breakfast';
-    } else if (hour < 18) {
-      newHeading = "Good afternoon! What's for lunch?";
-      newMealTime = 'lunch';
-    } else {
-      newHeading = "Good evening! What's for dinner?";
-      newMealTime = 'dinner';
+      const handleBeforeInstallPrompt = (event: any) => {
+        event.preventDefault();
+        setInstallPrompt(event);
+      };
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setIsAppInstalled(true);
+      }
+      
+      if (Capacitor.isNativePlatform()) {
+        registerNotifications().then(success => {
+          if (success) {
+            scheduleDailyNotifications();
+          }
+        });
+      }
+
+      const initAnalytics = async () => {
+          if (Capacitor.getPlatform() === 'web') return;
+          try {
+            await FirebaseAnalytics.setEnabled({ enabled: true });
+            await FirebaseAnalytics.logEvent({
+              name: "screen_view",
+              params: {
+                screen_name: "home",
+              }
+            });
+          } catch (error) {
+            console.error("Error initializing Firebase Analytics", error);
+          }
+      };
+
+      initAnalytics();
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
     }
-    
-    setHeading(newHeading);
-    setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
-
-    const handleBeforeInstallPrompt = (event: any) => {
-      event.preventDefault();
-      setInstallPrompt(event);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsAppInstalled(true);
-    }
-    
-    if (Capacitor.isNativePlatform()) {
-      registerNotifications().then(success => {
-        if (success) {
-          scheduleDailyNotifications();
-        }
-      });
-    }
-
-    const initAnalytics = async () => {
-        if (Capacitor.getPlatform() === 'web') return;
-        try {
-          await FirebaseAnalytics.setEnabled({ enabled: true });
-          await FirebaseAnalytics.logEvent({
-            name: "screen_view",
-            params: {
-              screen_name: "home",
-            }
-          });
-        } catch (error) {
-          console.error("Error initializing Firebase Analytics", error);
-        }
-    };
-
-    initAnalytics();
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient]);
 
   useEffect(() => {
     if (isCameraDialogOpen) {
@@ -508,7 +512,7 @@ export default function MealApp() {
 
   const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
     
-    if (!isClient || !premiumInitialized) {
+    if (!isClient) {
       return (
           <Card className="relative flex flex-col text-center h-full">
               <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center"><Skeleton className="w-full h-full rounded-full" /></div><CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle><CardDescription><Skeleton className="h-4 w-full mx-auto" /><Skeleton className="h-4 w-5/6 mx-auto mt-1" /></CardDescription></CardHeader>
@@ -740,6 +744,8 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
 
     
 
