@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, X, Loader2, Salad, Sandwich, Drumstick, Cake, HelpCircle, Video } from 'lucide-react';
+import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, X, Loader2, Salad, Sandwich, Drumstick, Cake, HelpCircle, Video, Star } from 'lucide-react';
 import Image from 'next/image';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
 import { suggestMeals, SuggestMealInput } from '@/ai/flows/suggest-meal-flow';
@@ -33,33 +33,10 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GoProModal } from '@/components/go-pro-modal';
-
-// --- HELPER FUNCTIONS FOR WEB DAILY LIMIT ---
-const getWebUserCredits = () => {
-    if (typeof window === 'undefined') return { single: 1 };
-    const stored = localStorage.getItem('mealgenna_web_credits');
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            return { single: typeof parsed.single === 'number' ? parsed.single : 1 };
-        } catch (e) {
-            return { single: 1 };
-        }
-    }
-    // Default for a new user is 1 free single generation
-    return { single: 1 };
-};
-
-const useWebUserCredit = () => {
-    if (typeof window === 'undefined') return;
-    const currentCredits = getWebUserCredits();
-    const newCredits = {
-        single: Math.max(0, currentCredits.single - 1)
-    };
-    localStorage.setItem('mealgenna_web_credits', JSON.stringify(newCredits));
-};
-// ----------------------------------------
+import { useAuth } from '@/hooks/use-auth';
+import { usePremium } from '@/hooks/use-premium';
+import { LimitModal } from '@/components/LimitModal';
+import { PaywallModal } from '@/components/PaywallModal';
 
 // Define gtag function for TypeScript and PWA install prompt types
 declare global {
@@ -86,6 +63,9 @@ type Mood = 'Quick' | 'Healthy' | 'Hearty';
 type ScanStep = 'scanning' | 'selectingMeal';
 
 export default function MealApp() {
+  const { user } = useAuth();
+  const { credits, isInitialized: creditsInitialized, useCredit } = usePremium();
+
   const [pantryItems, setPantryItems] = useState<string[]>([]);
   const [sessionItems, setSessionItems] = useState<string[]>([]);
   const [loadingMood, setLoadingMood] = useState<Mood | '7-day-plan' | 'from pantry' | null>(null);
@@ -112,7 +92,8 @@ export default function MealApp() {
   const [activeMeal, setActiveMeal] = useState<MealSuggestion | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
-  const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
   // Preferences state
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
@@ -355,127 +336,91 @@ export default function MealApp() {
     return undefined;
   };
 
-  const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    // THIS IS THE ENFORCEMENT POINT
-    if (Capacitor.getPlatform() === 'web' && getWebUserCredits().single <= 0) {
-        setIsGoProModalOpen(true);
-        if (isCameraDialogOpen) setIsCameraDialogOpen(false);
-        if (isPreferencesOpen) setIsPreferencesOpen(false);
-        return;
-    }
+  const handleGenerate = async (type: 'single' | '7-day-plan' | 'from pantry', items?: string[]) => {
+    const isWeb = Capacitor.getPlatform() === 'web';
     
+    if (isWeb) {
+      if (!user) {
+        toast({
+          variant: 'destructive',
+          title: 'Please Sign In',
+          description: 'You must be signed in to generate meals on the web.',
+        });
+        return;
+      }
+      if (!creditsInitialized) {
+        toast({ title: 'Please wait', description: 'Initializing your credits...' });
+        return;
+      }
+      
+      const creditType = type === '7-day-plan' ? '7-day-plan' : 'single';
+      if ((credits?.[creditType] ?? 0) <= 0) {
+        setIsLimitModalOpen(true);
+        return;
+      }
+    }
+
     const generationLogic = async () => {
-      setLoadingMood(mood);
-      setGeneratedMeals(null);
-      setIsMealSuggestionsOpen(true);
+      setLoadingMood(type);
+      
+      if (type === '7-day-plan') {
+        setGeneratedPlan(null);
+        setDetailedPlan(null);
+        setIsMealPlanOpen(true);
+      } else {
+        setGeneratedMeals(null);
+        setIsMealSuggestionsOpen(true);
+      }
+
       if (isCameraDialogOpen) setIsCameraDialogOpen(false);
 
-      const input: SuggestMealInput = {
-        pantryItems: items,
-        mealTime: mealTime,
-        mood: mood === 'from pantry' ? 'Quick' : mood,
-        diet: preferences.diet !== 'none' ? preferences.diet : undefined,
-        cuisine: getCuisinePreference(),
-        customRequest: preferences.customRequest || undefined
-      };
-
       try {
-        const result = await suggestMeals(input);
-        setGeneratedMeals(result);
-        if (Capacitor.getPlatform() === 'web') {
-            useWebUserCredit();
+        if (type === '7-day-plan') {
+          const input: GenerateMealPlanInput = { pantryItems, diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
+          const result = await generateMealPlan(input);
+          setGeneratedPlan(result);
+        } else {
+          const input: SuggestMealInput = { pantryItems: items || pantryItems, mealTime: preferences.mealTime, mood: type === 'from pantry' ? 'Quick' : (selectedMood as Mood), diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
+          const result = await suggestMeals(input);
+          setGeneratedMeals(result);
+        }
+        if (isWeb) {
+          await useCredit(type === '7-day-plan' ? '7-day-plan' : 'single');
         }
       } catch (error) {
-          console.error('Error generating meal:', error);
-          toast({
-              variant: 'destructive',
-              title: 'Generation Failed',
-              description: 'Could not generate meal ideas. Please try again.',
-          });
-          setIsMealSuggestionsOpen(false);
+          console.error('Error generating:', error);
+          toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate ideas. Please try again.' });
+          if (type === '7-day-plan') setIsMealPlanOpen(false);
+          else setIsMealSuggestionsOpen(false);
       } finally {
           setLoadingMood(null);
       }
     };
-    
-    if (Capacitor.getPlatform() === 'web') {
-      generationLogic();
+
+    // Determine how to wrap the generation logic (ads for mobile, direct for web)
+    if (isWeb) {
+      await generationLogic();
     } else {
-      showWatchToGenerateAd(generationLogic);
-    }
-  };
-
-
-  const handleGeneratePlan = async () => {
-    // THIS IS THE ENFORCEMENT POINT
-    if (Capacitor.getPlatform() === 'web') {
-        setIsGoProModalOpen(true);
-        if (isPreferencesOpen) setIsPreferencesOpen(false);
-        return;
-    }
-
-    const generationLogic = async () => {
-      setLoadingMood('7-day-plan');
-      setGeneratedPlan(null);
-      setDetailedPlan(null);
-      setIsMealPlanOpen(true);
-
-      const input: GenerateMealPlanInput = {
-        pantryItems,
-        diet: preferences.diet !== 'none' ? preferences.diet : undefined,
-        cuisine: getCuisinePreference(),
-        customRequest: preferences.customRequest || undefined,
-      };
-
-      try {
-        const result = await generateMealPlan(input);
-        setGeneratedPlan(result);
-      } catch (error) {
-          console.error('Error generating meal plan:', error);
-          toast({
-              variant: 'destructive',
-              title: 'Plan Generation Failed',
-              description: 'Could not generate the 7-day plan. Please try again.',
-          });
-          setIsMealPlanOpen(false);
-      } finally {
-          setLoadingMood(null);
+      if (type === '7-day-plan') {
+        showSevenDayPlanAds(generationLogic);
+      } else {
+        showWatchToGenerateAd(generationLogic);
       }
-    };
-    
-    showSevenDayPlanAds(generationLogic);
+    }
   };
+
 
   const handleFinalGeneration = async () => {
     setIsPreferencesOpen(false);
     if (selectedMood === '7-day-plan') {
-      await handleGeneratePlan();
+      await handleGenerate('7-day-plan');
     } else if (selectedMood) {
-      // The handleGenerateMeal function now contains the credit check
-      await handleGenerateMeal(selectedMood, preferences.mealTime, pantryItems);
+      await handleGenerate('single');
     }
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-     if (Capacitor.getPlatform() === 'web') {
-        if (mood === '7-day-plan') {
-            // Mobile-only feature, show modal immediately
-            setIsGoProModalOpen(true);
-            return;
-        }
-        // For single meals on web, check credits before proceeding
-        if (getWebUserCredits().single <= 0) {
-            setIsGoProModalOpen(true);
-            return;
-        }
-        handleOpenPreferences(mood);
-    } else if (mood === '7-day-plan') {
-        // On mobile, wrap 7-day plan in double ad wall
-        showSevenDayPlanAds(() => handleOpenPreferences('7-day-plan'));
-    } else {
-        // On mobile, wrap single meal in single ad wall
-        showWatchToGenerateAd(() => handleOpenPreferences(mood));
-    }
+    handleOpenPreferences(mood);
   };
 
 
@@ -706,9 +651,11 @@ export default function MealApp() {
         return 'Generating...';
     }
     if (Capacitor.getPlatform() === 'web') {
-        const hasCredits = getWebUserCredits().single > 0;
-        if (selectedMood === '7-day-plan') return 'Get the App';
-        return hasCredits ? 'Generate' : 'Get the App';
+      const creditType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
+      if ((credits?.[creditType] ?? 0) > 0) {
+        return 'Generate';
+      }
+      return 'Purchase';
     }
     if (selectedMood === '7-day-plan') {
         return 'Watch 2 Ads to Generate';
@@ -722,6 +669,8 @@ export default function MealApp() {
     useEffect(() => {
         setIsClient(true);
     }, []);
+    
+    const isWeb = isClient && Capacitor.getPlatform() === 'web';
 
     if (!isClient) {
         return (
@@ -743,24 +692,41 @@ export default function MealApp() {
             </Card>
         );
     }
-
-    const isWeb = Capacitor.getPlatform() === 'web';
-    const isPlan = mood === '7-day-plan';
-    const webHasCredits = isWeb && getWebUserCredits().single > 0;
     
-    let costText = 'Watch an ad';
-    if (isPlan) costText = 'Watch 2 ads';
+    const creditType = mood === '7-day-plan' ? '7-day-plan' : 'single';
+    const hasCredits = (credits?.[creditType] ?? 0) > 0;
+    
+    const getBadgeText = () => {
+      if (!isWeb) {
+          return mood === '7-day-plan' ? 'Watch 2 ads' : 'Watch an ad';
+      }
+      if (!user) {
+          return 'Sign In';
+      }
+      if (!creditsInitialized) {
+          return 'Loading...';
+      }
+      if (hasCredits) {
+          return `${credits?.[creditType]} left`;
+      }
+      return 'Purchase';
+    };
 
-    if(isWeb && isPlan) {
-        costText = "App Only"
-    } else if (isWeb && !isPlan) {
-        costText = webHasCredits ? `${getWebUserCredits().single} Free Left` : 'Get the App'
-    }
+    const getButtonContent = () => {
+        if (!isWeb) {
+            return <><Video className="mr-2 h-4 w-4" />{mood === '7-day-plan' ? 'Watch Ads' : 'Watch Ad'}</>;
+        }
+        if (hasCredits || !user) {
+            return <><Sparkles className="mr-2 h-4 w-4" />Get Ideas</>;
+        }
+        return <><Star className="mr-2 h-4 w-4" />Purchase More</>;
+    };
+
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-            <Badge variant={isPlan ? 'destructive' : (isWeb && !webHasCredits && !isPlan) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
-                {costText}
+             <Badge variant={isWeb && !hasCredits ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+                {getBadgeText()}
             </Badge>
             <CardHeader className="p-6">
                 <div className="mx-auto w-24 h-24 mb-2">
@@ -772,8 +738,7 @@ export default function MealApp() {
             <CardContent className="flex-1 p-6 pt-0" />
             <CardFooter className="p-6 pt-0">
                  <Button className="w-full" onClick={onClick}>
-                    {isWeb && (!webHasCredits && !isPlan) ? <Download className="mr-2 h-4 w-4" /> : isWeb ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
-                    {isWeb ? (isPlan ? 'Get the App' : webHasCredits ? 'Generate' : 'Get the App') : (isPlan ? 'Watch Ads' : 'Watch Ad')}
+                    {getButtonContent()}
                  </Button>
             </CardFooter>
         </Card>
@@ -797,14 +762,9 @@ export default function MealApp() {
       targetId: "tutorial-step-3",
     },
     {
-      title: "Generate Single Meals",
-      description: "Choose one of these cards to get single meal ideas. Web users get one free. Mobile users can watch a short ad to generate recipes.",
+      title: "Generate Meals",
+      description: "Choose one of these cards to get meal ideas. On mobile, watch a short ad. On the web, you get one free generation, then you can purchase more.",
       targetId: "tutorial-step-4",
-    },
-    {
-      title: "Get a 7-Day Plan",
-      description: "Generate a full week's meal plan. This feature is available on our mobile app, where free users watch two short rewarded ads to unlock.",
-      targetId: "tutorial-step-5",
     },
     {
       title: "You're All Set!",
@@ -842,7 +802,15 @@ export default function MealApp() {
   return (
     <>
       <div className="container relative py-12 md:py-20">
-        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} />
+        <LimitModal 
+            isOpen={isLimitModalOpen} 
+            onClose={() => setIsLimitModalOpen(false)} 
+            onSwitchToPurchase={() => {
+                setIsLimitModalOpen(false);
+                setIsPaywallOpen(true);
+            }}
+        />
+        {user && <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />}
         
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
@@ -955,22 +923,22 @@ export default function MealApp() {
                            <MealTypeButton
                                 mealType="breakfast"
                                 icon={<Salad className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'breakfast', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                            <MealTypeButton
                                 mealType="lunch"
                                 icon={<Sandwich className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'lunch', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                            <MealTypeButton
                                 mealType="dinner"
                                 icon={<Drumstick className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'dinner', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                            <MealTypeButton
                                 mealType="dessert"
                                 icon={<Cake className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'dessert', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                         </div>
                         <DialogFooter>
@@ -1032,38 +1000,40 @@ export default function MealApp() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-6 py-4 px-6 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="meal-time">Meal Type</Label>
-                  <Select value={preferences.mealTime} onValueChange={(value) => handlePreferenceChange('mealTime', value)}>
-                    <SelectTrigger id="meal-time">
-                      <SelectValue placeholder="Select a meal time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="breakfast">Breakfast</SelectItem>
-                      <SelectItem value="lunch">Lunch</SelectItem>
-                      <SelectItem value="dinner">Dinner</SelectItem>
-                      <SelectItem value="dessert">Dessert</SelectItem>
-                    </SelectContent>
-                  </Select>
+              { selectedMood !== '7-day-plan' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="meal-time">Meal Type</Label>
+                    <Select value={preferences.mealTime} onValueChange={(value) => handlePreferenceChange('mealTime', value)}>
+                      <SelectTrigger id="meal-time">
+                        <SelectValue placeholder="Select a meal time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="breakfast">Breakfast</SelectItem>
+                        <SelectItem value="lunch">Lunch</SelectItem>
+                        <SelectItem value="dinner">Dinner</SelectItem>
+                        <SelectItem value="dessert">Dessert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="diet-preference">Dietary Preference</Label>
+                    <Select value={preferences.diet} onValueChange={(value) => handlePreferenceChange('diet', value)}>
+                      <SelectTrigger id="diet-preference">
+                        <SelectValue placeholder="No preference" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No preference</SelectItem>
+                        <SelectItem value="Vegetarian">Vegetarian</SelectItem>
+                        <SelectItem value="Vegan">Vegan</SelectItem>
+                        <SelectItem value="Keto">Keto</SelectItem>
+                        <SelectItem value="Paleo">Paleo</SelectItem>
+                        <SelectItem value="Gluten-Free">Gluten-Free</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="diet-preference">Dietary Preference</Label>
-                  <Select value={preferences.diet} onValueChange={(value) => handlePreferenceChange('diet', value)}>
-                    <SelectTrigger id="diet-preference">
-                      <SelectValue placeholder="No preference" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No preference</SelectItem>
-                      <SelectItem value="Vegetarian">Vegetarian</SelectItem>
-                      <SelectItem value="Vegan">Vegan</SelectItem>
-                      <SelectItem value="Keto">Keto</SelectItem>
-                      <SelectItem value="Paleo">Paleo</SelectItem>
-                      <SelectItem value="Gluten-Free">Gluten-Free</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              )}
               <div>
                 <Label>Create a Flavor Fusion</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
@@ -1469,5 +1439,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-    
