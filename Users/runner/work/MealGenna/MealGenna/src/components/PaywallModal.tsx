@@ -11,7 +11,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useAuth } from '@/hooks/use-auth';
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -24,52 +23,25 @@ interface PaywallModalProps {
 }
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
-  const { user, firebaseUser } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handlePurchase = async (priceId: string) => {
-    if (!user || !firebaseUser) {
-      toast({ variant: 'destructive', title: 'You must be signed in to make a purchase.' });
-      return;
-    }
-
+    // This is a placeholder for now. We will add auth and Stripe logic in the next stage.
     setIsRedirecting(priceId);
-
-    try {
-      const idToken = await firebaseUser.getIdToken();
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ 
-          priceId: priceId,
-          userId: firebaseUser.uid,
-          userEmail: user.email,
-        }),
-      });
-
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('Failed to create Stripe session.');
-      }
-    } catch (error) {
-      console.error('Stripe redirect error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Purchase Failed',
-        description: 'Could not redirect to Stripe. Please try again.',
-      });
-      setIsRedirecting(null);
-    }
+    toast({
+      title: "Redirecting to Checkout",
+      description: "This will be connected to Stripe in the next step.",
+    });
+    // In the future, this will redirect to Stripe
+    setTimeout(() => {
+        setIsRedirecting(null);
+        onClose();
+    }, 2000);
   };
   
-  const singlePackPriceId = process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!;
-  const planPackPriceId = process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
+  const singlePackPriceId = 'price_1PQ1QpGzFq7L3g1fXXXXXXX'; // Placeholder
+  const planPackPriceId = 'price_1PQ1RAGzFq7L3g1fYYYYYYY'; // Placeholder
 
 
   return (
@@ -78,7 +50,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Get More Generations</DialogTitle>
           <DialogDescription className="pt-2 text-base">
-            You're out of free generations. Choose a one-time pack to continue creating.
+            Choose a one-time pack to continue creating.
           </DialogDescription>
         </DialogHeader>
 

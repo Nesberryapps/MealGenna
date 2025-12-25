@@ -33,10 +33,8 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
-import { usePremium } from '@/hooks/use-premium';
-import { LimitModal } from '@/components/LimitModal';
 import { PaywallModal } from '@/components/PaywallModal';
+
 
 declare global {
   interface Window {
@@ -62,9 +60,6 @@ type Mood = 'Quick' | 'Healthy' | 'Hearty';
 type ScanStep = 'scanning' | 'selectingMeal';
 
 export default function MealApp() {
-  const { user } = useAuth();
-  const { credits, isInitialized: creditsInitialized, useCredit } = usePremium();
-
   const [pantryItems, setPantryItems] = useState<string[]>([]);
   const [sessionItems, setSessionItems] = useState<string[]>([]);
   const [loadingMood, setLoadingMood] = useState<Mood | '7-day-plan' | 'from pantry' | null>(null);
@@ -90,7 +85,7 @@ export default function MealApp() {
   const [activeMeal, setActiveMeal] = useState<MealSuggestion | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
-  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
@@ -214,6 +209,12 @@ export default function MealApp() {
   };
 
   const handleOpenPreferences = (mood: Mood | '7-day-plan') => {
+    const isWeb = Capacitor.getPlatform() === 'web';
+    if(isWeb) {
+      setIsPaywallOpen(true);
+      return;
+    }
+
     setSelectedMood(mood);
     setIsPreferencesOpen(true);
   };
@@ -279,21 +280,10 @@ export default function MealApp() {
 
   const handleGenerate = async (type: 'single' | '7-day-plan' | 'from pantry', items?: string[]) => {
     const isWeb = Capacitor.getPlatform() === 'web';
-    const creditType = type === '7-day-plan' ? '7-day-plan' : 'single';
-
-    if (isWeb) {
-      if (!user) {
-        toast({ variant: 'destructive', title: 'Please Sign In', description: 'You must be signed in to generate meals on the web.' });
-        return;
-      }
-      if (!creditsInitialized) {
-        toast({ title: 'Please wait', description: 'Initializing your credits...' });
-        return;
-      }
-      if ((credits?.[creditType] ?? 0) <= 0) {
-        setIsLimitModalOpen(true);
-        return;
-      }
+    
+    if(isWeb) {
+      setIsPaywallOpen(true);
+      return;
     }
 
     const generationLogic = async () => {
@@ -312,7 +302,6 @@ export default function MealApp() {
           const result = await suggestMeals(input);
           setGeneratedMeals(result);
         }
-        if (isWeb) await useCredit(creditType);
       } catch (error) {
           toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate ideas. Please try again.' });
           if (type === '7-day-plan') setIsMealPlanOpen(false);
@@ -331,6 +320,11 @@ export default function MealApp() {
 
   const handleFinalGeneration = async () => {
     setIsPreferencesOpen(false);
+    const isWeb = Capacitor.getPlatform() === 'web';
+    if(isWeb) {
+      setIsPaywallOpen(true);
+      return;
+    }
     if (selectedMood === '7-day-plan') await handleGenerate('7-day-plan');
     else if (selectedMood) await handleGenerate('single');
   };
@@ -460,13 +454,9 @@ export default function MealApp() {
   };
 
   const getGenerateButtonText = () => {
+    const isWeb = Capacitor.getPlatform() === 'web';
     if (loadingMood) return 'Generating...';
-    if (Capacitor.getPlatform() === 'web') {
-      const creditType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
-      if (!user) return 'Sign in to Generate';
-      if ((credits?.[creditType] ?? 0) > 0) return 'Generate';
-      return 'Get More';
-    }
+    if(isWeb) return 'Get More';
     if (selectedMood === '7-day-plan') return 'Watch 2 Ads to Generate';
     return 'Watch an Ad to Generate';
   };
@@ -483,34 +473,24 @@ export default function MealApp() {
     );
     
     const isWeb = Capacitor.getPlatform() === 'web';
-    const creditType = isPlan ? '7-day-plan' : 'single';
-    const hasCredits = (credits?.[creditType] ?? 0) > 0;
     
     const getBadgeText = () => {
       if (!isWeb) return isPlan ? 'Watch 2 ads' : 'Watch an ad';
-      if (!user) return 'Sign In';
-      if (!creditsInitialized) return 'Loading...';
-      if (hasCredits) return `${credits?.[creditType]} left`;
       return 'Purchase';
     };
 
     const getButtonContent = () => {
         if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>;
-        if (isWeb) return (hasCredits || !user) ? <><Sparkles className="mr-2 h-4 w-4" />Generate</> : <><Star className="mr-2 h-4 w-4" />Get More</>;
+        if (isWeb) return <><Star className="mr-2 h-4 w-4" />Get More</>;
         return <><Video className="mr-2 h-4 w-4" />{isPlan ? 'Watch Ads' : 'Watch Ad'}</>;
-    };
-
-    const handleCardClick = () => {
-        if (isWeb && !hasCredits && user) setIsPaywallOpen(true);
-        else onClick();
     };
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-             <Badge variant={isWeb && !hasCredits && user ? 'destructive' : 'secondary'} className="absolute top-2 right-2">{getBadgeText()}</Badge>
+             <Badge variant={'destructive'} className="absolute top-2 right-2">{getBadgeText()}</Badge>
             <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">{icon}</div><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader>
             <CardContent className="flex-1 p-6 pt-0" />
-            <CardFooter className="p-6 pt-0"><Button className="w-full" onClick={handleCardClick} disabled={!!loadingMood}>{getButtonContent()}</Button></CardFooter>
+            <CardFooter className="p-6 pt-0"><Button className="w-full" onClick={onClick} disabled={!!loadingMood}>{getButtonContent()}</Button></CardFooter>
         </Card>
     );
 };
@@ -528,8 +508,7 @@ export default function MealApp() {
   return (
     <>
       <div className="container relative py-12 md:py-20">
-        <LimitModal isOpen={isLimitModalOpen} onClose={() => setIsLimitModalOpen(false)} onSwitchToPurchase={() => { setIsLimitModalOpen(false); setIsPaywallOpen(true); }} />
-        {user && <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />}
+        <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
         
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">{heading}</h1>
