@@ -288,7 +288,7 @@ export default function MealApp() {
         const result = await generateMealPlan(input);
         setGeneratedPlan(result);
       } else {
-        const input: SuggestMealInput = { pantryItems: items || pantryItems, mealTime: preferences.mealTime, mood: type === 'from pantry' ? 'Quick' : (selectedMood as Mood), diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
+        const input: SuggestMealInput = { pantryItems: items || pantryItems, mealTime: preferences.mealTime, mood: (selectedMood === 'from pantry' ? 'Quick' : (selectedMood as Mood)), diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
       }
@@ -588,10 +588,10 @@ export default function MealApp() {
                 {scanStep === 'selectingMeal' && ( <>
                     <DialogHeader><DialogTitle>What are you in the mood for?</DialogTitle><DialogDescription>Select a meal type to get suggestions based on your {sessionItems.length} scanned items.</DialogDescription></DialogHeader>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-8">
-                        <MealTypeButton mealType="breakfast" icon={<Salad className="h-8 w-8 mx-auto" />} onClick={() => handleFinalGeneration(sessionItems)} />
-                        <MealTypeButton mealType="lunch" icon={<Sandwich className="h-8 w-8 mx-auto" />} onClick={() => handleFinalGeneration(sessionItems)} />
-                        <MealTypeButton mealType="dinner" icon={<Drumstick className="h-8 w-8 mx-auto" />} onClick={() => handleFinalGeneration(sessionItems)} />
-                        <MealTypeButton mealType="dessert" icon={<Cake className="h-8 w-8 mx-auto" />} onClick={() => handleFinalGeneration(sessionItems)} />
+                        <MealTypeButton mealType="breakfast" icon={<Salad className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'breakfast' })); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="lunch" icon={<Sandwich className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'lunch' })); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="dinner" icon={<Drumstick className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'dinner' })); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="dessert" icon={<Cake className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'dessert' })); handleFinalGeneration(sessionItems)}} />
                     </div>
                     <DialogFooter><Button variant="outline" onClick={() => setScanStep('scanning')}>Back to Scanning</Button></DialogFooter>
                 </> )}
@@ -602,7 +602,7 @@ export default function MealApp() {
              <MoodCard mood="Quick" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Quick-meal.png" alt="Quick Meal" layout="fill" objectFit="cover" data-ai-hint="fast food" /></div>} title="Something Quick" description="Short on time? Get delicious meal ideas in seconds." onClick={() => handleMoodOrPlanClick('Quick')} />
            </div>
            <div className="lg:col-span-1">
-             <MoodCard mood="Healthy" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Healthy-meal.png" alt="Healthy Meal" layout="fill" objectFit="cover" />} title="Something Healthy" description="Nourish your body with a wholesome and tasty recipe." onClick={() => handleMoodOrPlanClick('Healthy')} />
+             <MoodCard mood="Healthy" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Healthy-meal.png" alt="Healthy Meal" layout="fill" objectFit="cover" data-ai-hint="healthy salad"/></div>} title="Something Healthy" description="Nourish your body with a wholesome and tasty recipe." onClick={() => handleMoodOrPlanClick('Healthy')} />
             </div>
             <div className="lg:col-span-1">
              <MoodCard mood="Hearty" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Hearty-meal.png" alt="Hearty Meal" layout="fill" objectFit="cover" data-ai-hint="steak dinner" /></div>} title="Something Hearty" description="Craving comfort food? Find a satisfying and filling meal." onClick={() => handleMoodOrPlanClick('Hearty')} />
@@ -717,3 +717,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
