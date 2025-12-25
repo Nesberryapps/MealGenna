@@ -5,27 +5,41 @@ import { admin } from '@/lib/firebase-admin';
 
 export async function POST(req: Request) {
   try {
-    const { priceId, userId, userEmail } = await req.json();
+    const { priceId, userEmail } = await req.json();
 
-    if (!priceId || !userId || !userEmail) {
-      return new NextResponse('Missing priceId, userId, or userEmail', { status: 400 });
+    if (!priceId || !userEmail) {
+      return new NextResponse('Missing priceId or userEmail', { status: 400 });
     }
 
+    let userId: string;
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
-    if (!token) {
-        return new NextResponse('Unauthorized: No token provided', { status: 401 });
-    }
 
-    try {
+    if (token) {
+        // If a token is provided, verify it and use the UID
         const decodedToken = await admin.auth().verifyIdToken(token);
-        if (decodedToken.uid !== userId) {
-            return new NextResponse('Unauthorized: Token does not match user', { status: 403 });
+        userId = decodedToken.uid;
+    } else {
+        // If no token (guest checkout), find or create the user by email
+        let userRecord;
+        try {
+            userRecord = await admin.auth().getUserByEmail(userEmail);
+        } catch (error: any) {
+            if (error.code === 'auth/user-not-found') {
+                userRecord = await admin.auth().createUser({ email: userEmail });
+                // Also send a magic link so they can sign in later
+                const actionCodeSettings = { url: `${process.env.NEXT_PUBLIC_APP_URL}/account`, handleCodeInApp: true };
+                await admin.auth().generateSignInWithEmailLink(userEmail, actionCodeSettings);
+            } else {
+                throw error; // Re-throw other errors
+            }
         }
-    } catch (error) {
-        console.error("Error verifying Firebase ID token:", error);
-        return new NextResponse('Unauthorized: Invalid token', { status: 403 });
+        userId = userRecord.uid;
     }
-
+    
+    // Safety check in case userId couldn't be determined
+    if (!userId) {
+        return new NextResponse('Could not determine user for checkout', { status: 500 });
+    }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -36,11 +50,11 @@ export async function POST(req: Request) {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${appUrl}/account?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${appUrl}/account?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/account`,
       customer_email: userEmail,
       metadata: {
-        userId,
+        userId, // The resolved Firebase UID
         priceId,
       },
     });

@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { admin } from '@/lib/firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
 const relevantEvents = new Set([
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
             break;
           }
           
-          const db = getFirestore();
+          const db = getFirestore(admin.app());
           const userCreditsRef = db.collection('user_credits').doc(userId);
 
           await db.runTransaction(async (transaction) => {
@@ -40,7 +41,13 @@ export async function POST(req: Request) {
             let credits = { single: 0, '7-day-plan': 0 };
 
             if (userCreditsSnap.exists) {
-              credits = userCreditsSnap.data() as typeof credits;
+                const data = userCreditsSnap.data();
+                if (data) {
+                    credits = {
+                        single: data.single || 0,
+                        '7-day-plan': data['7-day-plan'] || 0,
+                    };
+                }
             }
 
             if (priceId === process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID) { 
