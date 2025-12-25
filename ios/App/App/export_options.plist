@@ -4,5 +4,14 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
+    <key>teamID</key>
+    <string>5BYJT9QTKZ</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.nesberry.mealgenna.pro</key>
+        <string>MealGenna Pro Store</string>
+    </dict>
 </dict>
 </plist>
