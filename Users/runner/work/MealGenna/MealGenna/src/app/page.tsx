@@ -652,6 +652,7 @@ export default function MealApp() {
     }
     if (Capacitor.getPlatform() === 'web') {
       const creditType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
+      if (!user) return 'Sign in to Generate';
       if ((credits?.[creditType] ?? 0) > 0) {
         return 'Generate';
       }
@@ -663,7 +664,7 @@ export default function MealApp() {
     return 'Watch an Ad to Generate';
   };
 
-  const MoodCard = ({ mood, icon, title, description, onClick }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void }) => {
+  const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
     const [isClient, setIsClient] = useState(false);
     
     useEffect(() => {
@@ -676,11 +677,11 @@ export default function MealApp() {
         return (
             <Card className="relative flex flex-col text-center h-full">
                 <CardHeader className="p-6">
-                    <div className="mx-auto w-24 h-24 mb-2">
+                    <div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">
                       <Skeleton className="w-full h-full rounded-full" />
                     </div>
                     <CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle>
-                    <CardDescription><Skeleton className="h-4 w-full mx-auto" /></CardDescription>
+                    <CardDescription><Skeleton className="h-4 w-full mx-auto" /><Skeleton className="h-4 w-5/6 mx-auto mt-1" /></CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 p-6 pt-0" />
                 <CardFooter className="p-6 pt-0">
@@ -693,12 +694,12 @@ export default function MealApp() {
         );
     }
     
-    const creditType = mood === '7-day-plan' ? '7-day-plan' : 'single';
+    const creditType = isPlan ? '7-day-plan' : 'single';
     const hasCredits = (credits?.[creditType] ?? 0) > 0;
     
     const getBadgeText = () => {
       if (!isWeb) {
-          return mood === '7-day-plan' ? 'Watch 2 ads' : 'Watch an ad';
+          return isPlan ? 'Watch 2 ads' : 'Watch an ad';
       }
       if (!user) {
           return 'Sign In';
@@ -714,22 +715,22 @@ export default function MealApp() {
 
     const getButtonContent = () => {
         if (!isWeb) {
-            return <><Video className="mr-2 h-4 w-4" />{mood === '7-day-plan' ? 'Watch Ads' : 'Watch Ad'}</>;
+            return <><Video className="mr-2 h-4 w-4" />{isPlan ? 'Watch Ads' : 'Watch Ad'}</>;
         }
         if (hasCredits || !user) {
-            return <><Sparkles className="mr-2 h-4 w-4" />Get Ideas</>;
+            return <><Sparkles className="mr-2 h-4 w-4" />Generate</>;
         }
-        return <><Star className="mr-2 h-4 w-4" />Purchase More</>;
+        return <><Star className="mr-2 h-4 w-4" />Purchase</>;
     };
 
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-             <Badge variant={isWeb && !hasCredits ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+             <Badge variant={isWeb && !hasCredits && user ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
                 {getBadgeText()}
             </Badge>
             <CardHeader className="p-6">
-                <div className="mx-auto w-24 h-24 mb-2">
+                <div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">
                     {icon}
                 </div>
                 <CardTitle>{title}</CardTitle>
@@ -817,31 +818,8 @@ export default function MealApp() {
             {heading}
           </h1>
           <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Let's get cooking.
+            Instant Meal Ideas, Zero Hassle.
           </p>
-        </section>
-        
-        <section id="tutorial-step-1" className="mx-auto max-w-2xl mb-12">
-            <Card className="p-6 bg-gradient-to-br from-primary/20 via-background to-background border-primary/30">
-                <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-lg">App Controls</CardTitle>
-                        <CardDescription>
-                           Manage reminders and app installation.
-                        </CardDescription>
-                    </div>
-                     <div className="flex items-center">
-                        <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsTutorialOpen(true)}>
-                            <HelpCircle className="h-5 w-5" />
-                        </Button>
-                        {installPrompt && !isAppInstalled && (
-                          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleInstallClick}>
-                              <Download className="h-5 w-5" />
-                          </Button>
-                        )}
-                    </div>
-                </CardHeader>
-            </Card>
         </section>
         
         <div id="tutorial-step-0" className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
@@ -949,7 +927,7 @@ export default function MealApp() {
               </DialogContent>
            </Dialog>
 
-           <div id="tutorial-step-4">
+           <div id="tutorial-step-4" className="lg:col-span-1">
              <MoodCard 
                 mood="Quick" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Quick-meal.png" alt="Quick Meal" layout="fill" objectFit="cover" data-ai-hint="fast food" /></div>}
@@ -958,6 +936,7 @@ export default function MealApp() {
                 onClick={() => handleMoodOrPlanClick('Quick')}
               />
            </div>
+           <div className="lg:col-span-1">
            <MoodCard 
               mood="Healthy" 
               icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Healthy-meal.png" alt="Healthy Meal" layout="fill" objectFit="cover" /></div>}
@@ -965,6 +944,8 @@ export default function MealApp() {
               description="Nourish your body with a wholesome and tasty recipe."
               onClick={() => handleMoodOrPlanClick('Healthy')}
             />
+            </div>
+            <div className="lg:col-span-1">
            <MoodCard 
               mood="Hearty" 
               icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Hearty-meal.png" alt="Hearty Meal" layout="fill" objectFit="cover" data-ai-hint="steak dinner" /></div>}
@@ -972,25 +953,19 @@ export default function MealApp() {
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleMoodOrPlanClick('Hearty')}
             />
-           <div id="tutorial-step-5" className="lg:col-span-2">
+            </div>
+           <div id="tutorial-step-5" className="lg:col-span-3">
               <MoodCard 
                 mood="7-day-plan" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>}
                 title="Generate a 7-Day Plan" 
                 description="Get a complete breakfast, lunch, and dinner plan for the week."
                 onClick={() => handleMoodOrPlanClick('7-day-plan')}
+                isPlan={true}
               />
            </div>
         </div>
-
-        <section className="mx-auto max-w-5xl mt-12">
-            <Card className="w-full">
-                <CardContent className="p-4">
-                    <AdBanner />
-                </CardContent>
-            </Card>
-        </section>
-
+        
         <Dialog open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen}>
           <DialogContent className="max-h-[90vh] flex flex-col p-0">
             <DialogHeader className="p-6 pb-4">
