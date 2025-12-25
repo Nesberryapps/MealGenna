@@ -1,19 +1,22 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import { CheckoutForm } from './CheckoutForm';
+import { usePremium } from '@/hooks/use-premium';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -23,26 +26,97 @@ interface PaywallModalProps {
 }
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
-  const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user, firebaseUser } = useAuth();
+  const { refreshCredits } = usePremium();
+  
+  const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const singlePackPriceId = process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!;
+  const planPackPriceId = process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
 
-  const handlePurchase = async (priceId: string) => {
-    // This is a placeholder for now. We will add auth and Stripe logic in the next stage.
-    setIsRedirecting(priceId);
-    toast({
-      title: "Redirecting to Checkout",
-      description: "This will be connected to Stripe in the next step.",
-    });
-    // In the future, this will redirect to Stripe
-    setTimeout(() => {
-        setIsRedirecting(null);
+  useEffect(() => {
+    if (!isOpen) {
+        setTimeout(() => {
+            setSelectedPriceId(null);
+            setClientSecret(null);
+            setIsLoading(false);
+        }, 300);
+    }
+  }, [isOpen]);
+
+  const handlePurchaseClick = async (priceId: string) => {
+    if (!user || !firebaseUser) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Required",
+            description: "Please go to the account page to sign in before making a purchase.",
+        });
         onClose();
-    }, 2000);
+        return;
+    }
+
+    setIsLoading(true);
+    setSelectedPriceId(priceId);
+
+    try {
+        const idToken = await firebaseUser.getIdToken();
+        const response = await fetch('/api/stripe/payment-intent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ 
+                priceId,
+                userId: firebaseUser.uid,
+                userEmail: user.email,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json();
+            throw new Error(errorBody.error || 'Failed to create payment intent.');
+        }
+
+        const { clientSecret: newClientSecret } = await response.json();
+        setClientSecret(newClientSecret);
+
+    } catch (error: any) {
+        console.error("Stripe payment intent error:", error);
+        toast({
+            variant: "destructive",
+            title: "Purchase Failed",
+            description: error.message || "Could not connect to Stripe. Please try again.",
+        });
+        setSelectedPriceId(null);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const appearance = {
+    theme: 'night' as const,
+    variables: {
+      colorPrimary: '#10b981',
+    },
   };
   
-  const singlePackPriceId = 'price_1PQ1QpGzFq7L3g1fXXXXXXX'; // Placeholder
-  const planPackPriceId = 'price_1PQ1RAGzFq7L3g1fYYYYYYY'; // Placeholder
+  const options = clientSecret ? {
+    clientSecret,
+    appearance,
+  } : {};
 
+  const handlePaymentSuccess = () => {
+    toast({
+        title: "Payment Successful!",
+        description: "Your credits have been added. Refreshing your account.",
+    });
+    refreshCredits();
+    onClose();
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -50,38 +124,43 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Get More Generations</DialogTitle>
           <DialogDescription className="pt-2 text-base">
-            Choose a one-time pack to continue creating.
+            {clientSecret 
+              ? "Complete your secure purchase below." 
+              : "Choose a one-time pack to continue creating on the web."
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
-                <div className="text-center">
-                    <h3 className="text-lg font-bold">Single Meal Pack</h3>
-                    <p className="text-3xl font-extrabold my-2">$1.99</p>
-                    <p className="text-muted-foreground">Get 5 generations for single meals.</p>
+        {clientSecret ? (
+          <div className="pt-4">
+            <Elements options={options} stripe={stripePromise}>
+              <CheckoutForm onSuccess={handlePaymentSuccess} />
+            </Elements>
+          </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
+                    <div className="text-center">
+                        <h3 className="text-lg font-bold">Single Meal Pack</h3>
+                        <p className="text-3xl font-extrabold my-2">$1.99</p>
+                        <p className="text-muted-foreground">Get 5 generations for single meals.</p>
+                    </div>
+                    <Button onClick={() => handlePurchaseClick(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
+                        {isLoading && selectedPriceId === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
+                    </Button>
                 </div>
-                 <Button onClick={() => handlePurchase(singlePackPriceId)} disabled={!!isRedirecting} className="w-full mt-4">
-                    {isRedirecting === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
-                 </Button>
-            </div>
-            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
-                <div className="text-center">
-                    <h3 className="text-lg font-bold">Full Meal Plan Pack</h3>
-                    <p className="text-3xl font-extrabold my-2">$7.99</p>
-                    <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
+                <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
+                    <div className="text-center">
+                        <h3 className="text-lg font-bold">Full Meal Plan Pack</h3>
+                        <p className="text-3xl font-extrabold my-2">$7.99</p>
+                        <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
+                    </div>
+                    <Button onClick={() => handlePurchaseClick(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
+                        {isLoading && selectedPriceId === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
+                    </Button>
                 </div>
-                 <Button onClick={() => handlePurchase(planPackPriceId)} disabled={!!isRedirecting} className="w-full mt-4">
-                    {isRedirecting === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
-                 </Button>
             </div>
-        </div>
-
-        <DialogFooter className="sm:justify-center">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Maybe Later
-          </Button>
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

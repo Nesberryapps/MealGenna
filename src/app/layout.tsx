@@ -10,7 +10,8 @@ import { ModeToggle } from "@/components/mode-toggle";
 import Script from 'next/script';
 import type { Viewport } from 'next'
 import AdMobInit from "@/components/AdMobInit";
-import { Capacitor } from '@capacitor/core';
+import { AuthProvider } from "@/hooks/use-auth";
+import { PremiumProvider } from "@/hooks/use-premium";
 
 
 export const viewport: Viewport = {
@@ -38,7 +39,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Google tag (gtag.js) */}
         <Script async src="https://www.googletagmanager.com/gtag/js?id=AW-17507715969" strategy="afterInteractive"></Script>
         <Script id="google-ads-tag" strategy="afterInteractive">
           {`
@@ -48,7 +48,6 @@ export default function RootLayout({
             gtag('config', 'AW-17507715969');
           `}
         </Script>
-        {/* Event snippet for Purchase conversion page */}
         <Script id="google-ads-conversion-snippet" strategy="afterInteractive">
           {`
             function gtag_report_conversion(url, enhanced_conversion_data) {
@@ -68,7 +67,6 @@ export default function RootLayout({
           `}
         </Script>
         <meta name="google-adsense-account" content="ca-pub-6191158195654090" />
-        {/* Google Tag Manager */}
         <Script id="google-tag-manager" strategy="afterInteractive">
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -78,7 +76,6 @@ export default function RootLayout({
             })(window,document,'script','dataLayer','GTM-WDJBSQ72');
           `}
         </Script>
-        {/* End Google Tag Manager */}
         
         <Script 
           async 
@@ -89,10 +86,8 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
-        {/* Google Tag Manager (noscript) */}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WDJBSQ72"
         height="0" width="0" style={{display:"none", visibility:"hidden"}}></iframe></noscript>
-        {/* End Google Tag Manager (noscript) */}
         <AdMobInit />
 
         <ThemeProvider
@@ -101,35 +96,39 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-            <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container flex h-14 items-center">
-                  <Link href="/" className="mr-auto flex items-center">
-                    <ChefHat className="h-6 w-6 mr-2 text-primary" />
-                    <span className="font-bold">MealGenna</span>
-                  </Link>
-                  <nav className="flex items-center gap-2">
-                    <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                      <User className="h-5 w-5" />
-                      <span className="sr-only">Account</span>
+          <AuthProvider>
+            <PremiumProvider>
+              <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                  <div className="container flex h-14 items-center">
+                    <Link href="/" className="mr-auto flex items-center">
+                      <ChefHat className="h-6 w-6 mr-2 text-primary" />
+                      <span className="font-bold">MealGenna</span>
                     </Link>
-                    <ModeToggle />
+                    <nav className="flex items-center gap-2">
+                      <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                        <User className="h-5 w-5" />
+                        <span className="sr-only">Account</span>
+                      </Link>
+                      <ModeToggle />
+                    </nav>
+                  </div>
+              </header>
+              <main className="flex-1">{children}</main>
+              <footer className="py-6 md:px-8 md:py-8 border-t">
+                <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+                  <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} MealGenna. All rights reserved.</p>
+                  <nav className="flex gap-4 sm:gap-6">
+                      <Link href="/about" className="text-sm hover:underline">About Us</Link>
+                      <Link href="/blog" className="text-sm hover:underline">Blog</Link>
+                      <Link href="/terms" className="text-sm hover:underline">Terms & Conditions</Link>
+                      <Link href="/privacy" className="text-sm hover:underline">Privacy Policy</Link>
+                      <Link href="/contact" className="text-sm hover:underline">Contact Us</Link>
                   </nav>
                 </div>
-            </header>
-            <main className="flex-1">{children}</main>
-            <footer className="py-6 md:px-8 md:py-8 border-t">
-              <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-                <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} MealGenna. All rights reserved.</p>
-                <nav className="flex gap-4 sm:gap-6">
-                    <Link href="/about" className="text-sm hover:underline">About Us</Link>
-                    <Link href="/blog" className="text-sm hover:underline">Blog</Link>
-                    <Link href="/terms" className="text-sm hover:underline">Terms & Conditions</Link>
-                    <Link href="/privacy" className="text-sm hover:underline">Privacy Policy</Link>
-                    <Link href="/contact" className="text-sm hover-underline">Contact Us</Link>
-                </nav>
-              </div>
-            </footer>
-            <Toaster />
+              </footer>
+              <Toaster />
+            </PremiumProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
