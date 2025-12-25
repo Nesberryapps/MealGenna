@@ -131,9 +131,11 @@ export default function MealApp() {
         }
       }
     };
-    checkLink();
+    if (isClient) {
+        checkLink();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient]);
 
   useEffect(() => {
     const date = new Date();
