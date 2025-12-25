@@ -10,14 +10,12 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { usePremium } from '@/hooks/use-premium';
 import { PaywallModal } from '@/components/PaywallModal';
 import { Capacitor } from '@capacitor/core';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, beginRecovery, signOut, isRecovering, verifySignInLink } = useAuth();
-  const { credits, isInitialized: premiumInitialized, refreshCredits } = usePremium();
+  const { user, isInitialized, credits, beginRecovery, signOut, isRecovering, refreshCredits } = useAuth();
   
   const [email, setEmail] = useState('');
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
@@ -47,33 +45,20 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (isClient) {
-        // This effect runs once on mount to check for a sign-in link
-        const checkLink = async () => {
-        if (window.location.href.includes('oobCode')) {
-            const result = await verifySignInLink(window.location.href);
-            if (result.success) {
-            toast({ title: 'Sign-in Successful!', description: result.message });
-            } else if (result.message !== 'Not a sign-in link.') {
-            toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
-            }
-        }
-        };
-        checkLink();
-        
         const params = new URLSearchParams(window.location.search);
         if (params.get('payment_success') === 'true') {
-        toast({
+          toast({
             title: "Payment Successful!",
             description: "Your credits have been added. It may take a moment for them to appear.",
-        });
-        refreshCredits();
-        window.history.replaceState({}, document.title, window.location.pathname);
+          });
+          refreshCredits();
+          window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
-  const isLoading = !isInitialized || (user && !premiumInitialized);
+  const isLoading = !isInitialized;
 
   const getStatusContent = () => {
       if (!isClient || isLoading) {
@@ -197,3 +182,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
