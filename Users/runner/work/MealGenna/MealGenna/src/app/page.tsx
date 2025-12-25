@@ -8,11 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, CalendarDays, X, Loader2, Coins, Salad, Sandwich, Drumstick, Cake, Bell, BellRing, HelpCircle, CreditCard, Gem, Video, Star } from 'lucide-react';
+import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, ChevronDown, X, Loader2, Salad, Sandwich, Drumstick, Cake, HelpCircle, Video } from 'lucide-react';
 import Image from 'next/image';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
 import { suggestMeals, SuggestMealInput } from '@/ai/flows/suggest-meal-flow';
-import { generateMealPlan, GenerateMealPlanInput } from '@/ai/flows/generate-meal-plan-flow';
+import { generateMealPlan, GenerateMealPlanInput } from '@/ai_flows/generate-meal-plan-flow';
 import { getMealDetails } from '@/ai/flows/get-meal-details-flow';
 import { getFullMealPlanDetails, DetailedMealPlan } from '@/ai/flows/get-full-meal-plan-details-flow';
 import { generateGroceryList } from '@/ai/flows/generate-grocery-list-flow';
@@ -21,43 +21,41 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
-import { PaywallModal } from "@/components/PaywallModal";
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
-import { useSubscription } from '@/hooks/use-subscription';
-import { GoProModal } from '@/components/go-pro-modal';
-import { usePremium } from "@/hooks/use-premium";
 import { Skeleton } from '@/components/ui/skeleton';
-import type { PurchasesPackage } from '@revenuecat/purchases-capacitor';
+import { GoProModal } from '@/components/go-pro-modal';
 
-// --- HELPER FUNCTIONS FOR DAILY LIMIT ---
+// --- HELPER FUNCTIONS FOR WEB DAILY LIMIT ---
 const getWebUserCredits = () => {
-    if (typeof window === 'undefined') return { single: 1, plan: 0 };
+    if (typeof window === 'undefined') return { single: 1 };
     const stored = localStorage.getItem('mealgenna_web_credits');
     if (stored) {
-        return JSON.parse(stored);
+        try {
+            const parsed = JSON.parse(stored);
+            return { single: typeof parsed.single === 'number' ? parsed.single : 1 };
+        } catch (e) {
+            return { single: 1 };
+        }
     }
     // Default for a new user is 1 free single generation
-    return { single: 1, plan: 0 };
+    return { single: 1 };
 };
 
-const useWebUserCredits = (isSingle: boolean, planCredits: number) => {
+const useWebUserCredit = () => {
     if (typeof window === 'undefined') return;
     const currentCredits = getWebUserCredits();
     const newCredits = {
-        single: isSingle ? Math.max(0, currentCredits.single - 1) : currentCredits.single,
-        plan: planCredits
+        single: Math.max(0, currentCredits.single - 1)
     };
     localStorage.setItem('mealgenna_web_credits', JSON.stringify(newCredits));
 };
@@ -114,7 +112,6 @@ export default function MealApp() {
   const [activeMeal, setActiveMeal] = useState<MealSuggestion | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
-  const [isPaywallModalOpen, setIsPaywallModalOpen] = useState(false);
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   
   // Preferences state
@@ -126,11 +123,6 @@ export default function MealApp() {
     cuisine2: 'Surprise Me',
     customRequest: ''
   });
-
-  // Subscription state
-  const { isPro, getOfferings, makePurchase } = useSubscription();
-  const { credits, addCredits, isInitialized: isPremiumInitialized } = usePremium();
-
 
   // Tutorial state
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
@@ -146,10 +138,6 @@ export default function MealApp() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  
-  const [isAdLoading, setIsAdLoading] = useState(false);
-  const [isPurchasing, setIsPurchasing] = useState(false);
-
 
   useEffect(() => {
     // This effect runs only on the client, preventing hydration errors
@@ -368,8 +356,8 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
-    if (!isPro && Capacitor.getPlatform() === 'web' && credits.single <= 0) {
-        setIsPaywallModalOpen(true);
+    if (Capacitor.getPlatform() === 'web' && getWebUserCredits().single <= 0) {
+        setIsGoProModalOpen(true);
         return;
     }
     
@@ -391,8 +379,8 @@ export default function MealApp() {
       try {
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
-        if (Capacitor.getPlatform() === 'web' && !isPro) {
-            useWebUserCredits(true, credits.plan);
+        if (Capacitor.getPlatform() === 'web') {
+            useWebUserCredit();
         }
       } catch (error) {
           console.error('Error generating meal:', error);
@@ -407,7 +395,7 @@ export default function MealApp() {
       }
     };
     
-    if (isPro || (Capacitor.getPlatform() === 'web' && credits.single > 0)) {
+    if (Capacitor.getPlatform() === 'web') {
       generationLogic();
     } else {
       showWatchToGenerateAd(generationLogic);
@@ -416,8 +404,9 @@ export default function MealApp() {
 
 
   const handleGeneratePlan = async () => {
-    if (!isPro && Capacitor.getPlatform() === 'web' && credits.plan <= 0) {
-        setIsPaywallModalOpen(true);
+    // For now, let's make 7-day plan mobile-only feature
+    if (Capacitor.getPlatform() === 'web') {
+        setIsGoProModalOpen(true);
         return;
     }
 
@@ -437,9 +426,6 @@ export default function MealApp() {
       try {
         const result = await generateMealPlan(input);
         setGeneratedPlan(result);
-        if (Capacitor.getPlatform() === 'web' && !isPro) {
-            useWebUserCredits(false, credits.plan - 1);
-        }
       } catch (error) {
           console.error('Error generating meal plan:', error);
           toast({
@@ -453,11 +439,7 @@ export default function MealApp() {
       }
     };
     
-    if (isPro || (Capacitor.getPlatform() === 'web' && credits.plan > 0)) {
-        generationLogic();
-    } else {
-        showSevenDayPlanAds(generationLogic);
-    }
+    showSevenDayPlanAds(generationLogic);
   };
 
   const handleFinalGeneration = async () => {
@@ -470,15 +452,15 @@ export default function MealApp() {
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    if (isPro) {
-        handleOpenPreferences(mood);
-    } else if (Capacitor.getPlatform() === 'web') {
-        const currentCredits = getWebUserCredits();
-        const hasCredits = mood === '7-day-plan' ? currentCredits.plan > 0 : currentCredits.single > 0;
-        if (hasCredits) {
+     if (Capacitor.getPlatform() === 'web') {
+        if (mood === '7-day-plan') {
+            setIsGoProModalOpen(true);
+            return;
+        }
+        if (getWebUserCredits().single > 0) {
             handleOpenPreferences(mood);
         } else {
-            setIsPaywallModalOpen(true);
+            setIsGoProModalOpen(true);
         }
     } else if (mood === '7-day-plan') {
         showSevenDayPlanAds(() => handleOpenPreferences('7-day-plan'));
@@ -710,57 +692,18 @@ export default function MealApp() {
     }
   };
 
-
-  const openMealDetail = (meal: MealSuggestion) => {
-    setActiveMeal(meal);
-    setIsMealDetailOpen(true);
-  }
-
   const getGenerateButtonText = () => {
     if (loadingMood) {
         return 'Generating...';
     }
-    if (isPro) {
-        return 'Generate';
-    }
     if (Capacitor.getPlatform() === 'web') {
-        const currentCredits = getWebUserCredits();
-        const hasCredits = selectedMood === '7-day-plan' ? currentCredits.plan > 0 : currentCredits.single > 0;
-        return hasCredits ? 'Generate' : 'Get More';
+        const hasCredits = getWebUserCredits().single > 0;
+        return hasCredits ? 'Generate' : 'Get the App';
     }
     if (selectedMood === '7-day-plan') {
         return 'Watch 2 Ads to Generate';
     }
     return 'Watch an Ad to Generate';
-  };
-
-  const handlePurchase = async () => {
-    setIsPurchasing(true);
-    try {
-      const offerings = await getOfferings();
-      if (offerings && offerings.length > 0 && offerings[0].availablePackages.length > 0) {
-        const monthlyPackage = offerings[0].availablePackages.find(p => p.identifier === '$rc_monthly');
-        if (monthlyPackage) {
-            await makePurchase(monthlyPackage as PurchasesPackage);
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Purchase Unavailable',
-                description: 'Could not find a monthly subscription to purchase.'
-            });
-        }
-      } else {
-        toast({
-            variant: 'destructive',
-            title: 'Purchase Unavailable',
-            description: 'Could not find a subscription to purchase.'
-        });
-      }
-    }
-    finally {
-        setIsPurchasing(false);
-        setIsGoProModalOpen(false);
-    }
   };
 
   const MoodCard = ({ mood, icon, title, description, onClick }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void }) => {
@@ -771,7 +714,6 @@ export default function MealApp() {
     }, []);
 
     if (!isClient) {
-        // Render a placeholder or loading state on the server to prevent hydration mismatch
         return (
             <Card className="relative flex flex-col text-center h-full">
                 <CardHeader className="p-6">
@@ -781,9 +723,7 @@ export default function MealApp() {
                     <CardTitle>{title}</CardTitle>
                     <CardDescription>{description}</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1 p-6 pt-0">
-                  <Skeleton className="h-6 w-24 mx-auto" />
-                </CardContent>
+                <CardContent className="flex-1 p-6 pt-0" />
                 <CardFooter className="p-6 pt-0">
                      <Button className="w-full" disabled>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -796,27 +736,22 @@ export default function MealApp() {
 
     const isWeb = Capacitor.getPlatform() === 'web';
     const isPlan = mood === '7-day-plan';
-    const currentCredits = getWebUserCredits();
-    const webHasCredits = isPlan ? currentCredits.plan > 0 : currentCredits.single > 0;
+    const webHasCredits = isWeb && getWebUserCredits().single > 0;
     
     let costText = 'Watch an ad';
     if (isPlan) costText = 'Watch 2 ads';
-    
-    if (isWeb) {
-        if (webHasCredits) {
-            costText = `${isPlan ? currentCredits.plan : currentCredits.single} left`;
-        } else {
-            costText = 'Purchase';
-        }
+
+    if(isWeb && isPlan) {
+        costText = "App Only"
+    } else if (isWeb && !isPlan) {
+        costText = webHasCredits ? `${getWebUserCredits().single} Free Left` : 'Get the App'
     }
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-            {!isPro && (
-                <Badge variant={(isPlan || (isWeb && !webHasCredits)) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
-                    {costText}
-                </Badge>
-            )}
+            <Badge variant={isPlan ? 'destructive' : (isWeb && !webHasCredits) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+                {costText}
+            </Badge>
             <CardHeader className="p-6">
                 <div className="mx-auto w-24 h-24 mb-2">
                     {icon}
@@ -824,17 +759,11 @@ export default function MealApp() {
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 p-6 pt-0">
-                 {!isPro && (
-                    <Button variant="link" size="sm" onClick={() => isWeb ? setIsPaywallModalOpen(true) : setIsGoProModalOpen(true)}>
-                        {isWeb ? 'or Purchase More' : 'or Go Pro'}
-                    </Button>
-                )}
-            </CardContent>
+            <CardContent className="flex-1 p-6 pt-0" />
             <CardFooter className="p-6 pt-0">
                  <Button className="w-full" onClick={onClick}>
-                    {isPro ? <Sparkles className="mr-2 h-4 w-4" /> : (isWeb && webHasCredits) ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
-                    {isPro ? 'Generate' : (isWeb ? (webHasCredits ? 'Generate' : 'Get More') : (isPlan ? 'Watch Ads' : 'Watch Ad'))}
+                    {isWeb && !webHasCredits && !isPlan ? <Download className="mr-2 h-4 w-4" /> : isWeb ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                    {isWeb ? (isPlan ? 'Get the App' : webHasCredits ? 'Generate' : 'Get the App') : (isPlan ? 'Watch Ads' : 'Watch Ad')}
                  </Button>
             </CardFooter>
         </Card>
@@ -859,12 +788,12 @@ export default function MealApp() {
     },
     {
       title: "Generate Single Meals",
-      description: "Choose one of these cards to get single meal ideas. Free users watch a short ad to generate recipes.",
+      description: "Choose one of these cards to get single meal ideas. Web users get one free. Mobile users can watch a short ad to generate recipes.",
       targetId: "tutorial-step-4",
     },
     {
       title: "Get a 7-Day Plan",
-      description: "Generate a full week's meal plan. Free users watch two short rewarded ads to unlock.",
+      description: "Generate a full week's meal plan. This feature is available on our mobile app, where free users watch two short rewarded ads to unlock.",
       targetId: "tutorial-step-5",
     },
     {
@@ -903,9 +832,8 @@ export default function MealApp() {
   return (
     <>
       <div className="container relative py-12 md:py-20">
-        <PaywallModal isOpen={isPaywallModalOpen} onClose={() => setIsPaywallModalOpen(false)} addCredits={addCredits} />
-        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} onPurchase={handlePurchase} isLoading={isPurchasing} />
-
+        <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} />
+        
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
             {heading}
