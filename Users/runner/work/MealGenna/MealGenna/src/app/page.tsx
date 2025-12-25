@@ -186,6 +186,7 @@ export default function MealApp() {
       setSessionItems([]);
       setScanStep('scanning');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCameraDialogOpen]);
 
   useEffect(() => {
@@ -288,7 +289,7 @@ export default function MealApp() {
         const result = await generateMealPlan(input);
         setGeneratedPlan(result);
       } else {
-        const input: SuggestMealInput = { pantryItems: items || pantryItems, mealTime: preferences.mealTime, mood: (selectedMood === 'from pantry' ? 'Quick' : (selectedMood as Mood)), diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
+        const input: SuggestMealInput = { pantryItems: items || pantryItems, mealTime: preferences.mealTime, mood: (loadingMood === 'from pantry' ? 'Quick' : (selectedMood as Mood)), diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
       }
@@ -333,7 +334,7 @@ export default function MealApp() {
     }
   };
 
-  const handleOpenPreferences = (mood: Mood | '7-day-plan') => {
+  const handleOpenPreferences = (mood: Mood | '7-day-plan' | 'from pantry') => {
     setSelectedMood(mood);
     setIsPreferencesOpen(true);
   };
@@ -345,20 +346,20 @@ export default function MealApp() {
     if (Capacitor.getPlatform() === 'web') {
       if (user) {
         if ((credits?.[generationType] ?? 0) > 0) {
-          setIsPreferencesOpen(true);
+          handleOpenPreferences(mood);
         } else {
           setIsPaywallOpen(true);
         }
       } else {
         if (hasFreebie) {
-          setIsPreferencesOpen(true);
+          handleOpenPreferences(mood);
         } else {
           setIsLimitModalOpen(true);
         }
       }
     } else {
       // On mobile, always open preferences, ads are shown later.
-      setIsPreferencesOpen(true);
+      handleOpenPreferences(mood);
     }
   };
 
@@ -551,9 +552,9 @@ export default function MealApp() {
   return (
     <>
       <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
-      <LimitModal 
-        isOpen={isLimitModalOpen} 
-        onClose={() => setIsLimitModalOpen(false)} 
+      <LimitModal
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
         onSwitchToPurchase={() => {
           setIsLimitModalOpen(false);
           setIsPaywallOpen(true);
@@ -569,7 +570,7 @@ export default function MealApp() {
            <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
                 <Card className="relative flex flex-col text-center h-full">
                     <CardHeader className="p-6"><div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden"><Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" /></div><CardTitle>Use My Ingredients</CardTitle><CardDescription>Scan your pantry or fridge to get a meal idea from what you have.</CardDescription></CardHeader>
-                    <CardContent className="flex-1 p-6 pt-0" /><CardFooter className="p-6 pt-0"><DialogTrigger asChild><Button className="w-full"><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></DialogTrigger></CardFooter>
+                    <CardContent className="flex-1 p-6 pt-0" /><CardFooter className="p-6 pt-0"><DialogTrigger asChild><Button className="w-full" onClick={() => handleOpenPreferences('from pantry')}><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></DialogTrigger></CardFooter>
                 </Card>
               <DialogContent className="max-w-3xl">
                 {scanStep === 'scanning' && ( <>
@@ -588,10 +589,10 @@ export default function MealApp() {
                 {scanStep === 'selectingMeal' && ( <>
                     <DialogHeader><DialogTitle>What are you in the mood for?</DialogTitle><DialogDescription>Select a meal type to get suggestions based on your {sessionItems.length} scanned items.</DialogDescription></DialogHeader>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-8">
-                        <MealTypeButton mealType="breakfast" icon={<Salad className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'breakfast' })); handleFinalGeneration(sessionItems)}} />
-                        <MealTypeButton mealType="lunch" icon={<Sandwich className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'lunch' })); handleFinalGeneration(sessionItems)}} />
-                        <MealTypeButton mealType="dinner" icon={<Drumstick className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'dinner' })); handleFinalGeneration(sessionItems)}} />
-                        <MealTypeButton mealType="dessert" icon={<Cake className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'dessert' })); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="breakfast" icon={<Salad className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'breakfast'})); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="lunch" icon={<Sandwich className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'lunch'})); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="dinner" icon={<Drumstick className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'dinner'})); handleFinalGeneration(sessionItems)}} />
+                        <MealTypeButton mealType="dessert" icon={<Cake className="h-8 w-8 mx-auto" />} onClick={() => { setPreferences(prev => ({...prev, mealTime: 'dessert'})); handleFinalGeneration(sessionItems)}} />
                     </div>
                     <DialogFooter><Button variant="outline" onClick={() => setScanStep('scanning')}>Back to Scanning</Button></DialogFooter>
                 </> )}
@@ -602,7 +603,7 @@ export default function MealApp() {
              <MoodCard mood="Quick" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Quick-meal.png" alt="Quick Meal" layout="fill" objectFit="cover" data-ai-hint="fast food" /></div>} title="Something Quick" description="Short on time? Get delicious meal ideas in seconds." onClick={() => handleMoodOrPlanClick('Quick')} />
            </div>
            <div className="lg:col-span-1">
-             <MoodCard mood="Healthy" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Healthy-meal.png" alt="Healthy Meal" layout="fill" objectFit="cover" data-ai-hint="healthy salad"/></div>} title="Something Healthy" description="Nourish your body with a wholesome and tasty recipe." onClick={() => handleMoodOrPlanClick('Healthy')} />
+             <MoodCard mood="Healthy" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Healthy-meal.png" alt="Healthy Meal" layout="fill" objectFit="cover" data-ai-hint="healthy salad" /></div>} title="Something Healthy" description="Nourish your body with a wholesome and tasty recipe." onClick={() => handleMoodOrPlanClick('Healthy')} />
             </div>
             <div className="lg:col-span-1">
              <MoodCard mood="Hearty" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Hearty-meal.png" alt="Hearty Meal" layout="fill" objectFit="cover" data-ai-hint="steak dinner" /></div>} title="Something Hearty" description="Craving comfort food? Find a satisfying and filling meal." onClick={() => handleMoodOrPlanClick('Hearty')} />
@@ -674,10 +675,10 @@ export default function MealApp() {
         <Dialog open={isGroceryListOpen} onOpenChange={setIsGroceryListOpen}>
             <DialogContent>
                 <DialogHeader><DialogTitle>Grocery List: {activeMeal?.title}</DialogTitle><DialogDescription>We've compared the recipe with your pantry. Here's what you need.</DialogDescription></DialogHeader>
-                 {isFetchingGroceryList ? ( <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> ) : ( <div className="space-y-2 py-4 max-h-60 overflow-y-auto">{groceryListItems.length > 0 ? groceryListItems.map((item, index) => ( <div key={index} className="flex items-center space-x-2"><Checkbox id={`item-${index}`} checked={checkedGroceryItems.has(item)} onCheckedChange={() => handleCheckboxChange(item)} /><Label htmlFor={`item-${index}`} className="text-sm">{item}</Label></div> )) : ( <p className="text-sm text-muted-foreground text-center">You have all the ingredients!</p> )}</div> )}
+                 {isFetchingGroceryList ? ( <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> ) : ( <div className="space-y-2 py-4 max-h-60 overflow-y-auto">{groceryListItems.length > 0 ? groceryListItems.map((item, index) => ( <div key={index} className="flex items-center space-x-2"><Checkbox id={`item-${index}`} checked={checkedGroceryItems.has(item)} onCheckedChange={()={() => handleCheckboxChange(item)}} /><Label htmlFor={`item-${index}`} className="text-sm">{item}</Label></div> )) : ( <p className="text-sm text-muted-foreground text-center">You have all the ingredients!</p> )}</div> )}
                 <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
-                    <DropdownMenu><DropdownMenuTrigger asChild><Button className="w-full sm:w-auto" disabled={isFetchingGroceryList}><ShoppingCart className="mr-2 h-4 w-4" />Shop Ingredients Online<ChevronDown className="ml-2 h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => handleShopOnline('walmart')}>Walmart</DropdownMenuItem><DropdownMenuItem onClick={() => handleShopOnline('amazon')}>Amazon Fresh</DropdownMenuItem><DropdownMenuItem onClick={() => handleShopOnline('instacart')}>Instacart</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-                    <Button onClick={() => setIsGroceryListOpen(false)} variant="secondary" className="w-full smw-auto">Close</Button>
+                    <DropdownMenu><DropdownMenuTrigger asChild><Button className="w-full sm:w-auto" disabled={isFetchingGroceryList}><ShoppingCart className="mr-2 h-4 w-4" />Shop Ingredients Online<ChevronDown className="ml-2 h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={()={() => handleShopOnline('walmart')}>Walmart</DropdownMenuItem><DropdownMenuItem onClick={()={() => handleShopOnline('amazon')}>Amazon Fresh</DropdownMenuItem><DropdownMenuItem onClick={()={() => handleShopOnline('instacart')}>Instacart</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                    <Button onClick={()={() => setIsGroceryListOpen(false)} variant="secondary" className="w-full sm:w-auto">Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -686,8 +687,8 @@ export default function MealApp() {
             <DialogContent>
                 <DialogHeader><DialogTitle>{tutorialContent[tutorialStep].title}</DialogTitle><DialogDescription>{tutorialContent[tutorialStep].description}</DialogDescription></DialogHeader>
                 <DialogFooter className="justify-between">
-                    <div>{tutorialStep > 0 && ( <Button variant="outline" onClick={() => setTutorialStep(tutorialStep - 1)}>Back</Button> )}</div>
-                    <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsTutorialOpen(false)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setIsTutorialOpen(false)}>Finish</Button> )}</div>
+                    <div>{tutorialStep > 0 && ( <Button variant="outline" onClick={()={() => setTutorialStep(tutorialStep - 1)}>Back</Button> )}</div>
+                    <div className="flex gap-2"><Button variant="secondary" onClick={()={() => setIsTutorialOpen(false)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={()={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setIsTutorialOpen(false)}>Finish</Button> )}</div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
