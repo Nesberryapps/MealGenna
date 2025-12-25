@@ -121,7 +121,6 @@ export default function MealApp() {
   useEffect(() => {
     setIsClient(true);
     
-    // This effect runs once on mount to check for a sign-in link
     const checkLink = async () => {
       if (window.location.href.includes('oobCode')) {
         const result = await verifySignInLink(window.location.href);
@@ -325,7 +324,7 @@ export default function MealApp() {
     setIsPreferencesOpen(false);
     const generationType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
   
-    if (Capacitor.getPlatform() === 'web') {
+    if (isClient && Capacitor.getPlatform() === 'web') {
       if (user) {
         // Logged-in web user
         const hasCredits = (credits?.[generationType] ?? 0) > 0;
@@ -351,7 +350,7 @@ export default function MealApp() {
           setIsLimitModalOpen(true);
         }
       }
-    } else {
+    } else if (isClient) {
       // Mobile user
       const adLogic = generationType === '7-day-plan' ? showSevenDayPlanAds : showWatchToGenerateAd;
       adLogic(() => handleGenerateMeal(items));
@@ -367,7 +366,7 @@ export default function MealApp() {
     setSelectedMood(mood);
     const generationType = mood === '7-day-plan' ? '7-day-plan' : 'single';
     
-    if (Capacitor.getPlatform() === 'web') {
+    if (isClient && Capacitor.getPlatform() === 'web') {
       if (user) {
         if ((credits?.[generationType] ?? 0) > 0) {
           handleOpenPreferences(mood);
@@ -381,7 +380,7 @@ export default function MealApp() {
           setIsLimitModalOpen(true);
         }
       }
-    } else {
+    } else if (isClient) {
       // On mobile, always open preferences, ads are shown later.
       handleOpenPreferences(mood);
     }
@@ -741,5 +740,7 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
 
     
