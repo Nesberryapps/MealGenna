@@ -51,3 +51,5 @@ export function GoProModal({ isOpen, onClose }: GoProModalProps) {
     </Dialog>
   );
 }
+
+    

@@ -356,6 +356,7 @@ export default function MealApp() {
   };
 
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
+    // THIS IS THE ENFORCEMENT POINT
     if (Capacitor.getPlatform() === 'web' && getWebUserCredits().single <= 0) {
         setIsGoProModalOpen(true);
         if (isCameraDialogOpen) setIsCameraDialogOpen(false);
@@ -405,6 +406,7 @@ export default function MealApp() {
 
 
   const handleGeneratePlan = async () => {
+    // THIS IS THE ENFORCEMENT POINT
     if (Capacitor.getPlatform() === 'web') {
         setIsGoProModalOpen(true);
         return;
@@ -447,6 +449,7 @@ export default function MealApp() {
     if (selectedMood === '7-day-plan') {
       await handleGeneratePlan();
     } else if (selectedMood) {
+      // The handleGenerateMeal function now contains the credit check
       await handleGenerateMeal(selectedMood, preferences.mealTime, pantryItems);
     }
   };
@@ -454,17 +457,17 @@ export default function MealApp() {
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
      if (Capacitor.getPlatform() === 'web') {
         if (mood === '7-day-plan') {
+            // Mobile-only feature, show modal immediately
             setIsGoProModalOpen(true);
             return;
         }
-        if (getWebUserCredits().single > 0) {
-            handleOpenPreferences(mood);
-        } else {
-            setIsGoProModalOpen(true);
-        }
+        // For single meals on web, proceed to preferences. The final check happens in handleGenerateMeal.
+        handleOpenPreferences(mood);
     } else if (mood === '7-day-plan') {
+        // On mobile, wrap 7-day plan in double ad wall
         showSevenDayPlanAds(() => handleOpenPreferences('7-day-plan'));
     } else {
+        // On mobile, wrap single meal in single ad wall
         showWatchToGenerateAd(() => handleOpenPreferences(mood));
     }
   };
@@ -698,6 +701,7 @@ export default function MealApp() {
     }
     if (Capacitor.getPlatform() === 'web') {
         const hasCredits = getWebUserCredits().single > 0;
+        if (selectedMood === '7-day-plan') return 'Get the App';
         return hasCredits ? 'Generate' : 'Get the App';
     }
     if (selectedMood === '7-day-plan') {
@@ -718,10 +722,10 @@ export default function MealApp() {
             <Card className="relative flex flex-col text-center h-full">
                 <CardHeader className="p-6">
                     <div className="mx-auto w-24 h-24 mb-2">
-                      {icon}
+                      <Skeleton className="w-full h-full rounded-full" />
                     </div>
-                    <CardTitle>{title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
+                    <CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle>
+                    <CardDescription><Skeleton className="h-4 w-full mx-auto" /></CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 p-6 pt-0" />
                 <CardFooter className="p-6 pt-0">
@@ -749,7 +753,7 @@ export default function MealApp() {
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-            <Badge variant={isPlan ? 'destructive' : (isWeb && !webHasCredits) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
+            <Badge variant={isPlan ? 'destructive' : (isWeb && !webHasCredits && !isPlan) ? 'destructive' : 'secondary'} className="absolute top-2 right-2">
                 {costText}
             </Badge>
             <CardHeader className="p-6">
@@ -762,7 +766,7 @@ export default function MealApp() {
             <CardContent className="flex-1 p-6 pt-0" />
             <CardFooter className="p-6 pt-0">
                  <Button className="w-full" onClick={onClick}>
-                    {isWeb && !webHasCredits && !isPlan ? <Download className="mr-2 h-4 w-4" /> : isWeb ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
+                    {isWeb && (!webHasCredits && !isPlan) ? <Download className="mr-2 h-4 w-4" /> : isWeb ? <Sparkles className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}
                     {isWeb ? (isPlan ? 'Get the App' : webHasCredits ? 'Generate' : 'Get the App') : (isPlan ? 'Watch Ads' : 'Watch Ad')}
                  </Button>
             </CardFooter>
@@ -1459,3 +1463,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
