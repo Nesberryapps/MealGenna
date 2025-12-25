@@ -46,38 +46,40 @@ export default function AccountPage() {
   }
 
   useEffect(() => {
-    // This effect runs once on mount to check for a sign-in link
-    const checkLink = async () => {
-      if (window.location.href.includes('oobCode')) {
-        const result = await verifySignInLink(window.location.href);
-        if (result.success) {
-          toast({ title: 'Sign-in Successful!', description: result.message });
-        } else if (result.message !== 'Not a sign-in link.') {
-          toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+    if (isClient) {
+        // This effect runs once on mount to check for a sign-in link
+        const checkLink = async () => {
+        if (window.location.href.includes('oobCode')) {
+            const result = await verifySignInLink(window.location.href);
+            if (result.success) {
+            toast({ title: 'Sign-in Successful!', description: result.message });
+            } else if (result.message !== 'Not a sign-in link.') {
+            toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+            }
         }
-      }
-    };
-    checkLink();
-    
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment_success') === 'true') {
-      toast({
-        title: "Payment Successful!",
-        description: "Your credits have been added. It may take a moment for them to appear.",
-      });
-      refreshCredits();
-      window.history.replaceState({}, document.title, window.location.pathname);
+        };
+        checkLink();
+        
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('payment_success') === 'true') {
+        toast({
+            title: "Payment Successful!",
+            description: "Your credits have been added. It may take a moment for them to appear.",
+        });
+        refreshCredits();
+        window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient]);
 
   const isLoading = !isInitialized || (user && !premiumInitialized);
 
   const getStatusContent = () => {
-      if (isLoading) {
+      if (!isClient || isLoading) {
           return { text: 'Loading status...', badge: <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> };
       }
-      if (isClient && Capacitor.getPlatform() !== 'web') {
+      if (Capacitor.getPlatform() !== 'web') {
            return { text: 'You are on the Mobile plan.', badge: <Badge variant="secondary" className="text-base">Mobile</Badge> };
       }
       if (!user) {
