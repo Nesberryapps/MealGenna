@@ -515,8 +515,21 @@ export default function MealApp() {
     if (!isClient) {
       return (
           <Card className="relative flex flex-col text-center h-full">
-              <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center"><Skeleton className="w-full h-full rounded-full" /></div><CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle><CardDescription><Skeleton className="h-4 w-full mx-auto" /><Skeleton className="h-4 w-5/6 mx-auto mt-1" /></CardDescription></CardHeader>
-              <CardContent className="flex-1 p-6 pt-0" /><CardFooter className="p-6 pt-0"><Button className="w-full" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</Button></CardFooter>
+              <CardHeader className="p-6">
+                <div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">
+                  <Skeleton className="w-full h-full rounded-full" />
+                </div>
+                <CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle>
+                <div className="text-sm text-muted-foreground mt-1.5 space-y-1">
+                    <Skeleton className="h-4 w-full mx-auto" />
+                    <Skeleton className="h-4 w-5/6 mx-auto" />
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-6 pt-0" />
+              <CardFooter className="p-6 pt-0">
+                <Button className="w-full" disabled>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</Button>
+              </CardFooter>
           </Card>
       );
     }
@@ -750,3 +763,4 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
     
 
     
+
