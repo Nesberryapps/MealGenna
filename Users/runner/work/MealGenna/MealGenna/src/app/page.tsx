@@ -360,6 +360,7 @@ export default function MealApp() {
     if (Capacitor.getPlatform() === 'web' && getWebUserCredits().single <= 0) {
         setIsGoProModalOpen(true);
         if (isCameraDialogOpen) setIsCameraDialogOpen(false);
+        if (isPreferencesOpen) setIsPreferencesOpen(false);
         return;
     }
     
@@ -409,6 +410,7 @@ export default function MealApp() {
     // THIS IS THE ENFORCEMENT POINT
     if (Capacitor.getPlatform() === 'web') {
         setIsGoProModalOpen(true);
+        if (isPreferencesOpen) setIsPreferencesOpen(false);
         return;
     }
 
@@ -461,7 +463,11 @@ export default function MealApp() {
             setIsGoProModalOpen(true);
             return;
         }
-        // For single meals on web, proceed to preferences. The final check happens in handleGenerateMeal.
+        // For single meals on web, check credits before proceeding
+        if (getWebUserCredits().single <= 0) {
+            setIsGoProModalOpen(true);
+            return;
+        }
         handleOpenPreferences(mood);
     } else if (mood === '7-day-plan') {
         // On mobile, wrap 7-day plan in double ad wall

@@ -29,16 +29,16 @@ export const initializeAdMob = async () => {
   }
 };
 
-// 2. Show the Ad Every OTHER time (Ad -> Free -> Ad -> Free)
+// 2. Show a rewarded ad for a single meal generation
 export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
-  // A. Check Web Platform
+  // A. Check Web Platform - this should not be called on web, but as a safeguard.
   if (Capacitor.getPlatform() === 'web') {
     console.log("Web Mode: Skipping ad.");
     onRewardEarned();
     return;
   }
 
-  // C. If we are here, it's time to watch an ad!
+  // B. Show the ad
   const adId = Capacitor.getPlatform() === 'ios'
     ? 'ca-app-pub-6191158195654090/7842725756'
     : 'ca-app-pub-6191158195654090/2827553869';
