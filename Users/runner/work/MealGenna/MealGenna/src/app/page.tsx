@@ -12,7 +12,7 @@ import { Sparkles, Camera, ScanLine, Download, ClipboardList, ShoppingCart, Chev
 import Image from 'next/image';
 import { analyzePantry, AnalyzePantryOutput } from '@/ai/flows/analyze-pantry-flow';
 import { suggestMeals, SuggestMealInput } from '@/ai/flows/suggest-meal-flow';
-import { generateMealPlan, GenerateMealPlanInput } from '@/ai_flows/generate-meal-plan-flow';
+import { generateMealPlan, GenerateMealPlanInput } from '@/ai/flows/generate-meal-plan-flow';
 import { getMealDetails } from '@/ai/flows/get-meal-details-flow';
 import { getFullMealPlanDetails, DetailedMealPlan } from '@/ai/flows/get-full-meal-plan-details-flow';
 import { generateGroceryList } from '@/ai/flows/generate-grocery-list-flow';
@@ -358,6 +358,7 @@ export default function MealApp() {
   const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
     if (Capacitor.getPlatform() === 'web' && getWebUserCredits().single <= 0) {
         setIsGoProModalOpen(true);
+        if (isCameraDialogOpen) setIsCameraDialogOpen(false);
         return;
     }
     
@@ -404,7 +405,6 @@ export default function MealApp() {
 
 
   const handleGeneratePlan = async () => {
-    // For now, let's make 7-day plan mobile-only feature
     if (Capacitor.getPlatform() === 'web') {
         setIsGoProModalOpen(true);
         return;
