@@ -23,9 +23,9 @@ import {
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Daily Limit Reached</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">Free Generation Used</DialogTitle>
             <DialogDescription className="pt-2 text-base">
-              You've used your free meal generation for today.
+              You've used your free meal generation. Please purchase a pack to continue.
             </DialogDescription>
           </DialogHeader>
   
@@ -62,4 +62,3 @@ import {
       </Dialog>
     );
   }
-  

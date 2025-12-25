@@ -16,10 +16,8 @@ export async function POST(req: Request) {
         return new NextResponse('Unauthorized: No token provided', { status: 401 });
     }
 
-    // Verify the Firebase ID token
     try {
         const decodedToken = await admin.auth().verifyIdToken(token);
-        // Make sure the UID from the token matches the userId from the request body
         if (decodedToken.uid !== userId) {
             return new NextResponse('Unauthorized: Token does not match user', { status: 403 });
         }

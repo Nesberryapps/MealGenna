@@ -40,7 +40,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Google tag (gtag.js) */}
         <Script async src="https://www.googletagmanager.com/gtag/js?id=AW-17507715969" strategy="afterInteractive"></Script>
         <Script id="google-ads-tag" strategy="afterInteractive">
           {`
@@ -50,7 +49,6 @@ export default function RootLayout({
             gtag('config', 'AW-17507715969');
           `}
         </Script>
-        {/* Event snippet for Purchase conversion page */}
         <Script id="google-ads-conversion-snippet" strategy="afterInteractive">
           {`
             function gtag_report_conversion(url, enhanced_conversion_data) {
@@ -70,7 +68,6 @@ export default function RootLayout({
           `}
         </Script>
         <meta name="google-adsense-account" content="ca-pub-6191158195654090" />
-        {/* Google Tag Manager */}
         <Script id="google-tag-manager" strategy="afterInteractive">
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -80,7 +77,6 @@ export default function RootLayout({
             })(window,document,'script','dataLayer','GTM-WDJBSQ72');
           `}
         </Script>
-        {/* End Google Tag Manager */}
         
         <Script 
           async 
@@ -92,10 +88,8 @@ export default function RootLayout({
         <Script src="https://js.stripe.com/v3/" strategy="lazyOnload" />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
-        {/* Google Tag Manager (noscript) */}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WDJBSQ72"
         height="0" width="0" style={{display:"none", visibility:"hidden"}}></iframe></noscript>
-        {/* End Google Tag Manager (noscript) */}
         <AdMobInit />
 
         <ThemeProvider

@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/use-auth';
-import { usePremium } from '@/hooks/use-premium';
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';

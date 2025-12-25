@@ -9,14 +9,16 @@ export async function POST(req: Request) {
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
+    
+    // The oobCode (token) will be appended to this URL.
+    // The `continueUrl` should point to the page that will verify the link.
+    const actionCodeSettings = {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/`,
+        handleCodeInApp: true,
+    };
 
-    const { link } = await admin.auth().generateSignInWithEmailLink(email, {
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`,
-    });
+    const link = await admin.auth().generateSignInWithEmailLink(email, actionCodeSettings);
 
-    // In a real app, you'd email this link to the user.
-    // For this example, we're just sending it back.
-    // NOTE: This is NOT secure for production.
     console.log(`Generated sign-in link for ${email}: ${link}`);
 
     // In a real app, you would use a service like SendGrid, Resend, etc.
@@ -28,7 +30,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Error generating sign-in link:', error);
-    // Hide detailed error messages in production
     return NextResponse.json({ error: 'Could not generate sign-in link.' }, { status: 500 });
   }
 }

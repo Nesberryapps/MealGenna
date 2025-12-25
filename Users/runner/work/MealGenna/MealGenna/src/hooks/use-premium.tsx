@@ -32,14 +32,12 @@ export const PremiumProvider = ({ children }: { children: ReactNode }) => {
         if (snap.exists()) {
           setCredits(snap.data() as Credits);
         } else {
-          // If no document exists, user has the default free credit
           setCredits({ single: 1, '7-day-plan': 0 });
         }
         setIsInitialized(true);
       });
       return () => unsubscribe();
     } else if (authInitialized && !firebaseUser) {
-        // User is logged out, reset to default state for a guest
         setCredits({ single: 1, '7-day-plan': 0 });
         setIsInitialized(true);
     }
@@ -54,7 +52,7 @@ export const PremiumProvider = ({ children }: { children: ReactNode }) => {
 
     await runTransaction(db, async (transaction) => {
       const userCreditsSnap = await transaction.get(creditsRef);
-      let currentCredits: Credits = { single: 1, '7-day-plan': 0 }; // Default assumption
+      let currentCredits: Credits = { single: 1, '7-day-plan': 0 };
 
       if (userCreditsSnap.exists()) {
         currentCredits = userCreditsSnap.data() as Credits;

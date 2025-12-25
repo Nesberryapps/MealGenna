@@ -22,7 +22,6 @@ export default function AccountPage() {
   const [email, setEmail] = useState('');
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
-  // Guard against running server-dependent logic on the client before hydration
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 

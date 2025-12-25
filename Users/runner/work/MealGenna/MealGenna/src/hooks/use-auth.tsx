@@ -27,10 +27,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const auth = getAuth(app);
   
-  // Handle magic link verification
   const verifyTokenAndSignIn = useCallback(async () => {
       const url = window.location.href;
-      // Use a regex to avoid including other query params
+      
       const tokenMatch = url.match(/token=([^&]+)/);
       const token = tokenMatch ? tokenMatch[1] : null;
 
@@ -50,10 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             throw new Error(data.error || 'Invalid or expired sign-in link.');
           }
 
-          // Sign in with the custom token from the server
           await signInWithCustomToken(auth, data.customToken);
 
-          // The onAuthStateChanged listener below will handle setting the user state.
           toast({
             title: 'Sign-in Successful!',
             description: `Welcome back, ${data.email}!`,
@@ -66,14 +63,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         } finally {
           setIsSigningIn(false);
-          // Clean up the URL
           const cleanUrl = window.location.href.split('?')[0];
           window.history.replaceState({}, document.title, cleanUrl);
         }
       }
   }, [auth, toast]);
 
-  // Listener for Firebase Auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
@@ -87,9 +82,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // On initial load, check for a recovery token
   useEffect(() => {
-    verifyTokenAndSignIn();
+    if (document.readyState === 'complete') {
+        verifyTokenAndSignIn();
+    } else {
+        window.addEventListener('load', () => verifyTokenAndSignIn(), { once: true });
+    }
   }, [verifyTokenAndSignIn]);
 
   const beginRecovery = async (email: string) => {

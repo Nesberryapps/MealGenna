@@ -35,7 +35,6 @@ export async function POST(req: Request) {
           const db = getFirestore();
           const userCreditsRef = db.collection('user_credits').doc(userId);
 
-          // Logic to add credits based on the purchased priceId
           await db.runTransaction(async (transaction) => {
             const userCreditsSnap = await transaction.get(userCreditsRef);
             let credits = { single: 0, '7-day-plan': 0 };
@@ -44,14 +43,13 @@ export async function POST(req: Request) {
               credits = userCreditsSnap.data() as typeof credits;
             }
 
-            // Price IDs should match what's in your Stripe dashboard
-            if (priceId === process.env.STRIPE_SINGLE_PACK_PRICE_ID) { 
+            if (priceId === process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID) { 
               credits.single += 5;
-            } else if (priceId === process.env.STRIPE_PLAN_PACK_PRICE_ID) {
+            } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID) {
               credits['7-day-plan'] += 1;
             } else {
               console.warn(`Webhook received for unhandled priceId: ${priceId}`);
-              return; // Don't proceed if the priceId is unknown
+              return;
             }
             
             transaction.set(userCreditsRef, credits, { merge: true });
