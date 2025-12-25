@@ -26,51 +26,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const { toast } = useToast();
   const auth = getAuth(app);
-  
+
   const verifyTokenAndSignIn = useCallback(async () => {
-      const url = window.location.href;
+    const url = window.location.href;
+    const isSignInLink = auth.isSignInWithEmailLink(url);
+    
+    if (isSignInLink) {
+      setIsSigningIn(true);
+      toast({ title: 'Verifying your sign-in link...' });
       
-      const tokenMatch = url.match(/token=([^&]+)/);
-      const token = tokenMatch ? tokenMatch[1] : null;
-
-      if (token) {
-        setIsSigningIn(true);
-        toast({ title: 'Verifying your sign-in link...' });
-        
-        try {
-          const response = await fetch('/api/account/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: url }),
-          });
-
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.error || 'Invalid or expired sign-in link.');
-          }
-
-          await signInWithCustomToken(auth, data.customToken);
-
-          toast({
-            title: 'Sign-in Successful!',
-            description: `Welcome back, ${data.email}!`,
-          });
-        } catch (error: any) {
-          toast({
-            variant: 'destructive',
-            title: 'Sign-in Failed',
-            description: error.message,
-          });
-        } finally {
-          setIsSigningIn(false);
-          const cleanUrl = window.location.href.split('?')[0];
-          window.history.replaceState({}, document.title, cleanUrl);
+      try {
+        let email = window.localStorage.getItem('emailForSignIn');
+        if (!email) {
+          // This can happen if the user opens the link on a different device.
+          // In a real app, you would ask the user for their email.
+          // For this example, we'll throw an error.
+          throw new Error('Email not found for sign-in. Please try signing in on the same device.');
         }
+
+        const response = await fetch('/api/account/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: url, email }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
+
+        await signInWithCustomToken(auth, data.customToken);
+        
+        toast({ title: 'Sign-in Successful!', description: `Welcome back, ${data.email}!` });
+        window.localStorage.removeItem('emailForSignIn');
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Sign-in Failed', description: error.message });
+      } finally {
+        setIsSigningIn(false);
+        const cleanUrl = window.location.href.split('?')[0];
+        window.history.replaceState({}, document.title, cleanUrl);
       }
+    } else {
+        if (!auth.currentUser) {
+          setIsInitialized(true);
+        }
+    }
   }, [auth, toast]);
 
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser && fbUser.email) {
         setUser({ email: fbUser.email });
@@ -79,16 +82,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsInitialized(true);
     });
-    return () => unsubscribe();
-  }, [auth]);
+    
+    verifyTokenAndSignIn();
 
-  useEffect(() => {
-    if (document.readyState === 'complete') {
-        verifyTokenAndSignIn();
-    } else {
-        window.addEventListener('load', () => verifyTokenAndSignIn(), { once: true });
-    }
-  }, [verifyTokenAndSignIn]);
+    return () => unsubscribeAuth();
+  }, [auth, verifyTokenAndSignIn]);
 
   const beginRecovery = async (email: string) => {
     setIsRecovering(true);
@@ -99,20 +97,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
-      }
-      toast({
-        title: 'Check your email!',
-        description: "We've sent a secure sign-in link to your email address.",
-      });
+      if (!response.ok) throw new Error(data.error || 'Something went wrong');
+
+      window.localStorage.setItem('emailForSignIn', email);
+      toast({ title: 'Check your email!', description: "We've sent a secure sign-in link to your email address." });
     } catch (error: any) {
-      console.error('Recovery error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Recovery Failed',
-        description: error.message,
-      });
+      toast({ variant: 'destructive', title: 'Recovery Failed', description: error.message });
     } finally {
       setIsRecovering(false);
     }
@@ -122,12 +112,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await auth.signOut();
     setUser(null);
     setFirebaseUser(null);
-    toast({
-      title: 'Signed Out',
-      description: 'You have been signed out.',
-    });
+    toast({ title: 'Signed Out', description: 'You have been signed out.' });
   };
-
+  
   const value = {
     user,
     firebaseUser,

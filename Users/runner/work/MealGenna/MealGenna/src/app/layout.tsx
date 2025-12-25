@@ -11,7 +11,7 @@ import Script from 'next/script';
 import type { Viewport } from 'next'
 import AdMobInit from "@/components/AdMobInit";
 import { AuthProvider } from "@/hooks/use-auth";
-import { Capacitor } from '@capacitor/core';
+import { PremiumProvider } from "@/hooks/use-premium";
 
 
 export const viewport: Viewport = {
@@ -84,7 +84,6 @@ export default function RootLayout({
           strategy="afterInteractive"
           data-ad-host-channel="DISABLE_AUTO_ADS"
         />
-        <Script src="https://js.stripe.com/v3/" strategy="lazyOnload" />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WDJBSQ72"
@@ -98,6 +97,7 @@ export default function RootLayout({
             disableTransitionOnChange
         >
           <AuthProvider>
+            <PremiumProvider>
               <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <div className="container flex h-14 items-center">
                     <Link href="/" className="mr-auto flex items-center">
@@ -122,11 +122,12 @@ export default function RootLayout({
                       <Link href="/blog" className="text-sm hover:underline">Blog</Link>
                       <Link href="/terms" className="text-sm hover:underline">Terms & Conditions</Link>
                       <Link href="/privacy" className="text-sm hover:underline">Privacy Policy</Link>
-                      <Link href="/contact" className="text-sm hover-underline">Contact Us</Link>
+                      <Link href="/contact" className="text-sm hover:underline">Contact Us</Link>
                   </nav>
                 </div>
               </footer>
               <Toaster />
+            </PremiumProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

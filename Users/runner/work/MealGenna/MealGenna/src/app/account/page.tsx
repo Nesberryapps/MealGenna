@@ -17,7 +17,7 @@ import { Capacitor } from '@capacitor/core';
 export default function AccountPage() {
   const { toast } = useToast();
   const { user, isInitialized, beginRecovery, signOut, isRecovering } = useAuth();
-  const { credits, isInitialized: creditsInitialized } = usePremium();
+  const { credits, isInitialized: premiumInitialized, refreshCredits } = usePremium();
   
   const [email, setEmail] = useState('');
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
@@ -35,7 +35,20 @@ export default function AccountPage() {
     setEmail('');
   };
 
-  const isLoading = !isInitialized || (user && !creditsInitialized);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') === 'true') {
+      toast({
+        title: "Payment Successful!",
+        description: "Your credits have been added. It may take a moment for them to appear.",
+      });
+      refreshCredits();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isLoading = !isInitialized || (user && !premiumInitialized);
 
   const getStatusContent = () => {
       if (isLoading) {

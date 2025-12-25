@@ -552,9 +552,9 @@ export default function MealApp() {
   return (
     <>
       <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
-      <LimitModal
-        isOpen={isLimitModalOpen}
-        onClose={() => setIsLimitModalOpen(false)}
+      <LimitModal 
+        isOpen={isLimitModalOpen} 
+        onClose={() => setIsLimitModalOpen(false)} 
         onSwitchToPurchase={() => {
           setIsLimitModalOpen(false);
           setIsPaywallOpen(true);
@@ -568,10 +568,13 @@ export default function MealApp() {
         
         <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
            <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
-                <Card className="relative flex flex-col text-center h-full">
-                    <CardHeader className="p-6"><div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden"><Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" /></div><CardTitle>Use My Ingredients</CardTitle><CardDescription>Scan your pantry or fridge to get a meal idea from what you have.</CardDescription></CardHeader>
-                    <CardContent className="flex-1 p-6 pt-0" /><CardFooter className="p-6 pt-0"><DialogTrigger asChild><Button className="w-full" onClick={() => handleOpenPreferences('from pantry')}><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></DialogTrigger></CardFooter>
-                </Card>
+              <DialogTrigger asChild>
+                  <Card className="relative flex flex-col text-center h-full cursor-pointer hover:bg-muted/50 transition-colors">
+                      <CardHeader className="p-6"><div className="relative mx-auto w-24 h-24 rounded-full overflow-hidden"><Image src="/landing-page-image.png" alt="Scan ingredients" layout="fill" objectFit="cover" data-ai-hint="food pantry" /></div><CardTitle>Use My Ingredients</CardTitle><CardDescription>Scan your pantry or fridge to get a meal idea from what you have.</CardDescription></CardHeader>
+                      <CardContent className="flex-1 p-6 pt-0" />
+                      <CardFooter className="p-6 pt-0"><Button className="w-full" variant="outline"><Camera className="mr-2 h-4 w-4" />Start Scanning</Button></CardFooter>
+                  </Card>
+              </DialogTrigger>
               <DialogContent className="max-w-3xl">
                 {scanStep === 'scanning' && ( <>
                     <DialogHeader><DialogTitle>Scan Your Pantry</DialogTitle><DialogDescription>Point your camera at ingredients and click "Analyze Image". Scan as many times as you need.</DialogDescription></DialogHeader>
@@ -583,7 +586,10 @@ export default function MealApp() {
                     <div className="my-4"><h4 className="font-semibold mb-2">Found Items ({sessionItems.length})</h4><div className="max-h-24 overflow-y-auto rounded-md border p-2 bg-muted/50">{sessionItems.length > 0 ? ( <ul className="space-y-1">{sessionItems.map((item, index) => <li key={index} className="text-sm text-muted-foreground">{item}</li>)}</ul> ) : ( <p className="text-sm text-center text-muted-foreground py-2">No items scanned yet.</p> )}</div></div>
                     <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
                         <Button onClick={handleCaptureAndAnalyze} disabled={isScanning || hasCameraPermission !== true}>{isScanning ? 'Analyzing...' : 'Analyze Image'}</Button>
-                        <div className="flex flex-col sm:flex-row gap-2"><Button onClick={handleProceedToMealSelection} disabled={sessionItems.length === 0}>Next: Choose Meal Type</Button><Button variant="outline" onClick={() => setIsCameraDialogOpen(false)}>Cancel</Button></div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                           <Button onClick={handleProceedToMealSelection} disabled={sessionItems.length === 0}>Next: Choose Meal Type</Button>
+                           <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                        </div>
                     </DialogFooter>
                 </> )}
                 {scanStep === 'selectingMeal' && ( <>
@@ -608,7 +614,7 @@ export default function MealApp() {
             <div className="lg:col-span-1">
              <MoodCard mood="Hearty" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Hearty-meal.png" alt="Hearty Meal" layout="fill" objectFit="cover" data-ai-hint="steak dinner" /></div>} title="Something Hearty" description="Craving comfort food? Find a satisfying and filling meal." onClick={() => handleMoodOrPlanClick('Hearty')} />
             </div>
-           <div className="lg:col-span-3">
+           <div className="md:col-span-2 lg:col-span-3">
               <MoodCard mood="7-day-plan" icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>} title="Generate a 7-Day Plan" description="Get a complete breakfast, lunch, and dinner plan for the week." onClick={() => handleMoodOrPlanClick('7-day-plan')} isPlan={true} />
            </div>
         </div>
@@ -675,10 +681,10 @@ export default function MealApp() {
         <Dialog open={isGroceryListOpen} onOpenChange={setIsGroceryListOpen}>
             <DialogContent>
                 <DialogHeader><DialogTitle>Grocery List: {activeMeal?.title}</DialogTitle><DialogDescription>We've compared the recipe with your pantry. Here's what you need.</DialogDescription></DialogHeader>
-                 {isFetchingGroceryList ? ( <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> ) : ( <div className="space-y-2 py-4 max-h-60 overflow-y-auto">{groceryListItems.length > 0 ? groceryListItems.map((item, index) => ( <div key={index} className="flex items-center space-x-2"><Checkbox id={`item-${index}`} checked={checkedGroceryItems.has(item)} onCheckedChange={()={() => handleCheckboxChange(item)}} /><Label htmlFor={`item-${index}`} className="text-sm">{item}</Label></div> )) : ( <p className="text-sm text-muted-foreground text-center">You have all the ingredients!</p> )}</div> )}
+                 {isFetchingGroceryList ? ( <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> ) : ( <div className="space-y-2 py-4 max-h-60 overflow-y-auto">{groceryListItems.length > 0 ? groceryListItems.map((item, index) => ( <div key={index} className="flex items-center space-x-2"><Checkbox id={`item-${index}`} checked={checkedGroceryItems.has(item)} onCheckedChange={() => handleCheckboxChange(item)} /><Label htmlFor={`item-${index}`} className="text-sm">{item}</Label></div> )) : ( <p className="text-sm text-muted-foreground text-center">You have all the ingredients!</p> )}</div> )}
                 <DialogFooter className="sm:justify-between gap-2 flex-col sm:flex-row">
-                    <DropdownMenu><DropdownMenuTrigger asChild><Button className="w-full sm:w-auto" disabled={isFetchingGroceryList}><ShoppingCart className="mr-2 h-4 w-4" />Shop Ingredients Online<ChevronDown className="ml-2 h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={()={() => handleShopOnline('walmart')}>Walmart</DropdownMenuItem><DropdownMenuItem onClick={()={() => handleShopOnline('amazon')}>Amazon Fresh</DropdownMenuItem><DropdownMenuItem onClick={()={() => handleShopOnline('instacart')}>Instacart</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-                    <Button onClick={()={() => setIsGroceryListOpen(false)} variant="secondary" className="w-full sm:w-auto">Close</Button>
+                    <DropdownMenu><DropdownMenuTrigger asChild><Button className="w-full sm:w-auto" disabled={isFetchingGroceryList}><ShoppingCart className="mr-2 h-4 w-4" />Shop Ingredients Online<ChevronDown className="ml-2 h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => handleShopOnline('walmart')}>Walmart</DropdownMenuItem><DropdownMenuItem onClick={() => handleShopOnline('amazon')}>Amazon Fresh</DropdownMenuItem><DropdownMenuItem onClick={() => handleShopOnline('instacart')}>Instacart</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                    <Button onClick={() => setIsGroceryListOpen(false)} variant="secondary" className="w-full sm:w-auto">Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -687,8 +693,8 @@ export default function MealApp() {
             <DialogContent>
                 <DialogHeader><DialogTitle>{tutorialContent[tutorialStep].title}</DialogTitle><DialogDescription>{tutorialContent[tutorialStep].description}</DialogDescription></DialogHeader>
                 <DialogFooter className="justify-between">
-                    <div>{tutorialStep > 0 && ( <Button variant="outline" onClick={()={() => setTutorialStep(tutorialStep - 1)}>Back</Button> )}</div>
-                    <div className="flex gap-2"><Button variant="secondary" onClick={()={() => setIsTutorialOpen(false)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={()={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setIsTutorialOpen(false)}>Finish</Button> )}</div>
+                    <div>{tutorialStep > 0 && ( <Button variant="outline" onClick={() => setTutorialStep(tutorialStep - 1)}>Back</Button> )}</div>
+                    <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsTutorialOpen(false)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setIsTutorialOpen(false)}>Finish</Button> )}</div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -718,5 +724,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-    
