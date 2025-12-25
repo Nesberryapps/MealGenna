@@ -32,4 +32,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Could not generate sign-in link.' }, { status: 500 });
   }
 }
-
