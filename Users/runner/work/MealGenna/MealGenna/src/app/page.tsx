@@ -115,6 +115,9 @@ export default function MealApp() {
 
   const { user, hasFreebie, useFreebie, verifySignInLink } = useAuth();
   const { credits, useCredit, isInitialized: premiumInitialized } = usePremium();
+
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
   
   useEffect(() => {
     // This effect runs once on mount to check for a sign-in link
@@ -506,8 +509,6 @@ export default function MealApp() {
   };
 
   const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
-    const [isClient, setIsClient] = useState(false);
-    useEffect(() => { setIsClient(true); }, []);
     
     if (!isClient || !premiumInitialized) {
       return (

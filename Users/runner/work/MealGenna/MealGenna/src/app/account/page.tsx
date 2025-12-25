@@ -16,7 +16,7 @@ import { Capacitor } from '@capacitor/core';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, beginRecovery, signOut, isRecovering } = useAuth();
+  const { user, isInitialized, beginRecovery, signOut, isRecovering, verifySignInLink } = useAuth();
   const { credits, isInitialized: premiumInitialized, refreshCredits } = usePremium();
   
   const [email, setEmail] = useState('');
@@ -46,6 +46,19 @@ export default function AccountPage() {
   }
 
   useEffect(() => {
+    // This effect runs once on mount to check for a sign-in link
+    const checkLink = async () => {
+      if (window.location.href.includes('oobCode')) {
+        const result = await verifySignInLink(window.location.href);
+        if (result.success) {
+          toast({ title: 'Sign-in Successful!', description: result.message });
+        } else if (result.message !== 'Not a sign-in link.') {
+          toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+        }
+      }
+    };
+    checkLink();
+    
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment_success') === 'true') {
       toast({
@@ -64,7 +77,7 @@ export default function AccountPage() {
       if (isLoading) {
           return { text: 'Loading status...', badge: <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> };
       }
-      if (Capacitor.getPlatform() !== 'web') {
+      if (isClient && Capacitor.getPlatform() !== 'web') {
            return { text: 'You are on the Mobile plan.', badge: <Badge variant="secondary" className="text-base">Mobile</Badge> };
       }
       if (!user) {
