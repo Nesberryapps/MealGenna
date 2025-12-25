@@ -92,7 +92,7 @@ export default function MealApp() {
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   
-  const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
+  const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | 'from pantry' | null>(null);
   const [preferences, setPreferences] = useState({
     mealTime: 'lunch',
     diet: 'none',
@@ -117,9 +117,10 @@ export default function MealApp() {
   const { credits, useCredit, isInitialized: premiumInitialized } = usePremium();
 
   const [isClient, setIsClient] = useState(false);
-  useEffect(() => { setIsClient(true); }, []);
   
   useEffect(() => {
+    setIsClient(true);
+    
     // This effect runs once on mount to check for a sign-in link
     const checkLink = async () => {
       if (window.location.href.includes('oobCode')) {
@@ -131,13 +132,8 @@ export default function MealApp() {
         }
       }
     };
-    if (isClient) {
-        checkLink();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient]);
-
-  useEffect(() => {
+    checkLink();
+    
     const date = new Date();
     const hour = date.getHours();
     let newHeading = "What's on the menu?";
@@ -197,6 +193,7 @@ export default function MealApp() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -744,3 +741,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
