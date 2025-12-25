@@ -33,6 +33,8 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PaywallModal } from '@/components/PaywallModal';
+
 
 // Define gtag function for TypeScript and PWA install prompt types
 declare global {
@@ -86,6 +88,8 @@ export default function MealApp() {
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+
   // Preferences state
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
   const [preferences, setPreferences] = useState({
@@ -327,100 +331,65 @@ export default function MealApp() {
     return undefined;
   };
 
-  const handleGenerateMeal = (mood: Mood | 'from pantry', mealTime: string, items = pantryItems) => {
+  const handleGenerate = async (type: 'single' | '7-day-plan' | 'from pantry', items?: string[]) => {
+    const isWeb = Capacitor.getPlatform() === 'web';
+    
+    if (isWeb) {
+      setIsPaywallOpen(true);
+      return;
+    }
+
     const generationLogic = async () => {
-      setLoadingMood(mood);
-      setGeneratedMeals(null);
-      setIsMealSuggestionsOpen(true);
+      setLoadingMood(type);
+      if (type === '7-day-plan') { setGeneratedPlan(null); setDetailedPlan(null); setIsMealPlanOpen(true); } 
+      else { setGeneratedMeals(null); setIsMealSuggestionsOpen(true); }
       if (isCameraDialogOpen) setIsCameraDialogOpen(false);
 
-      const input: SuggestMealInput = {
-        pantryItems: items,
-        mealTime: mealTime,
-        mood: mood === 'from pantry' ? 'Quick' : mood,
-        diet: preferences.diet !== 'none' ? preferences.diet : undefined,
-        cuisine: getCuisinePreference(),
-        customRequest: preferences.customRequest || undefined
-      };
-
       try {
-        const result = await suggestMeals(input);
-        setGeneratedMeals(result);
+        if (type === '7-day-plan') {
+          const input: GenerateMealPlanInput = { pantryItems, diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
+          const result = await generateMealPlan(input);
+          setGeneratedPlan(result);
+        } else {
+          const input: SuggestMealInput = { pantryItems: items || pantryItems, mealTime: preferences.mealTime, mood: type === 'from pantry' ? 'Quick' : (selectedMood as Mood), diet: preferences.diet !== 'none' ? preferences.diet : undefined, cuisine: getCuisinePreference(), customRequest: preferences.customRequest || undefined };
+          const result = await suggestMeals(input);
+          setGeneratedMeals(result);
+        }
       } catch (error) {
-          console.error('Error generating meal:', error);
-          toast({
-              variant: 'destructive',
-              title: 'Generation Failed',
-              description: 'Could not generate meal ideas. Please try again.',
-          });
-          setIsMealSuggestionsOpen(false);
+          toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate ideas. Please try again.' });
+          if (type === '7-day-plan') setIsMealPlanOpen(false);
+          else setIsMealSuggestionsOpen(false);
       } finally {
           setLoadingMood(null);
       }
     };
-    
-    if (Capacitor.getPlatform() === 'web') {
-      generationLogic();
+
+    if (type === '7-day-plan') {
+      showSevenDayPlanAds(generationLogic);
     } else {
       showWatchToGenerateAd(generationLogic);
     }
   };
 
 
-  const handleGeneratePlan = async () => {
-    const generationLogic = async () => {
-      setLoadingMood('7-day-plan');
-      setGeneratedPlan(null);
-      setDetailedPlan(null);
-      setIsMealPlanOpen(true);
-
-      const input: GenerateMealPlanInput = {
-        pantryItems,
-        diet: preferences.diet !== 'none' ? preferences.diet : undefined,
-        cuisine: getCuisinePreference(),
-        customRequest: preferences.customRequest || undefined,
-      };
-
-      try {
-        const result = await generateMealPlan(input);
-        setGeneratedPlan(result);
-      } catch (error) {
-          console.error('Error generating meal plan:', error);
-          toast({
-              variant: 'destructive',
-              title: 'Plan Generation Failed',
-              description: 'Could not generate the 7-day plan. Please try again.',
-          });
-          setIsMealPlanOpen(false);
-      } finally {
-          setLoadingMood(null);
-      }
-    };
-    
-    if (Capacitor.getPlatform() === 'web') {
-        generationLogic();
-    } else {
-        showSevenDayPlanAds(generationLogic);
-    }
-  };
-
   const handleFinalGeneration = async () => {
     setIsPreferencesOpen(false);
+    
     if (selectedMood === '7-day-plan') {
-      await handleGeneratePlan();
+      await handleGenerate('7-day-plan');
     } else if (selectedMood) {
-      await handleGenerateMeal(selectedMood, preferences.mealTime, pantryItems);
+      await handleGenerate('single');
     }
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    if (Capacitor.getPlatform() === 'web') {
-      handleOpenPreferences(mood);
-    } else if (mood === '7-day-plan') {
-        showSevenDayPlanAds(() => handleOpenPreferences('7-day-plan'));
-    } else {
-        showWatchToGenerateAd(() => handleOpenPreferences(mood));
+    const isWeb = Capacitor.getPlatform() === 'web';
+
+    if (isWeb) {
+      setIsPaywallOpen(true);
+      return;
     }
+    handleOpenPreferences(mood);
   };
 
 
@@ -779,6 +748,7 @@ export default function MealApp() {
 
   return (
     <>
+      <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
       <div className="container relative py-12 md:py-20">
         <section className="mx-auto flex max-w-3xl flex-col items-center text-center gap-4 mb-12">
           <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
@@ -891,22 +861,22 @@ export default function MealApp() {
                            <MealTypeButton
                                 mealType="breakfast"
                                 icon={<Salad className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'breakfast', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                            <MealTypeButton
                                 mealType="lunch"
                                 icon={<Sandwich className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'lunch', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                            <MealTypeButton
                                 mealType="dinner"
                                 icon={<Drumstick className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'dinner', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                            <MealTypeButton
                                 mealType="dessert"
                                 icon={<Cake className="h-8 w-8 mx-auto" />}
-                                onClick={() => handleGenerateMeal('from pantry', 'dessert', sessionItems)}
+                                onClick={() => handleGenerate('from pantry', sessionItems)}
                            />
                         </div>
                         <DialogFooter>
@@ -940,7 +910,7 @@ export default function MealApp() {
               description="Craving comfort food? Find a satisfying and filling meal."
               onClick={() => handleMoodOrPlanClick('Hearty')}
             />
-           <div id="tutorial-step-5" className="lg:col-span-2">
+           <div id="tutorial-step-5" className="lg:col-span-3">
               <MoodCard 
                 mood="7-day-plan" 
                 icon={<div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto"><Image src="/Explore-flavors.png" alt="Meal Ideas" layout="fill" objectFit="cover" data-ai-hint="meal prep" /></div>}
