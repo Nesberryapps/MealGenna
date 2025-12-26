@@ -91,7 +91,7 @@ export default function MealApp() {
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   
-  const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | null>(null);
+  const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | 'from pantry' | null>(null);
   const [preferences, setPreferences] = useState({
     mealTime: 'lunch',
     diet: 'none',
@@ -113,84 +113,89 @@ export default function MealApp() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized } = useAuth();
+
+  const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
-    // This effect runs once on mount to check for a sign-in link
-    const checkLink = async () => {
-      if (window.location.href.includes('oobCode')) {
-        const result = await verifySignInLink(window.location.href);
-        if (result.success) {
-          toast({ title: 'Sign-in Successful!', description: result.message });
-        } else if (result.message !== 'Not a sign-in link.') {
-          toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
-        }
-      }
-    };
-    checkLink();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setIsClient(true);
   }, []);
 
   useEffect(() => {
-    const date = new Date();
-    const hour = date.getHours();
-    let newHeading = "What's on the menu?";
-    let newMealTime = 'lunch';
-
-    if (hour < 12) {
-      newHeading = "Good morning! What's for breakfast?";
-      newMealTime = 'breakfast';
-    } else if (hour < 18) {
-      newHeading = "Good afternoon! What's for lunch?";
-      newMealTime = 'lunch';
-    } else {
-      newHeading = "Good evening! What's for dinner?";
-      newMealTime = 'dinner';
-    }
-    
-    setHeading(newHeading);
-    setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
-
-    const handleBeforeInstallPrompt = (event: any) => {
-      event.preventDefault();
-      setInstallPrompt(event);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsAppInstalled(true);
-    }
-    
-    if (Capacitor.isNativePlatform()) {
-      registerNotifications().then(success => {
-        if (success) {
-          scheduleDailyNotifications();
+    if (isClient) {
+      const checkLink = async () => {
+        if (window.location.href.includes('oobCode')) {
+          const result = await verifySignInLink(window.location.href);
+          if (result.success) {
+            toast({ title: 'Sign-in Successful!', description: result.message });
+          } else if (result.message !== 'Not a sign-in link.') {
+            toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
+          }
         }
-      });
+      };
+      checkLink();
+      
+      const date = new Date();
+      const hour = date.getHours();
+      let newHeading = "What's on the menu?";
+      let newMealTime = 'lunch';
+
+      if (hour < 12) {
+        newHeading = "Good morning! What's for breakfast?";
+        newMealTime = 'breakfast';
+      } else if (hour < 18) {
+        newHeading = "Good afternoon! What's for lunch?";
+        newMealTime = 'lunch';
+      } else {
+        newHeading = "Good evening! What's for dinner?";
+        newMealTime = 'dinner';
+      }
+      
+      setHeading(newHeading);
+      setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
+
+      const handleBeforeInstallPrompt = (event: any) => {
+        event.preventDefault();
+        setInstallPrompt(event);
+      };
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setIsAppInstalled(true);
+      }
+      
+      if (Capacitor.isNativePlatform()) {
+        registerNotifications().then(success => {
+          if (success) {
+            scheduleDailyNotifications();
+          }
+        });
+      }
+
+      const initAnalytics = async () => {
+          if (Capacitor.getPlatform() === 'web') return;
+          try {
+            await FirebaseAnalytics.setEnabled({ enabled: true });
+            await FirebaseAnalytics.logEvent({
+              name: "screen_view",
+              params: {
+                screen_name: "home",
+              }
+            });
+          } catch (error) {
+            console.error("Error initializing Firebase Analytics", error);
+          }
+      };
+
+      initAnalytics();
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
     }
 
-    const initAnalytics = async () => {
-        if (Capacitor.getPlatform() === 'web') return;
-        try {
-          await FirebaseAnalytics.setEnabled({ enabled: true });
-          await FirebaseAnalytics.logEvent({
-            name: "screen_view",
-            params: {
-              screen_name: "home",
-            }
-          });
-        } catch (error) {
-          console.error("Error initializing Firebase Analytics", error);
-        }
-    };
-
-    initAnalytics();
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient]);
 
   useEffect(() => {
     if (isCameraDialogOpen) {
@@ -321,7 +326,7 @@ export default function MealApp() {
     setIsPreferencesOpen(false);
     const generationType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
   
-    if (Capacitor.getPlatform() === 'web') {
+    if (isClient && Capacitor.getPlatform() === 'web') {
       if (user) {
         // Logged-in web user
         const hasCredits = (credits?.[generationType] ?? 0) > 0;
@@ -347,7 +352,7 @@ export default function MealApp() {
           setIsLimitModalOpen(true);
         }
       }
-    } else {
+    } else if (isClient) {
       // Mobile user
       const adLogic = generationType === '7-day-plan' ? showSevenDayPlanAds : showWatchToGenerateAd;
       adLogic(() => handleGenerateMeal(items));
@@ -363,7 +368,7 @@ export default function MealApp() {
     setSelectedMood(mood);
     const generationType = mood === '7-day-plan' ? '7-day-plan' : 'single';
     
-    if (Capacitor.getPlatform() === 'web') {
+    if (isClient && Capacitor.getPlatform() === 'web') {
       if (user) {
         if ((credits?.[generationType] ?? 0) > 0) {
           handleOpenPreferences(mood);
@@ -377,7 +382,7 @@ export default function MealApp() {
           setIsLimitModalOpen(true);
         }
       }
-    } else {
+    } else if (isClient) {
       // On mobile, always open preferences, ads are shown later.
       handleOpenPreferences(mood);
     }
@@ -504,14 +509,25 @@ export default function MealApp() {
   };
 
   const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
-    const [isClient, setIsClient] = useState(false);
-    useEffect(() => { setIsClient(true); }, []);
     
-    if (!isClient || !isInitialized) {
+    if (!isClient) {
       return (
           <Card className="relative flex flex-col text-center h-full">
-              <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center"><Skeleton className="w-full h-full rounded-full" /></div><CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle><CardDescription><Skeleton className="h-4 w-full mx-auto" /><Skeleton className="h-4 w-5/6 mx-auto mt-1" /></CardDescription></CardHeader>
-              <CardContent className="flex-1 p-6 pt-0" /><CardFooter className="p-6 pt-0"><Button className="w-full" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</Button></CardFooter>
+              <CardHeader className="p-6">
+                <div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">
+                  <Skeleton className="w-full h-full rounded-full" />
+                </div>
+                <CardTitle><Skeleton className="h-6 w-3/4 mx-auto" /></CardTitle>
+                <div className="text-sm text-muted-foreground mt-1.5 space-y-1">
+                    <Skeleton className="h-4 w-full mx-auto" />
+                    <Skeleton className="h-4 w-5/6 mx-auto" />
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-6 pt-0" />
+              <CardFooter className="p-6 pt-0">
+                <Button className="w-full" disabled>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</Button>
+              </CardFooter>
           </Card>
       );
     }

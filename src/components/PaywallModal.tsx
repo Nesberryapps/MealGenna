@@ -12,12 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2 } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-import { CheckoutForm } from './CheckoutForm';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { Loader2, Mail } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -26,95 +22,143 @@ interface PaywallModalProps {
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
   const { toast } = useToast();
-  const { user, firebaseUser, refreshCredits } = useAuth();
+  const { user, firebaseUser } = useAuth();
   
-  const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [emailForPurchase, setEmailForPurchase] = useState('');
+  const [showEmailStep, setShowEmailStep] = useState(false);
+  const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
+
   const singlePackPriceId = process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!;
   const planPackPriceId = process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
 
   useEffect(() => {
+    if (isOpen && user?.email) {
+      setEmailForPurchase(user.email);
+    }
+  }, [isOpen, user]);
+
+  useEffect(() => {
+    // Reset state when the modal is closed
     if (!isOpen) {
-        setTimeout(() => {
-            setSelectedPriceId(null);
-            setClientSecret(null);
-            setIsLoading(false);
-        }, 300);
+      setTimeout(() => {
+        setIsLoading(false);
+        setEmailForPurchase('');
+        setShowEmailStep(false);
+        setSelectedPriceId(null);
+      }, 300);
     }
   }, [isOpen]);
 
-  const handlePurchaseClick = async (priceId: string) => {
-    if (!user || !firebaseUser) {
-        toast({
-            variant: "destructive",
-            title: "Authentication Required",
-            description: "Please go to the account page to sign in before making a purchase.",
-        });
-        onClose();
-        return;
-    }
-
-    setIsLoading(true);
-    setSelectedPriceId(priceId);
-
-    try {
-        const idToken = await firebaseUser.getIdToken();
-        const response = await fetch('/api/stripe/payment-intent', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ 
-                priceId,
-                userId: firebaseUser.uid,
-                userEmail: user.email,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(errorBody.error || 'Failed to create payment intent.');
-        }
-
-        const { clientSecret: newClientSecret } = await response.json();
-        setClientSecret(newClientSecret);
-
-    } catch (error: any) {
-        console.error("Stripe payment intent error:", error);
-        toast({
-            variant: "destructive",
-            title: "Purchase Failed",
-            description: error.message || "Could not connect to Stripe. Please try again.",
-        });
-        setSelectedPriceId(null);
-    } finally {
-        setIsLoading(false);
+  const handlePurchaseClick = (priceId: string) => {
+    if (!user) {
+      setShowEmailStep(true);
+      setSelectedPriceId(priceId);
+    } else {
+      handleCheckout(priceId, user.email);
     }
   };
 
-  const appearance = {
-    theme: 'night' as const,
-    variables: {
-      colorPrimary: '#10b981',
-    },
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPriceId) return; // Should not happen
+    await handleCheckout(selectedPriceId, emailForPurchase);
   };
   
-  const options = clientSecret ? {
-    clientSecret,
-    appearance,
-  } : {};
+  const handleCheckout = async (priceId: string, email: string) => {
+    setIsLoading(true);
+    try {
+      const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
+      
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
+        },
+        body: JSON.stringify({
+          priceId,
+          userEmail: email, // Use the provided/guest email
+        }),
+      });
 
-  const handlePaymentSuccess = () => {
-    toast({
-        title: "Payment Successful!",
-        description: "Your credits have been added. Refreshing your account.",
-    });
-    refreshCredits();
-    onClose();
-  }
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not create checkout session.");
+      }
+
+      if (data.url) {
+        // In a real app, you would also trigger sending the magic link here
+        // if it's a new guest user. For now, the backend handles this.
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned.");
+      }
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Purchase Failed",
+        description: error.message,
+      });
+      setIsLoading(false);
+    }
+  };
+
+
+  const renderContent = () => {
+    if (showEmailStep) {
+      return (
+        <form onSubmit={handleEmailSubmit} className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+                Enter your email to create an account and proceed to checkout. A magic sign-in link will be sent to your inbox.
+            </p>
+            <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={emailForPurchase}
+                    onChange={e => setEmailForPurchase(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    className="pl-10"
+                />
+            </div>
+             <Button type="submit" disabled={isLoading || !emailForPurchase} className="w-full">
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Proceed to Checkout"}
+            </Button>
+            <Button variant="link" onClick={() => { setShowEmailStep(false); setSelectedPriceId(null); }}>Back</Button>
+        </form>
+      );
+    }
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
+                <div className="text-center">
+                    <h3 className="text-lg font-bold">Single Meal Pack</h3>
+                    <p className="text-3xl font-extrabold my-2">$1.99</p>
+                    <p className="text-muted-foreground">Get 5 generations for single meals.</p>
+                </div>
+                <Button onClick={() => handlePurchaseClick(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
+                    {isLoading && selectedPriceId === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
+                </Button>
+            </div>
+            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
+                <div className="text-center">
+                    <h3 className="text-lg font-bold">7-Day Plan Pack</h3>
+                    <p className="text-3xl font-extrabold my-2">$7.99</p>
+                    <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
+                </div>
+                <Button onClick={() => handlePurchaseClick(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
+                    {isLoading && selectedPriceId === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
+                </Button>
+            </div>
+        </div>
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -122,43 +166,10 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Get More Generations</DialogTitle>
           <DialogDescription className="pt-2 text-base">
-            {clientSecret 
-              ? "Complete your secure purchase below." 
-              : "Choose a one-time pack to continue creating on the web."
-            }
+            Choose a one-time pack to continue creating on the web.
           </DialogDescription>
         </DialogHeader>
-
-        {clientSecret && stripePromise && options.clientSecret ? (
-          <div className="pt-4">
-            <Elements options={options} stripe={stripePromise}>
-              <CheckoutForm onSuccess={handlePaymentSuccess} />
-            </Elements>
-          </div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
-                    <div className="text-center">
-                        <h3 className="text-lg font-bold">Single Meal Pack</h3>
-                        <p className="text-3xl font-extrabold my-2">$1.99</p>
-                        <p className="text-muted-foreground">Get 5 generations for single meals.</p>
-                    </div>
-                    <Button onClick={() => handlePurchaseClick(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
-                        {isLoading && selectedPriceId === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
-                    </Button>
-                </div>
-                <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
-                    <div className="text-center">
-                        <h3 className="text-lg font-bold">7-Day Plan Pack</h3>
-                        <p className="text-3xl font-extrabold my-2">$7.99</p>
-                        <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
-                    </div>
-                    <Button onClick={() => handlePurchaseClick(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
-                        {isLoading && selectedPriceId === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
-                    </Button>
-                </div>
-            </div>
-        )}
+        {renderContent()}
       </DialogContent>
     </Dialog>
   );
