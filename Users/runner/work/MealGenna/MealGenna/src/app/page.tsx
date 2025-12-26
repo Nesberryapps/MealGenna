@@ -743,8 +743,8 @@ const MealPlanItem = ({ meal, mealType, onSelect }: { meal: SimpleMeal, mealType
     <div>
       <h4 className="font-semibold">{mealType}</h4>
       <button onClick={() => onSelect(meal)} className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors">
-        <p className="text-sm font-medium text-primary underline">{meal.title}</p>
-        <p className="text-sm text-muted-foreground">{meal.description}</p>
+        <span className="text-sm font-medium text-primary underline block">{meal.title}</span>
+        <span className="text-sm text-muted-foreground block">{meal.description}</span>
       </button>
     </div>
 );

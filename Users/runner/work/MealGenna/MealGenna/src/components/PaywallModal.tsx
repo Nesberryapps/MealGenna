@@ -21,7 +21,7 @@ interface PaywallModalProps {
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
   const { toast } = useToast();
-  const { user, firebaseUser } = useAuth();
+  const { firebaseUser } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
@@ -36,19 +36,16 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         setIsLoading(false);
         setSelectedPriceId(null);
       }, 300);
-    } else {
-        setIsLoading(false);
-        setSelectedPriceId(null);
     }
   }, [isOpen]);
 
   const handleCheckout = async (priceId: string) => {
     setIsLoading(true);
-    setSelectedPriceId(priceId); // Track which button is loading
+    setSelectedPriceId(priceId);
 
     try {
       const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
-      const userEmail = user?.email; // This will be undefined for guest users
+      const userEmail = firebaseUser?.email; 
 
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -58,7 +55,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         },
         body: JSON.stringify({
           priceId,
-          ...(userEmail && { userEmail }), // Only include email if user is logged in
+          ...(userEmail && { userEmail }), 
         }),
       });
 

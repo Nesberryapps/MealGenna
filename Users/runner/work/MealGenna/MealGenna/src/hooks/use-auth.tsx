@@ -3,20 +3,29 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, signInWithCustomToken, User as FirebaseUser } from 'firebase/auth';
+import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
 import { app } from '@/lib/firebase-client';
 import { Capacitor } from '@capacitor/core';
+
+interface Credits {
+  single: number;
+  '7-day-plan': number;
+}
 
 interface AuthContextType {
   user: { email: string } | null;
   firebaseUser: FirebaseUser | null;
+  credits: Credits | null;
   isInitialized: boolean;
   isRecovering: boolean;
   isSigningIn: boolean;
   hasFreebie: boolean;
   useFreebie: () => void;
+  useCredit: (type: 'single' | '7-day-plan') => Promise<{ success: boolean; message: string }>;
   beginRecovery: (email: string) => Promise<{ success: boolean; message: string }>;
   signOut: () => Promise<void>;
   verifySignInLink: (href: string) => Promise<{ success: boolean; message: string; email?: string }>;
+  refreshCredits: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,12 +35,14 @@ const FREEBIE_KEY = 'mealgenna_freebie_used_v2';
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [credits, setCredits] = useState<Credits | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [hasFreebie, setHasFreebie] = useState(true);
   
   const auth = getAuth(app);
+  const db = getFirestore(app);
 
   useEffect(() => {
     if (Capacitor.getPlatform() === 'web') {
@@ -42,14 +53,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const useFreebie = () => {
+    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
+      localStorage.setItem(FREEBIE_KEY, 'true');
+      setHasFreebie(false);
+    }
+  };
+
   const verifySignInLink = useCallback(async (href: string) => {
     if (auth.isSignInWithEmailLink(href)) {
       setIsSigningIn(true);
-      let email = window.localStorage.getItem('emailForSignIn');
-      if (!email) {
-        setIsSigningIn(false);
-        return { success: false, message: 'Please use the same device and browser you used to request the sign-in link.' };
-      }
       
       try {
         const response = await fetch('/api/account/verify', {
@@ -63,37 +76,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await signInWithCustomToken(auth, data.customToken);
         
-        window.localStorage.removeItem('emailForSignIn');
         return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
 
       } catch (error: any) {
         return { success: false, message: error.message };
       } finally {
         setIsSigningIn(false);
-        const cleanUrl = window.location.href.split('?')[0];
+        // Clean the URL to remove the sign-in link parameters
+        const cleanUrl = window.location.origin + window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
       }
     }
     return { success: false, message: 'Not a sign-in link.' };
   }, [auth]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
-      setFirebaseUser(fbUser);
-      setUser(fbUser ? { email: fbUser.email! } : null);
-      if (!isInitialized) {
-        setIsInitialized(true);
+  const fetchCredits = useCallback((fbUser: FirebaseUser | null) => {
+      if (fbUser) {
+          const creditsRef = doc(db, 'user_credits', fbUser.uid);
+          return onSnapshot(creditsRef, (snap) => {
+              if (snap.exists()) {
+                  setCredits(snap.data() as Credits);
+              } else {
+                  setCredits({ single: 0, '7-day-plan': 0 });
+              }
+              if (!isInitialized) setIsInitialized(true);
+          }, (error) => {
+              console.error("Error fetching credits:", error);
+              setCredits({ single: 0, '7-day-plan': 0 });
+              if (!isInitialized) setIsInitialized(true);
+          });
+      } else {
+          setCredits(null);
+          if (!isInitialized) setIsInitialized(true);
       }
+      return () => {};
+  }, [db, isInitialized]);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+      setFirebaseUser(fbUser);
+      setUser(fbUser?.email ? { email: fbUser.email } : null);
+      fetchCredits(fbUser); // Fetch credits when auth state changes
     });
-    return () => unsubscribe();
-  }, [auth, isInitialized]);
+    return () => unsubscribeAuth();
+  }, [auth, fetchCredits]);
   
   useEffect(() => {
-    if (isInitialized && !firebaseUser && window.location.search.includes('oobCode')) {
-      verifySignInLink(window.location.href);
-    }
+    const checkUrlForSignIn = async () => {
+        if (isInitialized && !firebaseUser && window.location.search.includes('oobCode')) {
+            await verifySignInLink(window.location.href);
+        }
+    };
+    checkUrlForSignIn();
   }, [isInitialized, firebaseUser, verifySignInLink]);
-
 
   const beginRecovery = async (email: string) => {
     setIsRecovering(true);
@@ -106,7 +141,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');
 
-      window.localStorage.setItem('emailForSignIn', email);
       return { success: true, message: "We've sent a secure sign-in link to your email address." };
     } catch (error: any) {
       return { success: false, message: error.message };
@@ -119,26 +153,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await auth.signOut();
     setUser(null);
     setFirebaseUser(null);
+    setCredits(null);
   };
-  
-  const useFreebie = () => {
-    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
-      localStorage.setItem(FREEBIE_KEY, 'true');
-      setHasFreebie(false);
+
+  const useCredit = useCallback(async (type: 'single' | '7-day-plan'): Promise<{ success: boolean; message: string }> => {
+    if (!firebaseUser) {
+      return { success: false, message: 'Please sign in to use credits.' };
     }
-  };
+    const creditsRef = doc(db, 'user_credits', firebaseUser.uid);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userCreditsSnap = await transaction.get(creditsRef);
+        let currentCredits: Credits = { single: 0, '7-day-plan': 0 };
+        if (userCreditsSnap.exists()) {
+          currentCredits = userCreditsSnap.data() as Credits;
+        }
+        if ((currentCredits[type] || 0) > 0) {
+          currentCredits[type] -= 1;
+          transaction.set(creditsRef, currentCredits, { merge: true });
+        } else {
+          throw new Error(`No credits of type "${type}" available.`);
+        }
+      });
+      return { success: true, message: 'Credit Used. Your meal is being generated.' };
+    } catch (error: any) {
+      console.error("Failed to use credit:", error);
+      const friendlyType = type === 'single' ? 'Single Meal' : 'Meal Plan';
+      return { success: false, message: `You have no ${friendlyType} credits left.` };
+    }
+  }, [firebaseUser, db]);
+  
+  const refreshCredits = useCallback(() => {
+    if (firebaseUser) {
+        fetchCredits(firebaseUser);
+    }
+  }, [firebaseUser, fetchCredits]);
+
 
   const value = {
     user,
     firebaseUser,
+    credits,
     isInitialized,
     isRecovering,
     isSigningIn,
     hasFreebie,
     useFreebie,
+    useCredit,
     beginRecovery,
     signOut,
     verifySignInLink,
+    refreshCredits,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

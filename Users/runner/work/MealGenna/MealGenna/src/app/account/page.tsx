@@ -35,7 +35,9 @@ export default function AccountPage() {
             description: "Your credits have been added. It may take a moment for them to appear.",
           });
           if (refreshCredits) refreshCredits();
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // Remove query params from URL
+          const newUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,7 +86,7 @@ export default function AccountPage() {
           <div className="p-4 border rounded-lg flex items-center justify-between">
             <div>
               <p className="font-semibold">Account Status</p>
-              <p className="text-sm text-muted-foreground">{status.text}</p>
+              <div className="text-sm text-muted-foreground">{status.text}</div>
             </div>
             {status.badge}
           </div>
