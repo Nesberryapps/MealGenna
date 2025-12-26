@@ -11,7 +11,7 @@ const priceToAmountMap: { [key: string]: number } = {
 
 export async function POST(req: Request) {
   try {
-    const { priceId, userId, userEmail } = await req.json();
+    const { priceId, userId, userEmail } await req.json();
 
     if (!priceId || !userId || !userEmail) {
       return new NextResponse('Missing priceId, userId, or userEmail', { status: 400 });
