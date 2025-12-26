@@ -1,3 +1,4 @@
+
 import { AdMob, RewardAdOptions, RewardAdPluginEvents, AdMobRewardItem } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
@@ -5,7 +6,10 @@ import { Capacitor } from '@capacitor/core';
 // For now, it will just log to the console. You can expand this later
 // to use server-side analytics if needed.
 const reportAdRewardConversion = () => {
-    console.log('Ad reward conversion event placeholder.');
+    if (window.gtag_report_conversion) {
+      window.gtag_report_conversion();
+    }
+    console.log('Ad reward conversion event reported.');
 };
 
 // 1. Initialize AdMob
@@ -28,26 +32,16 @@ export const initializeAdMob = async () => {
   }
 };
 
-// 2. Show the Ad Every OTHER time (Ad -> Free -> Ad -> Free)
+// 2. Show a rewarded ad for a single meal generation
 export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
-  // A. Check Web Platform
+  // A. Check Web Platform - this should not be called on web, but as a safeguard.
   if (Capacitor.getPlatform() === 'web') {
     console.log("Web Mode: Skipping ad.");
     onRewardEarned();
     return;
   }
 
-  // B. Check the "Frequency" Counter from phone storage
-  const currentCount = parseInt(localStorage.getItem('mealGenAdCount') || '0');
-
-  if (currentCount % 2 !== 0) {
-    console.log(`Count is ${currentCount}: User gets a FREE generation!`);
-    localStorage.setItem('mealGenAdCount', (currentCount + 1).toString());
-    onRewardEarned();
-    return; 
-  }
-
-  // C. If we are here, it's time to watch an ad!
+  // B. Show the ad
   const adId = Capacitor.getPlatform() === 'ios'
     ? 'ca-app-pub-6191158195654090/7842725756'
     : 'ca-app-pub-6191158195654090/2827553869';
@@ -56,7 +50,6 @@ export const showWatchToGenerateAd = async (onRewardEarned: () => void) => {
     RewardAdPluginEvents.Rewarded,
     (reward: AdMobRewardItem) => {
       console.log('User watched the video!', reward);
-      localStorage.setItem('mealGenAdCount', (currentCount + 1).toString());
       reportAdRewardConversion();
       onRewardEarned();
       rewardListener.remove();
@@ -89,12 +82,12 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
     return new Promise(async (resolve) => {
       let resolved = false;
       
-      const listener = await AdMob.addListener(
+      const rewardListener = await AdMob.addListener(
         RewardAdPluginEvents.Rewarded, 
         () => {
           reportAdRewardConversion();
           if (!resolved) { resolved = true; resolve(true); }
-          listener.remove();
+          rewardListener.remove();
         }
       );
 
@@ -112,6 +105,8 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
       } catch (e) {
         console.error(e);
         resolve(true); // Let user pass if ad fails
+        rewardListener.remove();
+        closeListener.remove();
       }
     });
   };
@@ -124,6 +119,10 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
     
     if (secondAdSuccess) {
       onComplete();
+    } else {
+      alert("The second ad was not completed. Please try again to unlock the plan.");
     }
+  } else {
+      alert("You need to watch the ad to unlock this feature. Please try again.");
   }
 };

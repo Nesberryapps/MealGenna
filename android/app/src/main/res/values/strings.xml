@@ -4,5 +4,5 @@
     <string name="title_activity_main">MealGenna</string>
     <string name="package_name">com.nesberry.mealgenna.pro</string>
     <string name="custom_url_scheme">com.nesberry.mealgenna.pro</string>
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="admob_app_id">ca-app-pub-6191158195654090~4140635535</string>
 </resources>
