@@ -11,12 +11,10 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { PaywallModal } from '@/components/PaywallModal';
 import { Capacitor } from '@capacitor/core';
-import { usePremium } from '@/hooks/use-premium';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, signOut } = useAuth();
-  const { credits, refreshCredits } = usePremium();
+  const { user, isInitialized, signOut, credits, refreshCredits } = useAuth();
   
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
@@ -36,7 +34,7 @@ export default function AccountPage() {
             title: "Payment Successful!",
             description: "Your credits have been added. It may take a moment for them to appear.",
           });
-          refreshCredits();
+          if (refreshCredits) refreshCredits();
           window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
@@ -61,7 +59,7 @@ export default function AccountPage() {
       if (singleCredits > 0 || planCredits > 0) {
           return { text: 'You have active generation credits.', badge: <Badge variant="premium" className="text-base">Active</Badge> };
       }
-      return { text: 'You are on the Free plan.', badge: <Badge variant="secondary" className="text-base">Free</Badge> };
+      return { text: 'You are out of credits.', badge: <Badge variant="destructive" className="text-base">Free</Badge> };
   };
 
   const status = getStatusContent();
@@ -94,7 +92,7 @@ export default function AccountPage() {
           {isClient && Capacitor.getPlatform() === 'web' && (
              user ? (
                 <div className="space-y-4">
-                    <p className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></p>
+                    <div className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></div>
                      <div className="p-4 border rounded-lg grid grid-cols-2 gap-4">
                         <div className="text-center">
                             <div className="text-2xl font-bold">{credits?.single ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</div>

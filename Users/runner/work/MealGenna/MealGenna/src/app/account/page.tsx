@@ -3,9 +3,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { X, Loader2, LogOut, Mail } from 'lucide-react';
+import { X, Loader2, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
@@ -15,28 +14,12 @@ import { Capacitor } from '@capacitor/core';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, credits, beginRecovery, signOut, isRecovering, refreshCredits } = useAuth();
+  const { user, isInitialized, signOut, credits, refreshCredits } = useAuth();
   
-  const [email, setEmail] = useState('');
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      toast({ variant: 'destructive', title: 'Email is required' });
-      return;
-    }
-    const result = await beginRecovery(email);
-    if (result.success) {
-        toast({ title: 'Check your email!', description: result.message });
-    } else {
-        toast({ variant: 'destructive', title: 'Recovery Failed', description: result.message });
-    }
-    setEmail('');
-  };
   
   const handleSignOut = async () => {
       await signOut();
@@ -51,7 +34,7 @@ export default function AccountPage() {
             title: "Payment Successful!",
             description: "Your credits have been added. It may take a moment for them to appear.",
           });
-          refreshCredits();
+          if (refreshCredits) refreshCredits();
           window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
@@ -68,7 +51,7 @@ export default function AccountPage() {
            return { text: 'You are on the Mobile plan.', badge: <Badge variant="secondary" className="text-base">Mobile</Badge> };
       }
       if (!user) {
-          return { text: 'Sign in to see your status.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
+          return { text: 'Purchase credits to get started.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
       }
       const singleCredits = credits?.single || 0;
       const planCredits = credits?.['7-day-plan'] || 0;
@@ -76,14 +59,14 @@ export default function AccountPage() {
       if (singleCredits > 0 || planCredits > 0) {
           return { text: 'You have active generation credits.', badge: <Badge variant="premium" className="text-base">Active</Badge> };
       }
-      return { text: 'You are on the Free plan.', badge: <Badge variant="secondary" className="text-base">Free</Badge> };
+      return { text: 'You are out of credits.', badge: <Badge variant="destructive" className="text-base">Free</Badge> };
   };
 
   const status = getStatusContent();
 
   return (
     <div className="container py-12 md:py-20">
-       {user && <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />}
+       <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
       <Card className="max-w-xl mx-auto relative">
          <Link href="/" className="absolute top-4 right-4">
               <Button variant="ghost" size="icon">
@@ -109,7 +92,7 @@ export default function AccountPage() {
           {isClient && Capacitor.getPlatform() === 'web' && (
              user ? (
                 <div className="space-y-4">
-                    <p className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></p>
+                    <div className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></div>
                      <div className="p-4 border rounded-lg grid grid-cols-2 gap-4">
                         <div className="text-center">
                             <div className="text-2xl font-bold">{credits?.single ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</div>
@@ -128,26 +111,15 @@ export default function AccountPage() {
                     </Button>
                 </div>
             ) : (
-                 <form onSubmit={handleSignIn} className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold">Sign In for Web</h3>
+                <div className="space-y-4 p-4 border rounded-lg text-center">
+                    <h3 className="font-semibold">Get Started on Web</h3>
                     <p className="text-sm text-muted-foreground">
-                        Sign in with a magic link to track your purchased credits on the web. No password needed.
+                        To use MealGenna on the web, please purchase a one-time credit pack. Your account will be created automatically during checkout.
                     </p>
-                    <div className="flex gap-2">
-                        <Input 
-                            type="email" 
-                            placeholder="your@email.com" 
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            disabled={isRecovering}
-                            required
-                        />
-                        <Button type="submit" disabled={isRecovering}>
-                            {isRecovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                            <span className="sr-only">Send Link</span>
-                        </Button>
-                    </div>
-                 </form>
+                    <Button onClick={() => setIsPaywallOpen(true)} className="w-full">
+                        Purchase Credits
+                    </Button>
+                </div>
             )
           )}
           
@@ -182,5 +154,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
