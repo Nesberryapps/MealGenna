@@ -99,6 +99,7 @@ export default function MealApp() {
     customRequest: ''
   });
 
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
   const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -136,7 +137,6 @@ export default function MealApp() {
       newMealTime = 'lunch';
     } else {
       newHeading = "Good evening! What's for dinner?";
-      newMealTime = 'dinner';
     }
     
     setHeading(newHeading);
@@ -675,12 +675,12 @@ export default function MealApp() {
             </DialogContent>
         </Dialog>
 
-        <Dialog open={isTutorialOpen} onOpenChange={setTutorialStep}>
+        <Dialog open={isTutorialOpen} onOpenChange={setIsTutorialOpen}>
             <DialogContent>
                 <DialogHeader><DialogTitle>{tutorialContent[tutorialStep].title}</DialogTitle><DialogDescription>{tutorialContent[tutorialStep].description}</DialogDescription></DialogHeader>
                 <DialogFooter className="justify-between">
                     <div>{tutorialStep > 0 && ( <Button variant="outline" onClick={() => setTutorialStep(tutorialStep - 1)}>Back</Button> )}</div>
-                    <div className="flex gap-2"><Button variant="secondary" onClick={() => setTutorialStep(tutorialContent.length)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setTutorialStep(tutorialContent.length)}>Finish</Button> )}</div>
+                    <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsTutorialOpen(false)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setIsTutorialOpen(false)}>Finish</Button> )}</div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -710,3 +710,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    
