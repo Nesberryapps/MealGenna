@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { admin } from '../../../../lib/firebase-admin';
+import { admin } from '@/lib/firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
 export async function POST(req: Request) {
@@ -12,14 +12,14 @@ export async function POST(req: Request) {
     }
 
     if (!admin.auth().isSignInWithEmailLink(token)) {
-        return NextResponse.json({ error: 'Invalid sign-in link provided.', { status: 400 });
+        return NextResponse.json({ error: 'Invalid sign-in link provided.' }, { status: 400 });
     }
 
     const url = new URL(token);
     const email = url.searchParams.get('email');
     
     if (!email) {
-        return NextResponse.json({ error: 'Email not found in sign-in link.', { status: 400 });
+        return NextResponse.json({ error: 'Email not found in sign-in link.' }, { status: 400 });
     }
 
     // This can fail if the link is expired or already used
