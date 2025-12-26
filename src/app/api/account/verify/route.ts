@@ -32,10 +32,14 @@ export async function POST(req: Request) {
     const userCreditsRef = db.collection('user_credits').doc(uid);
     const userCreditsSnap = await userCreditsRef.get();
 
-    // Give new users 1 free credit for each type, otherwise load existing credits.
+    // Give new web users 1 free credit for each type, otherwise load existing credits.
     let credits = { single: 1, '7-day-plan': 1 }; 
     if (userCreditsSnap.exists) {
-        credits = userCreditsSnap.data() as typeof credits;
+        const existingData = userCreditsSnap.data();
+        credits = {
+            single: existingData?.single ?? 0,
+            '7-day-plan': existingData?.['7-day-plan'] ?? 0,
+        };
     } else {
         await userCreditsRef.set(credits);
     }
