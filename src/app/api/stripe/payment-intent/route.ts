@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { stripe } from '../../../../lib/stripe';
-import { admin } from '../../../../lib/firebase-admin';
+import { admin } from '@/lib/firebase-admin';
+import { stripe } from '@/lib/stripe';
 
 // A map to convert price IDs to amounts in cents
 const priceToAmountMap: { [key: string]: number } = {
