@@ -33,7 +33,6 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PaywallModal } from '@/components/PaywallModal';
 import { useAuth } from '@/hooks/use-auth';
 import { LimitModal } from '@/components/LimitModal';
 
@@ -88,7 +87,6 @@ export default function MealApp() {
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   
-  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | 'from pantry' | null>(null);
@@ -112,7 +110,7 @@ export default function MealApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized } = useAuth();
+  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized, firebaseUser } = useAuth();
 
   const [isClient, setIsClient] = useState(false);
   
@@ -337,10 +335,10 @@ export default function MealApp() {
             await handleGenerateMeal(items);
           } else {
             toast({ variant: 'destructive', title: 'Out of Credits', description: result.message });
-            setIsPaywallOpen(true);
+            handleDirectCheckout(generationType);
           }
         } else {
-          setIsPaywallOpen(true);
+           handleDirectCheckout(generationType);
         }
       } else {
         // Guest web user
@@ -349,7 +347,7 @@ export default function MealApp() {
           toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
           await handleGenerateMeal(items);
         } else {
-          setIsLimitModalOpen(true);
+           handleDirectCheckout(generationType);
         }
       }
     } else if (isClient) {
@@ -358,6 +356,47 @@ export default function MealApp() {
       adLogic(() => handleGenerateMeal(items));
     }
   };
+
+  const handleDirectCheckout = async (type: 'single' | '7-day-plan') => {
+    setLoadingMood(type === 'single' ? selectedMood : '7-day-plan');
+    const priceId = type === 'single' 
+      ? process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!
+      : process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
+
+    try {
+      const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
+      const userEmail = firebaseUser?.email;
+
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
+        },
+        body: JSON.stringify({
+          priceId,
+          ...(userEmail && { userEmail }),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not create checkout session.');
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Purchase Failed',
+        description: error.message,
+      });
+    } finally {
+      setLoadingMood(null);
+    }
+  };
+
 
   const handleOpenPreferences = (mood: Mood | '7-day-plan' | 'from pantry') => {
     setSelectedMood(mood);
@@ -373,13 +412,13 @@ export default function MealApp() {
         if ((credits?.[generationType] ?? 0) > 0) {
           handleOpenPreferences(mood);
         } else {
-          setIsPaywallOpen(true);
+          handleDirectCheckout(generationType);
         }
       } else {
         if (hasFreebie) {
           handleOpenPreferences(mood);
         } else {
-          setIsLimitModalOpen(true);
+           handleDirectCheckout(generationType);
         }
       }
     } else if (isClient) {
@@ -557,7 +596,7 @@ export default function MealApp() {
     };
 
     const getButtonContent = () => {
-        if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>;
+        if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Going to Checkout...</>;
         if (isWeb) {
           if (showPurchaseState) return <><Star className="mr-2 h-4 w-4" />Get More</>;
           return <><Sparkles className="mr-2 h-4 w-4" />Generate</>;
@@ -587,13 +626,12 @@ export default function MealApp() {
 
   return (
     <>
-      <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
       <LimitModal 
         isOpen={isLimitModalOpen} 
         onClose={() => setIsLimitModalOpen(false)} 
         onSwitchToPurchase={() => {
           setIsLimitModalOpen(false);
-          setIsPaywallOpen(true);
+          handleDirectCheckout('single');
         }}
       />
       <div className="container relative py-12 md:py-20">
@@ -755,3 +793,5 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
+
+    

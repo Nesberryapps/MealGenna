@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,80 +9,39 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
+import { useState } from "react";
 
 interface PaywallModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCheckout: (priceId: string) => Promise<void>;
 }
 
-export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
-  const { toast } = useToast();
-  const { firebaseUser } = useAuth();
-  
+export function PaywallModal({ isOpen, onClose, onCheckout }: PaywallModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
-
+  
   const singlePackPriceId = process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!;
   const planPackPriceId = process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
 
-  useEffect(() => {
-    // Reset loading state when the modal is closed or opened
-    if (!isOpen) {
-      setTimeout(() => {
-        setIsLoading(false);
-        setSelectedPriceId(null);
-      }, 300);
-    }
-  }, [isOpen]);
-
-  const handleCheckout = async (priceId: string) => {
+  const handlePurchaseClick = async (priceId: string) => {
     setIsLoading(true);
     setSelectedPriceId(priceId);
-
-    try {
-      const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
-      const userEmail = firebaseUser?.email; 
-
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
-        },
-        body: JSON.stringify({
-          priceId,
-          ...(userEmail && { userEmail }), 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Could not create checkout session.");
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL returned.");
-      }
-
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Purchase Failed",
-        description: error.message,
-      });
-      setIsLoading(false);
-      setSelectedPriceId(null);
-    }
+    await onCheckout(priceId);
+    // The parent component handles the redirect, so we just set loading.
+    // If it fails, the parent will toast and we can reset loading there if needed.
+    // For now, assume redirect is imminent.
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!open) {
+            setIsLoading(false);
+            setSelectedPriceId(null);
+            onClose();
+        }
+    }}>
       <DialogContent className="sm:max-w-lg text-center">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Get More Generations</DialogTitle>
@@ -98,7 +56,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
                     <p className="text-3xl font-extrabold my-2">$1.99</p>
                     <p className="text-muted-foreground">Get 5 generations for single meals.</p>
                 </div>
-                <Button onClick={() => handleCheckout(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
+                <Button onClick={() => handlePurchaseClick(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
                     {isLoading && selectedPriceId === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
                 </Button>
             </div>
@@ -108,7 +66,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
                     <p className="text-3xl font-extrabold my-2">$7.99</p>
                     <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
                 </div>
-                <Button onClick={() => handleCheckout(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
+                <Button onClick={() => handlePurchaseClick(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
                     {isLoading && selectedPriceId === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
                 </Button>
             </div>
@@ -117,3 +75,5 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
     </Dialog>
   );
 }
+
+    

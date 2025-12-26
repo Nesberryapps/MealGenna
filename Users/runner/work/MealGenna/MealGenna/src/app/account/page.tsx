@@ -9,14 +9,11 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { PaywallModal } from '@/components/PaywallModal';
 import { Capacitor } from '@capacitor/core';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, credits, refreshCredits, isInitialized, signOut } = useAuth();
-  
-  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const { user, credits, refreshCredits, isInitialized, signOut, firebaseUser } = useAuth();
   
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
@@ -25,6 +22,44 @@ export default function AccountPage() {
       await signOut();
       toast({ title: 'Signed Out', description: 'You have been signed out.' });
   }
+
+  const handleDirectCheckout = async (type: 'single' | '7-day-plan') => {
+    const priceId = type === 'single' 
+      ? process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!
+      : process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
+
+    try {
+      const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
+      const userEmail = firebaseUser?.email;
+
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
+        },
+        body: JSON.stringify({
+          priceId,
+          ...(userEmail && { userEmail }),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not create checkout session.');
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Purchase Failed',
+        description: error.message,
+      });
+    }
+  };
+
 
   useEffect(() => {
     if (isClient) {
@@ -68,7 +103,6 @@ export default function AccountPage() {
 
   return (
     <div className="container py-12 md:py-20">
-       <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
       <Card className="max-w-xl mx-auto relative">
          <Link href="/" className="absolute top-4 right-4">
               <Button variant="ghost" size="icon">
@@ -105,7 +139,7 @@ export default function AccountPage() {
                             <p className="text-sm text-muted-foreground">Meal Plan Credits</p>
                         </div>
                     </div>
-                     <Button onClick={() => setIsPaywallOpen(true)} className="w-full">
+                     <Button onClick={() => handleDirectCheckout('single')} className="w-full">
                         Purchase More Credits
                     </Button>
                     <Button onClick={handleSignOut} variant="outline" className="w-full">
@@ -116,9 +150,9 @@ export default function AccountPage() {
                 <div className="space-y-4 p-4 border rounded-lg text-center">
                     <h3 className="font-semibold">Get Started on Web</h3>
                     <p className="text-sm text-muted-foreground">
-                        To use MealGenna on the web, please purchase a one-time credit pack. Your account will be created automatically during checkout.
+                        To use MealGenna on the web, please purchase a one-time credit pack.
                     </p>
-                    <Button onClick={() => setIsPaywallOpen(true)} className="w-full">
+                    <Button onClick={() => handleDirectCheckout('single')} className="w-full">
                         Purchase Credits
                     </Button>
                 </div>
@@ -156,3 +190,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
