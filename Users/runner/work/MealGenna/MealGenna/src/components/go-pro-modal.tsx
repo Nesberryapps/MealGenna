@@ -20,7 +20,7 @@ export function GoProModal({ isOpen, onClose }: GoProModalProps) {
             <Star className="h-12 w-12 mx-auto text-yellow-400" />
             <DialogTitle className="text-2xl font-bold">Get the Mobile App</DialogTitle>
             <DialogDescription className="text-base text-muted-foreground pb-4">
-                You've used your free web generation. For unlimited ad-supported generations, please download our mobile app!
+                Unlock ad-supported generations and get the full experience on mobile.
             </DialogDescription>
         </DialogHeader>
 
@@ -33,7 +33,7 @@ export function GoProModal({ isOpen, onClose }: GoProModalProps) {
             />
             </Link>
 
-            <Link href="https://apps.apple.com/us/app/mealgenna-pro/id6503874984" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
+            <Link href="https://apps.apple.com/us/app/mealgenna-ai-meal-planner/id6755921708" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
             <img 
                 src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" 
                 alt="Download on the App Store" 
@@ -51,5 +51,3 @@ export function GoProModal({ isOpen, onClose }: GoProModalProps) {
     </Dialog>
   );
 }
-
-    

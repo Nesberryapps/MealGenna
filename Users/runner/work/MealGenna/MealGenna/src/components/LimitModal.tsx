@@ -15,24 +15,23 @@ import {
   interface LimitModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSwitchToPurchase: () => void;
+    onGoToAppStores: () => void;
   }
   
-  export function LimitModal({ isOpen, onClose, onSwitchToPurchase }: LimitModalProps) {
+  export function LimitModal({ isOpen, onClose, onGoToAppStores }: LimitModalProps) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Free Generation Used</DialogTitle>
             <DialogDescription className="pt-2 text-base">
-              You've used your free meal generation. To continue, please purchase a credit pack or get unlimited generations on our mobile app.
+              You've used your free meal generation. For unlimited ad-supported generations, please download our mobile app.
             </DialogDescription>
           </DialogHeader>
   
           <div className="flex flex-col items-center gap-4 py-4">
-             <Button onClick={onSwitchToPurchase}>Purchase a Generation Pack</Button>
-             <p className="text-sm text-muted-foreground">or</p>
-             <p className="font-semibold">Get the mobile app for ad-supported generations!</p>
+             <Button onClick={onGoToAppStores}>Get the Mobile App</Button>
+             <p className="font-semibold mt-4">Download now for unlimited generations!</p>
             
             <div className="flex gap-4 justify-center">
               <Link href="https://play.google.com/store/apps/details?id=com.nesberry.mealgenna.pro" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
@@ -43,7 +42,7 @@ import {
                 />
               </Link>
   
-              <Link href="https://apps.apple.com/us/app/mealgenna-pro/id6503874984" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
+              <Link href="https://apps.apple.com/us/app/mealgenna-ai-meal-planner/id6755921708" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
                 <img 
                   src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" 
                   alt="Download on the App Store" 
@@ -62,3 +61,5 @@ import {
       </Dialog>
     );
   }
+
+    
