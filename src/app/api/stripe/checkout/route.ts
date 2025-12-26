@@ -1,44 +1,31 @@
 
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-import { admin } from '@/lib/firebase-admin';
+import { stripe } from '../../../../lib/stripe';
+import { admin } from '../../../../lib/firebase-admin';
 
 export async function POST(req: Request) {
   try {
-    const { priceId, userEmail } = await req.json();
+    const { priceId } = await req.json();
 
-    if (!priceId || !userEmail) {
-      return new NextResponse('Missing priceId or userEmail', { status: 400 });
+    if (!priceId) {
+      return new NextResponse('Missing priceId', { status: 400 });
     }
 
-    let userId: string;
+    let userId: string | undefined;
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
+    let userEmail: string | undefined;
 
     if (token) {
-        // If a token is provided, verify it and use the UID
         const decodedToken = await admin.auth().verifyIdToken(token);
         userId = decodedToken.uid;
+        userEmail = decodedToken.email;
     } else {
-        // If no token (guest checkout), find or create the user by email
-        let userRecord;
-        try {
-            userRecord = await admin.auth().getUserByEmail(userEmail);
-        } catch (error: any) {
-            if (error.code === 'auth/user-not-found') {
-                userRecord = await admin.auth().createUser({ email: userEmail });
-                // Also send a magic link so they can sign in later
-                const actionCodeSettings = { url: `${process.env.NEXT_PUBLIC_APP_URL}/account`, handleCodeInApp: true };
-                const link = await admin.auth().generateSignInWithEmailLink(userEmail, actionCodeSettings);
-                // In a real app, you would email this link to the user.
-                console.log(`Generated sign-in link for new user ${userEmail}: ${link}`);
-            } else {
-                throw error; // Re-throw other errors
-            }
-        }
+        // Create an anonymous user for guest checkouts
+        const userRecord = await admin.auth().createUser({});
         userId = userRecord.uid;
+        console.log(`Created anonymous user with UID: ${userId} for guest checkout.`);
     }
     
-    // Safety check in case userId couldn't be determined
     if (!userId) {
         return new NextResponse('Could not determine user for checkout', { status: 500 });
     }
@@ -54,9 +41,10 @@ export async function POST(req: Request) {
       mode: 'payment',
       success_url: `${appUrl}/account?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/account`,
-      customer_email: userEmail,
+      // Stripe will collect the email on its page if not provided
+      ...(userEmail && { customer_email: userEmail }),
       metadata: {
-        userId, // The resolved Firebase UID
+        userId,
         priceId,
       },
     });

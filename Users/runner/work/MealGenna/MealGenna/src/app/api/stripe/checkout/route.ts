@@ -20,6 +20,7 @@ export async function POST(req: Request) {
         userId = decodedToken.uid;
         userEmail = decodedToken.email;
     } else {
+        // Create an anonymous user for guest checkouts
         const userRecord = await admin.auth().createUser({});
         userId = userRecord.uid;
         console.log(`Created anonymous user with UID: ${userId} for guest checkout.`);
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
       mode: 'payment',
       success_url: `${appUrl}/account?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/account`,
+      // Stripe will collect the email on its page if not provided
       ...(userEmail && { customer_email: userEmail }),
       metadata: {
         userId,
