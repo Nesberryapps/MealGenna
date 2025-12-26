@@ -33,10 +33,8 @@ import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
 import { LimitModal } from '@/components/LimitModal';
 import { GoProModal } from '@/components/go-pro-modal';
-
 
 declare global {
   interface Window {
@@ -60,6 +58,7 @@ declare global {
 
 type Mood = 'Quick' | 'Healthy' | 'Hearty';
 type ScanStep = 'scanning' | 'selectingMeal';
+const FREEBIE_KEY = 'mealgenna_freebie_used_v2';
 
 export default function MealApp() {
   const [pantryItems, setPantryItems] = useState<string[]>([]);
@@ -100,7 +99,6 @@ export default function MealApp() {
     customRequest: ''
   });
 
-  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
   const [installPrompt, setInstallPrompt] = useState<any>(null);
@@ -111,79 +109,87 @@ export default function MealApp() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-
-  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized } = useAuth();
-
-  const [isClient, setIsClient] = useState(false);
   
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const [hasFreebie, setHasFreebie] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (isClient) {
-      const date = new Date();
-      const hour = date.getHours();
-      let newHeading = "What's on the menu?";
-      let newMealTime = 'lunch';
+    // This check ensures localStorage is only accessed on the client
+    if (Capacitor.getPlatform() === 'web') {
+      const freebieUsed = localStorage.getItem(FREEBIE_KEY);
+      setHasFreebie(freebieUsed !== 'true');
+    } else {
+      setHasFreebie(false); // No freebies on mobile
+    }
+    setIsInitialized(true);
 
-      if (hour < 12) {
-        newHeading = "Good morning! What's for breakfast?";
-        newMealTime = 'breakfast';
-      } else if (hour < 18) {
-        newHeading = "Good afternoon! What's for lunch?";
-        newMealTime = 'lunch';
-      } else {
-        newHeading = "Good evening! What's for dinner?";
-        newMealTime = 'dinner';
-      }
-      
-      setHeading(newHeading);
-      setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
+    const date = new Date();
+    const hour = date.getHours();
+    let newHeading = "What's on the menu?";
+    let newMealTime = 'lunch';
 
-      const handleBeforeInstallPrompt = (event: any) => {
-        event.preventDefault();
-        setInstallPrompt(event);
-      };
+    if (hour < 12) {
+      newHeading = "Good morning! What's for breakfast?";
+      newMealTime = 'breakfast';
+    } else if (hour < 18) {
+      newHeading = "Good afternoon! What's for lunch?";
+      newMealTime = 'lunch';
+    } else {
+      newHeading = "Good evening! What's for dinner?";
+      newMealTime = 'dinner';
+    }
+    
+    setHeading(newHeading);
+    setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
 
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    const handleBeforeInstallPrompt = (event: any) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
 
-      if (window.matchMedia('(display-mode: standalone)').matches) {
-        setIsAppInstalled(true);
-      }
-      
-      if (Capacitor.isNativePlatform()) {
-        registerNotifications().then(success => {
-          if (success) {
-            scheduleDailyNotifications();
-          }
-        });
-      }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-      const initAnalytics = async () => {
-          if (Capacitor.getPlatform() === 'web') return;
-          try {
-            await FirebaseAnalytics.setEnabled({ enabled: true });
-            await FirebaseAnalytics.logEvent({
-              name: "screen_view",
-              params: {
-                screen_name: "home",
-              }
-            });
-          } catch (error) {
-            console.error("Error initializing Firebase Analytics", error);
-          }
-      };
-
-      initAnalytics();
-
-      return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      };
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsAppInstalled(true);
+    }
+    
+    if (Capacitor.isNativePlatform()) {
+      registerNotifications().then(success => {
+        if (success) {
+          scheduleDailyNotifications();
+        }
+      });
     }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient]);
+    const initAnalytics = async () => {
+        if (Capacitor.getPlatform() === 'web') return;
+        try {
+          await FirebaseAnalytics.setEnabled({ enabled: true });
+          await FirebaseAnalytics.logEvent({
+            name: "screen_view",
+            params: {
+              screen_name: "home",
+            }
+          });
+        } catch (error) {
+          console.error("Error initializing Firebase Analytics", error);
+        }
+    };
+
+    initAnalytics();
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const useFreebie = () => {
+    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
+      localStorage.setItem(FREEBIE_KEY, 'true');
+      setHasFreebie(false);
+    }
+  };
+
 
   useEffect(() => {
     if (isCameraDialogOpen) {
@@ -314,24 +320,7 @@ export default function MealApp() {
     setIsPreferencesOpen(false);
     const generationType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
   
-    if (isClient && Capacitor.getPlatform() === 'web') {
-      if (user) {
-        // Logged-in web user
-        const hasCredits = (credits?.[generationType] ?? 0) > 0;
-        if (hasCredits) {
-          const result = await useCredit(generationType);
-          if (result.success) {
-            toast({ title: 'Credit Used', description: 'Your meal is being generated.' });
-            await handleGenerateMeal(items);
-          } else {
-            toast({ variant: 'destructive', title: 'Out of Credits', description: result.message });
-            setIsGoProModalOpen(true);
-          }
-        } else {
-           setIsGoProModalOpen(true);
-        }
-      } else {
-        // Guest web user
+    if (Capacitor.getPlatform() === 'web') {
         if (hasFreebie) {
           useFreebie();
           toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
@@ -339,8 +328,7 @@ export default function MealApp() {
         } else {
            setIsLimitModalOpen(true);
         }
-      }
-    } else if (isClient) {
+    } else {
       // Mobile user
       const adLogic = generationType === '7-day-plan' ? showSevenDayPlanAds : showWatchToGenerateAd;
       adLogic(() => handleGenerateMeal(items));
@@ -353,24 +341,13 @@ export default function MealApp() {
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    setSelectedMood(mood);
-    const generationType = mood === '7-day-plan' ? '7-day-plan' : 'single';
-    
-    if (isClient && Capacitor.getPlatform() === 'web') {
-      if (user) {
-        if ((credits?.[generationType] ?? 0) > 0) {
-          handleOpenPreferences(mood);
-        } else {
-          setIsGoProModalOpen(true);
-        }
+    if (Capacitor.getPlatform() === 'web') {
+      if (hasFreebie) {
+        handleOpenPreferences(mood);
       } else {
-        if (hasFreebie) {
-          handleOpenPreferences(mood);
-        } else {
-           setIsLimitModalOpen(true);
-        }
+        setIsLimitModalOpen(true);
       }
-    } else if (isClient) {
+    } else {
       // On mobile, always open preferences, ads are shown later.
       handleOpenPreferences(mood);
     }
@@ -498,7 +475,7 @@ export default function MealApp() {
 
   const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
     
-    if (!isClient || !isInitialized) {
+    if (!isInitialized) {
       return (
           <Card className="relative flex flex-col text-center h-full">
               <CardHeader className="p-6">
@@ -521,25 +498,15 @@ export default function MealApp() {
     }
     
     const isWeb = Capacitor.getPlatform() === 'web';
-    const generationType = isPlan ? '7-day-plan' : 'single';
-    let showPurchaseState = false;
+    let showAppNag = false;
 
     if (isWeb) {
-      if (user) {
-        showPurchaseState = (credits?.[generationType] ?? 0) <= 0;
-      } else {
-        showPurchaseState = !hasFreebie;
-      }
+      showAppNag = !hasFreebie;
     }
 
     const getBadgeText = () => {
       if (isWeb) {
-        if (showPurchaseState) return 'Get App';
-        if (user) {
-          const count = credits?.[generationType] ?? 0;
-          return `${count} left`;
-        }
-        return '1 Free Left';
+        return showAppNag ? 'Get App' : '1 Free Left';
       }
       return isPlan ? 'Watch 2 ads' : 'Watch an ad';
     };
@@ -547,7 +514,7 @@ export default function MealApp() {
     const getButtonContent = () => {
         if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>;
         if (isWeb) {
-          if (showPurchaseState) return <><Star className="mr-2 h-4 w-4" />Get App</>;
+          if (showAppNag) return <><Star className="mr-2 h-4 w-4" />Get App</>;
           return <><Sparkles className="mr-2 h-4 w-4" />Generate</>;
         }
         return <><Video className="mr-2 h-4 w-4" />{isPlan ? 'Watch Ads' : 'Watch Ad'}</>;
@@ -555,7 +522,7 @@ export default function MealApp() {
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-             <Badge variant={showPurchaseState ? 'destructive' : 'premium'} className="absolute top-2 right-2">{getBadgeText()}</Badge>
+             <Badge variant={showAppNag ? 'destructive' : 'premium'} className="absolute top-2 right-2">{getBadgeText()}</Badge>
             <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">{icon}</div><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader>
             <CardContent className="flex-1 p-6 pt-0" />
             <CardFooter className="p-6 pt-0"><Button className="w-full" onClick={onClick} disabled={!!loadingMood}>{getButtonContent()}</Button></CardFooter>
@@ -567,7 +534,7 @@ export default function MealApp() {
     { title: "Welcome to MealGenna!", description: "This quick tour will walk you through the main features. Use 'Next' and 'Back' to navigate." },
     { title: "App Controls", description: "Manage your account, re-run this tutorial, and install the app to your device for easy access." },
     { title: "Scan Your Pantry", description: "Use this to scan what's in your pantry. Our AI will identify items and suggest recipes." },
-    { title: "Generate Meals", description: "Choose a card to get meal ideas. On mobile, watch an ad. On web, use credits or purchase more." },
+    { title: "Generate Meals", description: "Choose a card to get meal ideas. On mobile, watch an ad. On web, use your one free generation." },
     { title: "You're All Set!", description: "You're ready to start exploring. Close this dialog and start generating your first meal." },
   ];
 
@@ -662,7 +629,7 @@ export default function MealApp() {
           <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
             <DialogHeader className="p-6 pb-2"><DialogTitle>Here are your meal ideas!</DialogTitle><DialogDescription>We've generated three options for you based on your preferences.</DialogDescription></DialogHeader>
             <div className="flex-1 flex flex-col overflow-hidden">
-              {(generatedMeals && generatedMeals.length > 0) ? ( <Tabs defaultValue={generatedMeals[0]?.title} className="flex-1 flex flex-col overflow-hidden"><TabsList className="flex-wrap h-auto mx-6 justify-start md:justify-center">{generatedMeals.map((meal) => (<TabsTrigger key={meal.title} value={meal.title} className="flex-grow md:flex-grow-0">{meal.title}</TabsTrigger>))}</TabsList>{generatedMeals.map((meal) => (<TabsContent key={meal.title} value={meal.title} className="flex-1 overflow-y-auto mt-0"><Card className="border-0 shadow-none rounded-none"><CardHeader className="p-6">{meal.imageUrl && ( <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden mb-4"><Image src={meal.imageUrl} alt={meal.title} fill style={{objectFit: 'cover'}} data-ai-hint="food meal"/></div> )}<CardTitle className="text-xl md:text-2xl">{meal.title}</CardTitle><CardDescription>{meal.description}</CardDescription></CardHeader><CardContent className="px-6 grid gap-6"><div><h3 className="text-xl font-semibold mb-2">Ingredients</h3><ul className="list-disc list-inside space-y-1 text-muted-foreground">{meal.ingredients.map((item, index) => <li key={index}>{item}</li>)}</ul></div><div><h3 className="text-xl font-semibold mb-2">Recipe</h3><ol className="list-decimal list-inside space-y-2 text-muted-foreground">{meal.recipe.map((step, index) => <li key={index}>{step}</li>)}</ol></div><div><h3 className="text-xl font-semibold mb-2">Nutrition Facts</h3><Table><TableHeader><TableRow><TableHead>Nutrient</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell>Calories</TableCell><TableCell className="text-right">{meal.nutrition.calories}</TableCell></TableRow><TableRow><TableCell>Protein</TableCell><TableCell className="text-right">{meal.nutrition.protein}</TableCell></TableRow><TableRow><TableCell>Carbohydrates</TableCell><TableCell className="text-right">{meal.nutrition.carbs}</TableCell></TableRow><TableRow><TableCell>Fat</TableCell><TableCell className="text-right">{meal.nutrition.fat}</TableCell></TableRow></TableBody></Table></div></CardContent><CardFooter className="p-6 flex flex-col sm:flex-row gap-2 bg-muted/50"><Button variant="outline" className="w-full sm:w-auto" onClick={() => openGroceryList(meal)}><ClipboardList className="mr-2 h-4 w-4" />Grocery List</Button><Button onClick={() => handleDownloadRecipe(meal)} className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" />Download Recipe</Button></CardFooter></Card></TabsContent>))}</Tabs> ) : ( <div className="flex flex-col items-center justify-center flex-1 min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div><p className="mt-4 text-muted-foreground">Whipping something up for you...</p></div> )}
+              {(generatedMeals && generatedMeals.length > 0) ? ( <Tabs defaultValue={generatedMeals[0]?.title} className="flex-1 flex flex-col overflow-hidden"><TabsList className="flex-wrap h-auto mx-6 justify-start md:justify-center">{generatedMeals.map((meal) => (<TabsTrigger key={meal.title} value={meal.title} className="flex-grow md:flex-grow-0">{meal.title}</TabsTrigger>))}</TabsList>{generatedMeals.map((meal, index) => (<TabsContent key={meal.title} value={meal.title} className="flex-1 overflow-y-auto mt-0"><Card className="border-0 shadow-none rounded-none"><CardHeader className="p-6"><div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden mb-4"><Image src={meal.imageUrl || `https://picsum.photos/seed/${index}/600/400`} alt={meal.title} fill style={{objectFit: 'cover'}} data-ai-hint="food meal"/></div><CardTitle className="text-xl md:text-2xl">{meal.title}</CardTitle><CardDescription>{meal.description}</CardDescription></CardHeader><CardContent className="px-6 grid gap-6"><div><h3 className="text-xl font-semibold mb-2">Ingredients</h3><ul className="list-disc list-inside space-y-1 text-muted-foreground">{meal.ingredients.map((item, i) => <li key={i}>{item}</li>)}</ul></div><div><h3 className="text-xl font-semibold mb-2">Recipe</h3><ol className="list-decimal list-inside space-y-2 text-muted-foreground">{meal.recipe.map((step, i) => <li key={i}>{step}</li>)}</ol></div><div><h3 className="text-xl font-semibold mb-2">Nutrition Facts</h3><Table><TableHeader><TableRow><TableHead>Nutrient</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader><TableBody><TableRow><TableCell>Calories</TableCell><TableCell className="text-right">{meal.nutrition.calories}</TableCell></TableRow><TableRow><TableCell>Protein</TableCell><TableCell className="text-right">{meal.nutrition.protein}</TableCell></TableRow><TableRow><TableCell>Carbohydrates</TableCell><TableCell className="text-right">{meal.nutrition.carbs}</TableCell></TableRow><TableRow><TableCell>Fat</TableCell><TableCell className="text-right">{meal.nutrition.fat}</TableCell></TableRow></TableBody></Table></div></CardContent><CardFooter className="p-6 flex flex-col sm:flex-row gap-2 bg-muted/50"><Button variant="outline" className="w-full sm:w-auto" onClick={() => openGroceryList(meal)}><ClipboardList className="mr-2 h-4 w-4" />Grocery List</Button><Button onClick={() => handleDownloadRecipe(meal)} className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" />Download Recipe</Button></CardFooter></Card></TabsContent>))}</Tabs> ) : ( <div className="flex flex-col items-center justify-center flex-1 min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div><p className="mt-4 text-muted-foreground">Whipping something up for you...</p></div> )}
             </div>
             <DialogFooter className="p-6 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"><Button onClick={() => setIsMealSuggestionsOpen(false)} variant="secondary">Close</Button></DialogFooter>
           </DialogContent>
@@ -708,12 +675,12 @@ export default function MealApp() {
             </DialogContent>
         </Dialog>
 
-        <Dialog open={isTutorialOpen} onOpenChange={setIsTutorialOpen}>
+        <Dialog open={isTutorialOpen} onOpenChange={setTutorialStep}>
             <DialogContent>
                 <DialogHeader><DialogTitle>{tutorialContent[tutorialStep].title}</DialogTitle><DialogDescription>{tutorialContent[tutorialStep].description}</DialogDescription></DialogHeader>
                 <DialogFooter className="justify-between">
                     <div>{tutorialStep > 0 && ( <Button variant="outline" onClick={() => setTutorialStep(tutorialStep - 1)}>Back</Button> )}</div>
-                    <div className="flex gap-2"><Button variant="secondary" onClick={() => setIsTutorialOpen(false)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setIsTutorialOpen(false)}>Finish</Button> )}</div>
+                    <div className="flex gap-2"><Button variant="secondary" onClick={() => setTutorialStep(tutorialContent.length)}>End Tour</Button>{tutorialStep < tutorialContent.length - 1 ? ( <Button onClick={() => setTutorialStep(tutorialStep + 1)}>Next</Button> ) : ( <Button onClick={() => setTutorialStep(tutorialContent.length)}>Finish</Button> )}</div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -743,5 +710,3 @@ const MealTypeButton = ({ mealType, icon, onClick }: { mealType: string, icon: R
         <span className="text-sm font-medium capitalize">{mealType}</span>
     </button>
 );
-
-    
