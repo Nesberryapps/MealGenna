@@ -4,59 +4,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Loader2, LogOut, Star } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { X, Star } from 'lucide-react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
 import { Capacitor } from '@capacitor/core';
 import { GoProModal } from '@/components/go-pro-modal';
 
 export default function AccountPage() {
-  const { toast } = useToast();
-  const { user, credits, refreshCredits, isInitialized, signOut } = useAuth();
-  
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
 
-  const handleSignOut = async () => {
-      await signOut();
-      toast({ title: 'Signed Out', description: 'You have been signed out.' });
-  }
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment_success') === 'true') {
-      toast({
-        title: "Payment Successful!",
-        description: "Your credits have been added. It may take a moment for them to appear.",
-      });
-      if (refreshCredits) refreshCredits();
-      // Remove query params from URL
-      const newUrl = window.location.origin + window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const isLoading = !isInitialized;
-
   const getStatusContent = () => {
-      if (isLoading) {
-          return { text: 'Loading status...', badge: <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> };
-      }
       if (Capacitor.getPlatform() !== 'web') {
            return { text: 'You are on the Mobile plan.', badge: <Badge variant="secondary" className="text-base">Mobile</Badge> };
       }
-      if (!user) {
-          return { text: 'Sign in to sync credits.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
-      }
-      const singleCredits = credits?.single || 0;
-      const planCredits = credits?.['7-day-plan'] || 0;
-
-      if (singleCredits > 0 || planCredits > 0) {
-          return { text: 'You have active generation credits.', badge: <Badge variant="premium" className="text-base">Active</Badge> };
-      }
-      return { text: 'You are out of credits.', badge: <Badge variant="destructive" className="text-base">Free</Badge> };
+      return { text: 'You are using the Web version.', badge: <Badge variant="outline" className="text-base">Web</Badge> };
   };
 
   const status = getStatusContent();
@@ -75,7 +36,7 @@ export default function AccountPage() {
         <CardHeader>
           <CardTitle className="text-3xl">Your Account</CardTitle>
           <CardDescription>
-            Manage your account and generation credits.
+            Manage your app experience.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -88,37 +49,15 @@ export default function AccountPage() {
           </div>
           
           {Capacitor.getPlatform() === 'web' && (
-             user ? (
-                <div className="space-y-4">
-                    <div className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></div>
-                     <div className="p-4 border rounded-lg grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold">{credits?.single ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</div>
-                            <p className="text-sm text-muted-foreground">Single Meal Credits</p>
-                        </div>
-                         <div className="text-center">
-                            <div className="text-2xl font-bold">{credits?.['7-day-plan'] ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</div>
-                            <p className="text-sm text-muted-foreground">Meal Plan Credits</p>
-                        </div>
-                    </div>
-                     <Button onClick={() => setIsGoProModalOpen(true)} className="w-full">
-                        <Star className="mr-2 h-4 w-4" /> Get More With The App
-                    </Button>
-                    <Button onClick={handleSignOut} variant="outline" className="w-full">
-                        <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                    </Button>
-                </div>
-            ) : (
-                <div className="space-y-4 p-4 border rounded-lg text-center">
-                    <h3 className="font-semibold">Get Started on Web</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Sign in to sync your credits or get the app for unlimited generations.
-                    </p>
-                    <Button onClick={() => setIsGoProModalOpen(true)} className="w-full">
-                       <Star className="mr-2 h-4 w-4" /> Get the App
-                    </Button>
-                </div>
-            )
+            <div className="space-y-4 p-4 border rounded-lg text-center">
+                <h3 className="font-semibold">Get Unlimited Generations</h3>
+                <p className="text-sm text-muted-foreground">
+                    Download the mobile app for unlimited, ad-supported meal generations and the full MealGenna experience.
+                </p>
+                <Button onClick={() => setIsGoProModalOpen(true)} className="w-full">
+                   <Star className="mr-2 h-4 w-4" /> Get the Mobile App
+                </Button>
+            </div>
           )}
           
            <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 text-center">
@@ -145,7 +84,7 @@ export default function AccountPage() {
         </CardContent>
         <CardFooter className="flex-col items-start gap-4">
            <p className="text-sm text-muted-foreground">
-            For the best experience and unlimited generations, download the MealGenna mobile app. One-time credit purchases on the web are no longer available.
+            The web version of MealGenna provides a free preview of our service. For the best experience and unlimited generations, please download the MealGenna mobile app.
           </p>
         </CardFooter>
       </Card>
