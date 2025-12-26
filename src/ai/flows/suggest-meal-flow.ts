@@ -99,11 +99,7 @@ const suggestMealsFlow = ai.defineFlow(
           model: 'googleai/imagen-4.0-fast-generate-001',
           prompt: `A delicious, high-quality, photorealistic image of: ${meal.title}`,
         });
-        if (media?.url) {
-            meal.imageUrl = media.url;
-        } else {
-            meal.imageUrl = '';
-        }
+        meal.imageUrl = media?.url || '';
       } catch (error) {
         console.error(`Image generation failed for "${meal.title}", proceeding without image.`, error);
         meal.imageUrl = '';
