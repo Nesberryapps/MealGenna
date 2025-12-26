@@ -14,7 +14,7 @@ import { Capacitor } from '@capacitor/core';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, signOut, credits, refreshCredits } = useAuth();
+  const { user, credits, refreshCredits, isInitialized, signOut } = useAuth();
   
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
