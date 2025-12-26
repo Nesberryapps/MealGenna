@@ -14,7 +14,8 @@ const config: CapacitorConfig = {
   },
   ios: {
     deploymentTarget: '15.0',
-    scheme: 'MealGenna' 
+    scheme: 'MealGenna',
+    useFrameworks: true
   }
 };
 

@@ -24,9 +24,11 @@ jobs:
       - name: Sync iOS Project
         run: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: Clean and Install CocoaPods
         run: |
           cd ios/App
+          pod deintegrate
+          pod cache clean --all
           pod install
           cd ../..
 
