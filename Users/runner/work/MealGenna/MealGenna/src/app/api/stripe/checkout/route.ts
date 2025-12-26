@@ -28,7 +28,9 @@ export async function POST(req: Request) {
                 userRecord = await admin.auth().createUser({ email: userEmail });
                 // Also send a magic link so they can sign in later
                 const actionCodeSettings = { url: `${process.env.NEXT_PUBLIC_APP_URL}/account`, handleCodeInApp: true };
-                await admin.auth().generateSignInWithEmailLink(userEmail, actionCodeSettings);
+                const link = await admin.auth().generateSignInWithEmailLink(userEmail, actionCodeSettings);
+                // In a real app, you would email this link to the user.
+                console.log(`Generated sign-in link for new user ${userEmail}: ${link}`);
             } else {
                 throw error; // Re-throw other errors
             }

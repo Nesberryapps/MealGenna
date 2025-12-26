@@ -89,6 +89,8 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
       }
 
       if (data.url) {
+        // In a real app, you would also trigger sending the magic link here
+        // if it's a new guest user. For now, the backend handles this.
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned.");
