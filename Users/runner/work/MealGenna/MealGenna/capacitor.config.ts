@@ -13,12 +13,7 @@ const config: CapacitorConfig = {
     // Firebase Analytics and other plugins are configured here now
   },
   ios: {
-    packageClassList: [
-      "AdMobPlugin",
-      "FirebaseAnalyticsPlugin",
-      "FilesystemPlugin",
-      "LocalNotificationsPlugin"
-    ]
+    // packageClassList is no longer needed in Capacitor 6
   }
 };
 
