@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged, signInWithCustomToken, User as FirebaseUse
 import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
 import { app } from '@/lib/firebase-client';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Credits {
   single: number;
@@ -43,6 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (Capacitor.getPlatform() === 'web') {
@@ -61,13 +63,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const verifySignInLink = useCallback(async (href: string) => {
+    // Check is done on the client side
     if (auth.isSignInWithEmailLink(href)) {
       setIsSigningIn(true);
-      let email = window.localStorage.getItem('emailForSignIn');
-      if (!email) {
-        setIsSigningIn(false);
-        return { success: false, message: 'Please use the same device and browser you used to request the sign-in link.' };
-      }
       
       try {
         const response = await fetch('/api/account/verify', {
@@ -79,17 +77,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
 
+        // Sign in with the custom token returned from the server
         await signInWithCustomToken(auth, data.customToken);
         
-        window.localStorage.removeItem('emailForSignIn');
         return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
 
       } catch (error: any) {
         return { success: false, message: error.message };
       } finally {
         setIsSigningIn(false);
-        const cleanUrl = window.location.href.split('?')[0];
-        window.history.replaceState({}, document.title, cleanUrl);
+        // Clean the URL to remove the sign-in link parameters
+        const newUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
       }
     }
     return { success: false, message: 'Not a sign-in link.' };
@@ -120,18 +119,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
-      setUser(fbUser ? { email: fbUser.email! } : null);
-      fetchCredits(fbUser); // Fetch credits when auth state changes
-    });
-    return () => unsubscribeAuth();
-  }, [auth, fetchCredits]);
-  
-  useEffect(() => {
-    if (isInitialized && !firebaseUser && window.location.search.includes('oobCode')) {
-      verifySignInLink(window.location.href);
-    }
-  }, [isInitialized, firebaseUser, verifySignInLink]);
+      setUser(fbUser?.email ? { email: fbUser.email } : null);
+      // Fetch or re-fetch credits whenever the user state changes
+      const unsubscribeCredits = fetchCredits(fbUser); 
+      
+      // On initial load, if the user is not signed in but there's a link, try to sign them in.
+      if (!fbUser && window.location.href.includes('oobCode=')) {
+        verifySignInLink(window.location.href).then(result => {
+          if (result.success) {
+            toast({ title: "Sign In Successful", description: result.message });
+          } else if (result.message !== 'Not a sign-in link.') {
+            toast({ variant: 'destructive', title: 'Sign In Failed', description: result.message });
+          }
+        });
+      } else if (!isInitialized) {
+        setIsInitialized(true);
+      }
 
+      return () => unsubscribeCredits();
+    });
+
+    return () => unsubscribeAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth, fetchCredits, verifySignInLink]);
+  
   const beginRecovery = async (email: string) => {
     setIsRecovering(true);
     try {
@@ -143,7 +154,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Something went wrong');
 
-      window.localStorage.setItem('emailForSignIn', email);
       return { success: true, message: "We've sent a secure sign-in link to your email address." };
     } catch (error: any) {
       return { success: false, message: error.message };

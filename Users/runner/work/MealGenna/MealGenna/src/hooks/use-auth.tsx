@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
@@ -6,6 +5,7 @@ import { getAuth, onAuthStateChanged, signInWithCustomToken, User as FirebaseUse
 import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
 import { app } from '@/lib/firebase-client';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Credits {
   single: number;
@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (Capacitor.getPlatform() === 'web') {
@@ -61,7 +62,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const verifySignInLink = useCallback(async (href: string) => {
-    // Check is done on the client side
+    if (isSigningIn) return { success: false, message: 'Sign-in already in progress.' };
+    
     if (auth.isSignInWithEmailLink(href)) {
       setIsSigningIn(true);
       
@@ -75,7 +77,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
 
-        // Sign in with the custom token returned from the server
         await signInWithCustomToken(auth, data.customToken);
         
         return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
@@ -84,13 +85,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, message: error.message };
       } finally {
         setIsSigningIn(false);
-        // Clean the URL to remove the sign-in link parameters
         const newUrl = window.location.origin + window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
       }
     }
     return { success: false, message: 'Not a sign-in link.' };
-  }, [auth]);
+  }, [auth, isSigningIn]);
 
   const fetchCredits = useCallback((fbUser: FirebaseUser | null) => {
       if (fbUser) {
@@ -118,18 +118,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
       setUser(fbUser?.email ? { email: fbUser.email } : null);
-      // Fetch or re-fetch credits whenever the user state changes
       const unsubscribeCredits = fetchCredits(fbUser); 
       
-      // On initial load, if the user is not signed in but there's a link, try to sign them in.
-      if (!fbUser && window.location.href.includes('oobCode=')) {
-        verifySignInLink(window.location.href);
+      if (!isInitialized) {
+        if (!fbUser && typeof window !== 'undefined' && window.location.href.includes('oobCode=')) {
+          verifySignInLink(window.location.href).then(result => {
+            if (result.success) {
+              toast({ title: "Sign In Successful", description: result.message });
+            } else if (result.message !== 'Not a sign-in link.' && result.message !== 'Sign-in already in progress.') {
+              toast({ variant: 'destructive', title: 'Sign In Failed', description: result.message });
+            }
+          });
+        }
+        setIsInitialized(true);
       }
 
       return () => unsubscribeCredits();
     });
 
     return () => unsubscribeAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth, fetchCredits, verifySignInLink]);
   
   const beginRecovery = async (email: string) => {

@@ -112,7 +112,7 @@ export default function MealApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized, firebaseUser } = useAuth();
+  const { user, credits, hasFreebie, useCredit, useFreebie, isInitialized } = useAuth();
 
   const [isClient, setIsClient] = useState(false);
   
@@ -122,18 +122,6 @@ export default function MealApp() {
 
   useEffect(() => {
     if (isClient) {
-      const checkLink = async () => {
-        if (window.location.href.includes('oobCode')) {
-          const result = await verifySignInLink(window.location.href);
-          if (result.success) {
-            toast({ title: 'Sign-in Successful!', description: result.message });
-          } else if (result.message !== 'Not a sign-in link.') {
-            toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
-          }
-        }
-      };
-      checkLink();
-      
       const date = new Date();
       const hour = date.getHours();
       let newHeading = "What's on the menu?";

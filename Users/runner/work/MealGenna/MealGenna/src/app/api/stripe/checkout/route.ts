@@ -1,62 +1,228 @@
+'use client';
 
-import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-import { admin } from '@/lib/firebase-admin';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { getAuth, onAuthStateChanged, signInWithCustomToken, User as FirebaseUser } from 'firebase/auth';
+import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
+import { app } from '@/lib/firebase-client';
+import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/components/ui/use-toast';
 
-export async function POST(req: Request) {
-  try {
-    const { priceId } = await req.json();
+interface Credits {
+  single: number;
+  '7-day-plan': number;
+}
 
-    if (!priceId) {
-      return new NextResponse('Missing priceId', { status: 400 });
-    }
+interface AuthContextType {
+  user: { email: string } | null;
+  firebaseUser: FirebaseUser | null;
+  credits: Credits | null;
+  isInitialized: boolean;
+  isRecovering: boolean;
+  isSigningIn: boolean;
+  hasFreebie: boolean;
+  useFreebie: () => void;
+  useCredit: (type: 'single' | '7-day-plan') => Promise<{ success: boolean; message: string }>;
+  beginRecovery: (email: string) => Promise<{ success: boolean; message: string }>;
+  signOut: () => Promise<void>;
+  verifySignInLink: (href: string) => Promise<{ success: boolean; message: string; email?: string }>;
+  refreshCredits: () => void;
+}
 
-    let userId: string | undefined;
-    const token = req.headers.get('Authorization')?.split('Bearer ')[1];
-    let userEmail: string | undefined;
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-    if (token) {
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        userId = decodedToken.uid;
-        userEmail = decodedToken.email;
+const FREEBIE_KEY = 'mealgenna_freebie_used_v2';
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [credits, setCredits] = useState<Credits | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [hasFreebie, setHasFreebie] = useState(true);
+  
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (Capacitor.getPlatform() === 'web') {
+      const freebieUsed = localStorage.getItem(FREEBIE_KEY);
+      setHasFreebie(freebieUsed !== 'true');
     } else {
-        // Create an anonymous user for guest checkouts
-        const userRecord = await admin.auth().createUser({});
-        userId = userRecord.uid;
-        console.log(`Created anonymous user with UID: ${userId} for guest checkout.`);
+      setHasFreebie(false); // No freebies on mobile
     }
+  }, []);
+
+  const useFreebie = () => {
+    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
+      localStorage.setItem(FREEBIE_KEY, 'true');
+      setHasFreebie(false);
+    }
+  };
+
+  const verifySignInLink = useCallback(async (href: string) => {
+    if (isSigningIn) return { success: false, message: 'Sign-in already in progress.' };
     
-    if (!userId) {
-        return new NextResponse('Could not determine user for checkout', { status: 500 });
+    if (auth.isSignInWithEmailLink(href)) {
+      setIsSigningIn(true);
+      
+      try {
+        const response = await fetch('/api/account/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: href }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
+
+        await signInWithCustomToken(auth, data.customToken);
+        
+        return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
+
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      } finally {
+        setIsSigningIn(false);
+        const newUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
     }
+    return { success: false, message: 'Not a sign-in link.' };
+  }, [auth, isSigningIn]);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const fetchCredits = useCallback((fbUser: FirebaseUser | null) => {
+      if (fbUser) {
+          const creditsRef = doc(db, 'user_credits', fbUser.uid);
+          return onSnapshot(creditsRef, (snap) => {
+              if (snap.exists()) {
+                  setCredits(snap.data() as Credits);
+              } else {
+                  setCredits({ single: 0, '7-day-plan': 0 });
+              }
+              if (!isInitialized) setIsInitialized(true);
+          }, (error) => {
+              console.error("Error fetching credits:", error);
+              setCredits({ single: 0, '7-day-plan': 0 });
+              if (!isInitialized) setIsInitialized(true);
+          });
+      } else {
+          setCredits(null);
+          if (!isInitialized) setIsInitialized(true);
+      }
+      return () => {};
+  }, [db, isInitialized]);
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price: priceId,
-        quantity: 1,
-      }],
-      mode: 'payment',
-      success_url: `${appUrl}/account?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/account`,
-      // Stripe will collect the email on its page if not provided
-      ...(userEmail && { customer_email: userEmail }),
-      metadata: {
-        userId,
-        priceId,
-      },
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+      setFirebaseUser(fbUser);
+      setUser(fbUser?.email ? { email: fbUser.email } : null);
+      const unsubscribeCredits = fetchCredits(fbUser); 
+      
+      if (!isInitialized) {
+        if (!fbUser && typeof window !== 'undefined' && window.location.href.includes('oobCode=')) {
+          verifySignInLink(window.location.href).then(result => {
+            if (result.success) {
+              toast({ title: "Sign In Successful", description: result.message });
+            } else if (result.message !== 'Not a sign-in link.' && result.message !== 'Sign-in already in progress.') {
+              toast({ variant: 'destructive', title: 'Sign In Failed', description: result.message });
+            }
+          });
+        }
+        setIsInitialized(true);
+      }
+
+      return () => unsubscribeCredits();
     });
 
-    if (!session.url) {
-        return new NextResponse('Failed to create Stripe session', { status: 500 });
+    return () => unsubscribeAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth, fetchCredits, verifySignInLink]);
+  
+  const beginRecovery = async (email: string) => {
+    setIsRecovering(true);
+    try {
+      const response = await fetch('/api/account/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Something went wrong');
+
+      return { success: true, message: "We've sent a secure sign-in link to your email address." };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    } finally {
+      setIsRecovering(false);
     }
+  };
 
-    return NextResponse.json({ url: session.url });
+  const signOut = async () => {
+    await auth.signOut();
+    setUser(null);
+    setFirebaseUser(null);
+    setCredits(null);
+  };
 
-  } catch (error) {
-    console.error('[STRIPE_CHECKOUT_ERROR]', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+  const useCredit = useCallback(async (type: 'single' | '7-day-plan'): Promise<{ success: boolean; message: string }> => {
+    if (!firebaseUser) {
+      return { success: false, message: 'Please sign in to use credits.' };
+    }
+    const creditsRef = doc(db, 'user_credits', firebaseUser.uid);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userCreditsSnap = await transaction.get(creditsRef);
+        let currentCredits: Credits = { single: 0, '7-day-plan': 0 };
+        if (userCreditsSnap.exists()) {
+          currentCredits = userCreditsSnap.data() as Credits;
+        }
+        if ((currentCredits[type] || 0) > 0) {
+          currentCredits[type] -= 1;
+          transaction.set(creditsRef, currentCredits, { merge: true });
+        } else {
+          throw new Error(`No credits of type "${type}" available.`);
+        }
+      });
+      return { success: true, message: 'Credit Used. Your meal is being generated.' };
+    } catch (error: any) {
+      console.error("Failed to use credit:", error);
+      const friendlyType = type === 'single' ? 'Single Meal' : 'Meal Plan';
+      return { success: false, message: `You have no ${friendlyType} credits left.` };
+    }
+  }, [firebaseUser, db]);
+  
+  const refreshCredits = useCallback(() => {
+    if (firebaseUser) {
+        fetchCredits(firebaseUser);
+    }
+  }, [firebaseUser, fetchCredits]);
+
+
+  const value = {
+    user,
+    firebaseUser,
+    credits,
+    isInitialized,
+    isRecovering,
+    isSigningIn,
+    hasFreebie,
+    useFreebie,
+    useCredit,
+    beginRecovery,
+    signOut,
+    verifySignInLink,
+    refreshCredits,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-}
+  return context;
+};

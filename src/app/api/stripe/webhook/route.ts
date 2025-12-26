@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { stripe } from '../../../../lib/stripe';
-import { admin } from '../../../../lib/firebase-admin';
+import { stripe } from '@/lib/stripe';
+import { admin } from '@/lib/firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
 const relevantEvents = new Set([

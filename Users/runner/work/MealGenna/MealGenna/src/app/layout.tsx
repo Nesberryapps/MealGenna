@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -11,7 +10,6 @@ import Script from 'next/script';
 import type { Viewport } from 'next'
 import AdMobInit from "@/components/AdMobInit";
 import { AuthProvider } from "@/hooks/use-auth";
-import { PremiumProvider } from "@/hooks/use-premium";
 
 
 export const viewport: Viewport = {
@@ -97,7 +95,6 @@ export default function RootLayout({
             disableTransitionOnChange
         >
           <AuthProvider>
-            <PremiumProvider>
               <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <div className="container flex h-14 items-center">
                     <Link href="/" className="mr-auto flex items-center">
@@ -127,7 +124,6 @@ export default function RootLayout({
                 </div>
               </footer>
               <Toaster />
-            </PremiumProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
