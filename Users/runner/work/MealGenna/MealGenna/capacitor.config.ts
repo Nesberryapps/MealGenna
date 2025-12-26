@@ -13,7 +13,7 @@ const config: CapacitorConfig = {
     // Firebase Analytics and other plugins are configured here now
   },
   ios: {
-    // packageClassList is no longer needed in Capacitor 6
+    deploymentTarget: '15.0'
   }
 };
 

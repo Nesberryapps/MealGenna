@@ -13,8 +13,7 @@ const config: CapacitorConfig = {
     // Keep your existing plugins configuration here if any
   },
   ios: {
-    // ✅ THIS MUST BE EMPTY (or contain only 'scheme')
-    // Do NOT paste "packageClassList" here.
+    deploymentTarget: '15.0',
     scheme: 'MealGenna' 
   }
 };
