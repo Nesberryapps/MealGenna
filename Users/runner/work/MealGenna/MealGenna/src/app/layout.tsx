@@ -118,7 +118,7 @@ export default function RootLayout({
                   <Link href="/blog" className="text-sm hover:underline">Blog</Link>
                   <Link href="/terms" className="text-sm hover:underline">Terms & Conditions</Link>
                   <Link href="/privacy" className="text-sm hover:underline">Privacy Policy</Link>
-                  <Link href="/contact" className="text-sm hover:underline">Contact Us</Link>
+                  <Link href="/contact" className="text-sm hoverunderline">Contact Us</Link>
               </nav>
             </div>
           </footer>
