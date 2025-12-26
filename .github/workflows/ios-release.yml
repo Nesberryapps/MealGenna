@@ -24,6 +24,15 @@ jobs:
       - name: Sync iOS Project
         run: npx cap sync ios
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: |
+          cd ios/App
+          xcodegen generate
+          cd ../..
+      
       - name: Clean and Install CocoaPods
         run: |
           cd ios/App
@@ -61,50 +70,6 @@ jobs:
 
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
-
-      - name: Configure Project Signing (Strict)
-        run: |
-          sudo gem install xcodeproj
-          
-          ruby -e "
-          require 'xcodeproj'
-          project_path = 'ios/App/App.xcodeproj'
-          project = Xcodeproj::Project.open(project_path)
-          
-          # Loop through ALL targets (App, Capacitor, AdMob, etc)
-          project.targets.each do |target|
-            target.build_configurations.each do |config|
-              # 1. EVERYONE gets the Team ID (Required)
-              config.build_settings['DEVELOPMENT_TEAM'] = '5BYJT9QTKZ'
-              
-              # 2. ONLY the Main App gets the Profile and Manual Signing
-              if target.name == 'App'
-                config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'MealGenna Pro Store'
-                config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
-              else
-                # 3. Force Plugins to be Manual/Empty (Prevents the crash)
-                config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
-                config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ''
-                config.build_settings['CODE_SIGN_IDENTITY'] = '' 
-              end
-            end
-          end
-
-          # Enable Push Notifications (Only for App)
-          target = project.targets.find { |t| t.name == 'App' }
-          if target
-             attributes = project.root_object.attributes['TargetAttributes'] || {}
-             target_attrs = attributes[target.uuid] || {}
-             target_attrs['SystemCapabilities'] ||= {}
-             target_attrs['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
-             attributes[target.uuid] = target_attrs
-             project.root_object.attributes['TargetAttributes'] = attributes
-          end
-          
-          project.save
-          puts '✅ Signing configured strictly for App target only!'
-          "
 
       - name: Build iOS App
         run: |
