@@ -114,76 +114,68 @@ export default function MealApp() {
 
   const { user, credits, hasFreebie, useCredit, useFreebie, isInitialized } = useAuth();
 
-  const [isClient, setIsClient] = useState(false);
-  
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    const date = new Date();
+    const hour = date.getHours();
+    let newHeading = "What's on the menu?";
+    let newMealTime = 'lunch';
 
-  useEffect(() => {
-    if (isClient) {
-      const date = new Date();
-      const hour = date.getHours();
-      let newHeading = "What's on the menu?";
-      let newMealTime = 'lunch';
+    if (hour < 12) {
+      newHeading = "Good morning! What's for breakfast?";
+      newMealTime = 'breakfast';
+    } else if (hour < 18) {
+      newHeading = "Good afternoon! What's for lunch?";
+      newMealTime = 'lunch';
+    } else {
+      newHeading = "Good evening! What's for dinner?";
+      newMealTime = 'dinner';
+    }
+    
+    setHeading(newHeading);
+    setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
 
-      if (hour < 12) {
-        newHeading = "Good morning! What's for breakfast?";
-        newMealTime = 'breakfast';
-      } else if (hour < 18) {
-        newHeading = "Good afternoon! What's for lunch?";
-        newMealTime = 'lunch';
-      } else {
-        newHeading = "Good evening! What's for dinner?";
-        newMealTime = 'dinner';
-      }
-      
-      setHeading(newHeading);
-      setPreferences(prev => ({ ...prev, mealTime: newMealTime }));
+    const handleBeforeInstallPrompt = (event: any) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
 
-      const handleBeforeInstallPrompt = (event: any) => {
-        event.preventDefault();
-        setInstallPrompt(event);
-      };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-      if (window.matchMedia('(display-mode: standalone)').matches) {
-        setIsAppInstalled(true);
-      }
-      
-      if (Capacitor.isNativePlatform()) {
-        registerNotifications().then(success => {
-          if (success) {
-            scheduleDailyNotifications();
-          }
-        });
-      }
-
-      const initAnalytics = async () => {
-          if (Capacitor.getPlatform() === 'web') return;
-          try {
-            await FirebaseAnalytics.setEnabled({ enabled: true });
-            await FirebaseAnalytics.logEvent({
-              name: "screen_view",
-              params: {
-                screen_name: "home",
-              }
-            });
-          } catch (error) {
-            console.error("Error initializing Firebase Analytics", error);
-          }
-      };
-
-      initAnalytics();
-
-      return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      };
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsAppInstalled(true);
+    }
+    
+    if (Capacitor.isNativePlatform()) {
+      registerNotifications().then(success => {
+        if (success) {
+          scheduleDailyNotifications();
+        }
+      });
     }
 
+    const initAnalytics = async () => {
+        if (Capacitor.getPlatform() === 'web') return;
+        try {
+          await FirebaseAnalytics.setEnabled({ enabled: true });
+          await FirebaseAnalytics.logEvent({
+            name: "screen_view",
+            params: {
+              screen_name: "home",
+            }
+          });
+        } catch (error) {
+          console.error("Error initializing Firebase Analytics", error);
+        }
+    };
+
+    initAnalytics();
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient]);
+  }, []);
 
   useEffect(() => {
     if (isCameraDialogOpen) {
@@ -314,7 +306,7 @@ export default function MealApp() {
     setIsPreferencesOpen(false);
     const generationType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
   
-    if (isClient && Capacitor.getPlatform() === 'web') {
+    if (Capacitor.getPlatform() === 'web') {
       if (user) {
         // Logged-in web user
         const hasCredits = (credits?.[generationType] ?? 0) > 0;
@@ -340,7 +332,7 @@ export default function MealApp() {
            setIsLimitModalOpen(true);
         }
       }
-    } else if (isClient) {
+    } else {
       // Mobile user
       const adLogic = generationType === '7-day-plan' ? showSevenDayPlanAds : showWatchToGenerateAd;
       adLogic(() => handleGenerateMeal(items));
@@ -356,7 +348,7 @@ export default function MealApp() {
     setSelectedMood(mood);
     const generationType = mood === '7-day-plan' ? '7-day-plan' : 'single';
     
-    if (isClient && Capacitor.getPlatform() === 'web') {
+    if (Capacitor.getPlatform() === 'web') {
       if (user) {
         if ((credits?.[generationType] ?? 0) > 0) {
           handleOpenPreferences(mood);
@@ -370,7 +362,7 @@ export default function MealApp() {
            setIsLimitModalOpen(true);
         }
       }
-    } else if (isClient) {
+    } else {
       // On mobile, always open preferences, ads are shown later.
       handleOpenPreferences(mood);
     }
@@ -498,7 +490,7 @@ export default function MealApp() {
 
   const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
     
-    if (!isClient || !isInitialized) {
+    if (!isInitialized) {
       return (
           <Card className="relative flex flex-col text-center h-full">
               <CardHeader className="p-6">

@@ -16,37 +16,32 @@ export default function AccountPage() {
   const { toast } = useToast();
   const { user, credits, refreshCredits, isInitialized, signOut } = useAuth();
   
-  const [isClient, setIsClient] = useState(false);
   const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
 
-  useEffect(() => { setIsClient(true); }, []);
-  
   const handleSignOut = async () => {
       await signOut();
       toast({ title: 'Signed Out', description: 'You have been signed out.' });
   }
 
   useEffect(() => {
-    if (isClient) {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('payment_success') === 'true') {
-          toast({
-            title: "Payment Successful!",
-            description: "Your credits have been added. It may take a moment for them to appear.",
-          });
-          if (refreshCredits) refreshCredits();
-          // Remove query params from URL
-          const newUrl = window.location.origin + window.location.pathname;
-          window.history.replaceState({}, document.title, newUrl);
-        }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') === 'true') {
+      toast({
+        title: "Payment Successful!",
+        description: "Your credits have been added. It may take a moment for them to appear.",
+      });
+      if (refreshCredits) refreshCredits();
+      // Remove query params from URL
+      const newUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClient]);
+  }, []);
 
   const isLoading = !isInitialized;
 
   const getStatusContent = () => {
-      if (!isClient || isLoading) {
+      if (isLoading) {
           return { text: 'Loading status...', badge: <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> };
       }
       if (Capacitor.getPlatform() !== 'web') {
@@ -92,7 +87,7 @@ export default function AccountPage() {
             {status.badge}
           </div>
           
-          {isClient && Capacitor.getPlatform() === 'web' && (
+          {Capacitor.getPlatform() === 'web' && (
              user ? (
                 <div className="space-y-4">
                     <div className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></div>
@@ -119,8 +114,6 @@ export default function AccountPage() {
                     <p className="text-sm text-muted-foreground">
                         Sign in to sync your credits or get the app for unlimited generations.
                     </p>
-                    {/* The login flow is now primarily handled via magic link on the main page. 
-                        This button could open a login modal in the future. For now, it opens the app store modal. */}
                     <Button onClick={() => setIsGoProModalOpen(true)} className="w-full">
                        <Star className="mr-2 h-4 w-4" /> Get the App
                     </Button>
@@ -160,5 +153,3 @@ export default function AccountPage() {
     </>
   );
 }
-
-    

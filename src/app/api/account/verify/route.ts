@@ -12,8 +12,7 @@ export async function POST(req: Request) {
     }
 
     // The client should verify `isSignInWithEmailLink` before calling this endpoint.
-    // The admin SDK does not have this method.
-    // We extract the email from the link's query parameters.
+    // We just need to extract the email from the link's query parameters on the server.
     const url = new URL(token);
     const email = url.searchParams.get('email');
     
@@ -21,11 +20,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Email not found in sign-in link.' }, { status: 400 });
     }
 
-    // This can fail if the link is expired or already used
+    // This can fail if the link is expired or already used, but the client-side check
+    // with isSignInWithEmailLink should prevent most of these.
+    // If user doesn't exist, create them. Otherwise, get their existing record.
     const userRecord = await admin.auth().getUserByEmail(email).catch(() => null);
-    
-    // If the user does not exist, a new one will be created.
-    // If they do exist, it will sign them in.
     const uid = userRecord ? userRecord.uid : (await admin.auth().createUser({ email })).uid;
     
     const db = getFirestore();
@@ -41,6 +39,7 @@ export async function POST(req: Request) {
             '7-day-plan': existingData?.['7-day-plan'] ?? 0,
         };
     } else {
+        // This is a new user, set their initial credits
         await userCreditsRef.set(credits);
     }
     

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { getAuth, onAuthStateChanged, signInWithCustomToken, User as FirebaseUser } from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, runTransaction, DocumentData } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { app } from '@/lib/firebase-client';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,14 +18,11 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   credits: Credits | null;
   isInitialized: boolean;
-  isRecovering: boolean;
-  isSigningIn: boolean;
   hasFreebie: boolean;
   useFreebie: () => void;
   useCredit: (type: 'single' | '7-day-plan') => Promise<{ success: boolean; message: string }>;
   beginRecovery: (email: string) => Promise<{ success: boolean; message: string }>;
   signOut: () => Promise<void>;
-  verifySignInLink: (href: string) => Promise<{ success: boolean; message: string; email?: string }>;
   refreshCredits: () => void;
 }
 
@@ -38,8 +35,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [credits, setCredits] = useState<Credits | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isRecovering, setIsRecovering] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
   const [hasFreebie, setHasFreebie] = useState(true);
   
   const auth = getAuth(app);
@@ -47,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (Capacitor.getPlatform() === 'web') {
+    if (typeof window !== 'undefined' && Capacitor.getPlatform() === 'web') {
       const freebieUsed = localStorage.getItem(FREEBIE_KEY);
       setHasFreebie(freebieUsed !== 'true');
     } else {
@@ -63,10 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const verifySignInLink = useCallback(async (href: string) => {
-    // Check is done on the client side
     if (auth.isSignInWithEmailLink(href)) {
-      setIsSigningIn(true);
-      
       try {
         const response = await fetch('/api/account/verify', {
           method: 'POST',
@@ -77,22 +69,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
 
-        // Sign in with the custom token returned from the server
         await signInWithCustomToken(auth, data.customToken);
+        toast({ title: "Sign In Successful", description: `Welcome back, ${data.email}!` });
         
-        return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
-
-      } catch (error: any) {
-        return { success: false, message: error.message };
-      } finally {
-        setIsSigningIn(false);
         // Clean the URL to remove the sign-in link parameters
         const newUrl = window.location.origin + window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
+        return true;
+
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Sign In Failed', description: error.message });
+        const newUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        return false;
       }
     }
-    return { success: false, message: 'Not a sign-in link.' };
-  }, [auth]);
+    return false;
+  }, [auth, toast]);
+
 
   const fetchCredits = useCallback((fbUser: FirebaseUser | null) => {
       if (fbUser) {
@@ -117,34 +111,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [db, isInitialized]);
 
   useEffect(() => {
+    // Run this effect only once on initial client-side mount
+    if (typeof window !== 'undefined' && window.location.href.includes('oobCode=')) {
+        verifySignInLink(window.location.href);
+    }
+    
     const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
       setUser(fbUser?.email ? { email: fbUser.email } : null);
-      // Fetch or re-fetch credits whenever the user state changes
-      const unsubscribeCredits = fetchCredits(fbUser); 
+      const unsubscribeCredits = fetchCredits(fbUser);
       
-      // On initial load, if the user is not signed in but there's a link, try to sign them in.
-      if (!fbUser && window.location.href.includes('oobCode=')) {
-        verifySignInLink(window.location.href).then(result => {
-          if (result.success) {
-            toast({ title: "Sign In Successful", description: result.message });
-          } else if (result.message !== 'Not a sign-in link.') {
-            toast({ variant: 'destructive', title: 'Sign In Failed', description: result.message });
-          }
-        });
-      } else if (!isInitialized) {
+      if (!isInitialized) {
         setIsInitialized(true);
       }
-
+      
       return () => unsubscribeCredits();
     });
 
     return () => unsubscribeAuth();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, fetchCredits, verifySignInLink]);
+  }, []);
   
   const beginRecovery = async (email: string) => {
-    setIsRecovering(true);
     try {
       const response = await fetch('/api/account/recover', {
         method: 'POST',
@@ -157,8 +145,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: true, message: "We've sent a secure sign-in link to your email address." };
     } catch (error: any) {
       return { success: false, message: error.message };
-    } finally {
-      setIsRecovering(false);
     }
   };
 
@@ -208,14 +194,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     firebaseUser,
     credits,
     isInitialized,
-    isRecovering,
-    isSigningIn,
     hasFreebie,
     useFreebie,
     useCredit,
     beginRecovery,
     signOut,
-    verifySignInLink,
     refreshCredits,
   };
 
