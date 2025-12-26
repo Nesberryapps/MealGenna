@@ -7,35 +7,23 @@ export async function POST(req: Request) {
   try {
     const { priceId, userEmail } = await req.json();
 
-    if (!priceId || !userEmail) {
-      return new NextResponse('Missing priceId or userEmail', { status: 400 });
+    if (!priceId) {
+      return new NextResponse('Missing priceId', { status: 400 });
     }
 
     let userId: string;
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
 
-    if (token) {
-        // If a token is provided, verify it and use the UID
+    if (token && userEmail) {
+        // If a token is provided (logged-in user), verify it and use the UID
         const decodedToken = await admin.auth().verifyIdToken(token);
         userId = decodedToken.uid;
     } else {
-        // If no token (guest checkout), find or create the user by email
-        let userRecord;
-        try {
-            userRecord = await admin.auth().getUserByEmail(userEmail);
-        } catch (error: any) {
-            if (error.code === 'auth/user-not-found') {
-                userRecord = await admin.auth().createUser({ email: userEmail });
-                // Also send a magic link so they can sign in later
-                const actionCodeSettings = { url: `${process.env.NEXT_PUBLIC_APP_URL}/account`, handleCodeInApp: true };
-                const link = await admin.auth().generateSignInWithEmailLink(userEmail, actionCodeSettings);
-                // In a real app, you would email this link to the user.
-                console.log(`Generated sign-in link for new user ${userEmail}: ${link}`);
-            } else {
-                throw error; // Re-throw other errors
-            }
-        }
+        // If no token (guest checkout), create an anonymous user to track the purchase.
+        // The user can later claim this by signing in with the email they use at Stripe checkout.
+        const userRecord = await admin.auth().createUser({});
         userId = userRecord.uid;
+        console.log(`Created anonymous user with UID: ${userId} for guest checkout.`);
     }
     
     // Safety check in case userId couldn't be determined
@@ -54,9 +42,11 @@ export async function POST(req: Request) {
       mode: 'payment',
       success_url: `${appUrl}/account?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/account`,
-      customer_email: userEmail,
+      // If the user is already logged in, pre-fill the email. Otherwise, let Stripe collect it.
+      ...(userEmail && { customer_email: userEmail }),
+      // Pass the Firebase UID (anonymous or real) to the webhook
       metadata: {
-        userId, // The resolved Firebase UID
+        userId,
         priceId,
       },
     });

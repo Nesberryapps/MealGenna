@@ -12,8 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/hooks/use-auth';
-import { Loader2, Mail } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -25,51 +24,32 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
   const { user, firebaseUser } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
-  const [emailForPurchase, setEmailForPurchase] = useState('');
-  const [showEmailStep, setShowEmailStep] = useState(false);
   const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null);
 
   const singlePackPriceId = process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!;
   const planPackPriceId = process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
 
   useEffect(() => {
-    if (isOpen && user?.email) {
-      setEmailForPurchase(user.email);
-    }
-  }, [isOpen, user]);
-
-  useEffect(() => {
-    // Reset state when the modal is closed
+    // Reset loading state when the modal is closed or opened
     if (!isOpen) {
       setTimeout(() => {
         setIsLoading(false);
-        setEmailForPurchase('');
-        setShowEmailStep(false);
         setSelectedPriceId(null);
       }, 300);
+    } else {
+        setIsLoading(false);
+        setSelectedPriceId(null);
     }
   }, [isOpen]);
 
-  const handlePurchaseClick = (priceId: string) => {
-    if (!user) {
-      setShowEmailStep(true);
-      setSelectedPriceId(priceId);
-    } else {
-      handleCheckout(priceId, user.email);
-    }
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPriceId) return; // Should not happen
-    await handleCheckout(selectedPriceId, emailForPurchase);
-  };
-  
-  const handleCheckout = async (priceId: string, email: string) => {
+  const handleCheckout = async (priceId: string) => {
     setIsLoading(true);
+    setSelectedPriceId(priceId); // Track which button is loading
+
     try {
       const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
-      
+      const userEmail = user?.email; // This will be undefined for guest users
+
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
@@ -78,7 +58,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         },
         body: JSON.stringify({
           priceId,
-          userEmail: email, // Use the provided/guest email
+          ...(userEmail && { userEmail }), // Only include email if user is logged in
         }),
       });
 
@@ -89,8 +69,6 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
       }
 
       if (data.url) {
-        // In a real app, you would also trigger sending the magic link here
-        // if it's a new guest user. For now, the backend handles this.
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned.");
@@ -103,60 +81,8 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         description: error.message,
       });
       setIsLoading(false);
+      setSelectedPriceId(null);
     }
-  };
-
-
-  const renderContent = () => {
-    if (showEmailStep) {
-      return (
-        <form onSubmit={handleEmailSubmit} className="space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground">
-                Enter your email to create an account and proceed to checkout. A magic sign-in link will be sent to your inbox.
-            </p>
-            <div className="flex gap-2">
-                <Input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={emailForPurchase}
-                    onChange={e => setEmailForPurchase(e.target.value)}
-                    disabled={isLoading}
-                    required
-                />
-                <Button type="submit" disabled={isLoading || !emailForPurchase}>
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                    <span className="sr-only">Proceed to Checkout</span>
-                </Button>
-            </div>
-            <Button variant="link" onClick={() => { setShowEmailStep(false); setSelectedPriceId(null); }}>Back</Button>
-        </form>
-      );
-    }
-
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
-                <div className="text-center">
-                    <h3 className="text-lg font-bold">Single Meal Pack</h3>
-                    <p className="text-3xl font-extrabold my-2">$1.99</p>
-                    <p className="text-muted-foreground">Get 5 generations for single meals.</p>
-                </div>
-                <Button onClick={() => handlePurchaseClick(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
-                    {isLoading && selectedPriceId === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
-                </Button>
-            </div>
-            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
-                <div className="text-center">
-                    <h3 className="text-lg font-bold">7-Day Plan Pack</h3>
-                    <p className="text-3xl font-extrabold my-2">$7.99</p>
-                    <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
-                </div>
-                <Button onClick={() => handlePurchaseClick(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
-                    {isLoading && selectedPriceId === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
-                </Button>
-            </div>
-        </div>
-    );
   };
 
   return (
@@ -168,7 +94,28 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
             Choose a one-time pack to continue creating on the web.
           </DialogDescription>
         </DialogHeader>
-        {renderContent()}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
+                <div className="text-center">
+                    <h3 className="text-lg font-bold">Single Meal Pack</h3>
+                    <p className="text-3xl font-extrabold my-2">$1.99</p>
+                    <p className="text-muted-foreground">Get 5 generations for single meals.</p>
+                </div>
+                <Button onClick={() => handleCheckout(singlePackPriceId)} disabled={isLoading} className="w-full mt-4">
+                    {isLoading && selectedPriceId === singlePackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
+                </Button>
+            </div>
+            <div className="p-6 border rounded-lg flex flex-col items-center justify-between">
+                <div className="text-center">
+                    <h3 className="text-lg font-bold">7-Day Plan Pack</h3>
+                    <p className="text-3xl font-extrabold my-2">$7.99</p>
+                    <p className="text-muted-foreground">Get 1 full 7-day meal plan generation.</p>
+                </div>
+                <Button onClick={() => handleCheckout(planPackPriceId)} disabled={isLoading} className="w-full mt-4">
+                    {isLoading && selectedPriceId === planPackPriceId ? <Loader2 className="h-4 w-4 animate-spin"/> : "Purchase"}
+                </Button>
+            </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
