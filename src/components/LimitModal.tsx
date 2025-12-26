@@ -42,7 +42,7 @@ import {
                 />
               </Link>
   
-              <Link href="https://apps.apple.com/us/app/mealgenna-pro/id6503874984" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
+              <Link href="https://apps.apple.com/us/app/mealgenna-ai-meal-planner/id6755921708" target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
                 <img 
                   src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" 
                   alt="Download on the App Store" 
