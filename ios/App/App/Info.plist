@@ -45,5 +45,31 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- AdMob Configuration (Test ID) -->
+    <key>GADApplicationIdentifier</key>
+    <string>ca-app-pub-3940256099942544~1458002511</string>
+    <key>SKAdNetworkItems</key>
+    <array>
+        <dict>
+            <key>SKAdNetworkIdentifier</key>
+            <string>cstr6suwn9.skadnetwork</string>
+        </dict>
+    </array>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>This identifier will be used to deliver personalized ads to you.</string>
+
+    <!-- Camera/Photo Permissions -->
+    <key>NSCameraUsageDescription</key>
+    <string>MealGenna needs access to your camera to scan food items.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>MealGenna needs access to your photos to upload food images.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>MealGenna needs access to save meal plans to your photos.</string>
+
+    <!-- File Sharing (For Download Button) -->
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
 </dict>
 </plist>
