@@ -22,6 +22,11 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Rebuild iOS Project
+        run: |
+          rm -rf ios
+          npx cap add ios
+
       - name: Sync iOS Project
         run: npx cap sync ios
 
