@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
@@ -29,14 +28,11 @@ import { Textarea } from '@/components/ui/textarea';
 import AdBanner from '@/components/ad-banner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { showWatchToGenerateAd, showSevenDayPlanAds } from '@/services/admob';
 import { registerNotifications, scheduleDailyNotifications } from '@/services/notifications';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
 import { LimitModal } from '@/components/LimitModal';
 import { GoProModal } from '@/components/go-pro-modal';
-
 
 declare global {
   interface Window {
@@ -60,6 +56,7 @@ declare global {
 
 type Mood = 'Quick' | 'Healthy' | 'Hearty';
 type ScanStep = 'scanning' | 'selectingMeal';
+const FREEBIE_KEY = 'mealgenna_freebie_used_v2';
 
 export default function MealApp() {
   const [pantryItems, setPantryItems] = useState<string[]>([]);
@@ -111,10 +108,20 @@ export default function MealApp() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-
-  const { user, credits, hasFreebie, useCredit, useFreebie, isInitialized } = useAuth();
+  
+  const [hasFreebie, setHasFreebie] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // This check ensures localStorage is only accessed on the client
+    if (Capacitor.getPlatform() === 'web') {
+      const freebieUsed = localStorage.getItem(FREEBIE_KEY);
+      setHasFreebie(freebieUsed !== 'true');
+    } else {
+      setHasFreebie(false); // No freebies on mobile
+    }
+    setIsInitialized(true);
+
     const date = new Date();
     const hour = date.getHours();
     let newHeading = "What's on the menu?";
@@ -128,7 +135,6 @@ export default function MealApp() {
       newMealTime = 'lunch';
     } else {
       newHeading = "Good evening! What's for dinner?";
-      newMealTime = 'dinner';
     }
     
     setHeading(newHeading);
@@ -153,29 +159,18 @@ export default function MealApp() {
       });
     }
 
-    const initAnalytics = async () => {
-        if (Capacitor.getPlatform() === 'web') return;
-        try {
-          await FirebaseAnalytics.setEnabled({ enabled: true });
-          await FirebaseAnalytics.logEvent({
-            name: "screen_view",
-            params: {
-              screen_name: "home",
-            }
-          });
-        } catch (error) {
-          console.error("Error initializing Firebase Analytics", error);
-        }
-    };
-
-    initAnalytics();
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const useFreebie = () => {
+    if (Capacitor.getPlatform() === 'web' && hasFreebie) {
+      localStorage.setItem(FREEBIE_KEY, 'true');
+      setHasFreebie(false);
+    }
+  };
+
 
   useEffect(() => {
     if (isCameraDialogOpen) {
@@ -307,23 +302,6 @@ export default function MealApp() {
     const generationType = selectedMood === '7-day-plan' ? '7-day-plan' : 'single';
   
     if (Capacitor.getPlatform() === 'web') {
-      if (user) {
-        // Logged-in web user
-        const hasCredits = (credits?.[generationType] ?? 0) > 0;
-        if (hasCredits) {
-          const result = await useCredit(generationType);
-          if (result.success) {
-            toast({ title: 'Credit Used', description: 'Your meal is being generated.' });
-            await handleGenerateMeal(items);
-          } else {
-            toast({ variant: 'destructive', title: 'Out of Credits', description: result.message });
-            setIsGoProModalOpen(true);
-          }
-        } else {
-           setIsGoProModalOpen(true);
-        }
-      } else {
-        // Guest web user
         if (hasFreebie) {
           useFreebie();
           toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
@@ -331,7 +309,6 @@ export default function MealApp() {
         } else {
            setIsLimitModalOpen(true);
         }
-      }
     } else {
       // Mobile user
       const adLogic = generationType === '7-day-plan' ? showSevenDayPlanAds : showWatchToGenerateAd;
@@ -345,22 +322,11 @@ export default function MealApp() {
   };
   
   const handleMoodOrPlanClick = (mood: Mood | '7-day-plan') => {
-    setSelectedMood(mood);
-    const generationType = mood === '7-day-plan' ? '7-day-plan' : 'single';
-    
     if (Capacitor.getPlatform() === 'web') {
-      if (user) {
-        if ((credits?.[generationType] ?? 0) > 0) {
-          handleOpenPreferences(mood);
-        } else {
-          setIsGoProModalOpen(true);
-        }
+      if (hasFreebie) {
+        handleOpenPreferences(mood);
       } else {
-        if (hasFreebie) {
-          handleOpenPreferences(mood);
-        } else {
-           setIsLimitModalOpen(true);
-        }
+        setIsLimitModalOpen(true);
       }
     } else {
       // On mobile, always open preferences, ads are shown later.
@@ -513,25 +479,15 @@ export default function MealApp() {
     }
     
     const isWeb = Capacitor.getPlatform() === 'web';
-    const generationType = isPlan ? '7-day-plan' : 'single';
-    let showPurchaseState = false;
+    let showAppNag = false;
 
     if (isWeb) {
-      if (user) {
-        showPurchaseState = (credits?.[generationType] ?? 0) <= 0;
-      } else {
-        showPurchaseState = !hasFreebie;
-      }
+      showAppNag = !hasFreebie;
     }
 
     const getBadgeText = () => {
       if (isWeb) {
-        if (showPurchaseState) return 'Get App';
-        if (user) {
-          const count = credits?.[generationType] ?? 0;
-          return `${count} left`;
-        }
-        return '1 Free Left';
+        return showAppNag ? 'Get App' : '1 Free Left';
       }
       return isPlan ? 'Watch 2 ads' : 'Watch an ad';
     };
@@ -539,7 +495,7 @@ export default function MealApp() {
     const getButtonContent = () => {
         if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>;
         if (isWeb) {
-          if (showPurchaseState) return <><Star className="mr-2 h-4 w-4" />Get App</>;
+          if (showAppNag) return <><Star className="mr-2 h-4 w-4" />Get App</>;
           return <><Sparkles className="mr-2 h-4 w-4" />Generate</>;
         }
         return <><Video className="mr-2 h-4 w-4" />{isPlan ? 'Watch Ads' : 'Watch Ad'}</>;
@@ -547,7 +503,7 @@ export default function MealApp() {
     
     return (
         <Card className="relative flex flex-col text-center h-full">
-             <Badge variant={showPurchaseState ? 'destructive' : 'premium'} className="absolute top-2 right-2">{getBadgeText()}</Badge>
+             <Badge variant={showAppNag ? 'destructive' : 'premium'} className="absolute top-2 right-2">{getBadgeText()}</Badge>
             <CardHeader className="p-6"><div className="mx-auto w-24 h-24 mb-2 flex items-center justify-center">{icon}</div><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader>
             <CardContent className="flex-1 p-6 pt-0" />
             <CardFooter className="p-6 pt-0"><Button className="w-full" onClick={onClick} disabled={!!loadingMood}>{getButtonContent()}</Button></CardFooter>
@@ -559,7 +515,7 @@ export default function MealApp() {
     { title: "Welcome to MealGenna!", description: "This quick tour will walk you through the main features. Use 'Next' and 'Back' to navigate." },
     { title: "App Controls", description: "Manage your account, re-run this tutorial, and install the app to your device for easy access." },
     { title: "Scan Your Pantry", description: "Use this to scan what's in your pantry. Our AI will identify items and suggest recipes." },
-    { title: "Generate Meals", description: "Choose a card to get meal ideas. On mobile, watch an ad. On web, use credits or purchase more." },
+    { title: "Generate Meals", description: "Choose a card to get meal ideas. On mobile, watch an ad. On web, use your one free generation." },
     { title: "You're All Set!", description: "You're ready to start exploring. Close this dialog and start generating your first meal." },
   ];
 
