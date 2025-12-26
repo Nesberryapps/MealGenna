@@ -38,7 +38,7 @@ The post should be:
 -   Incredibly concise (2-3 short paragraphs).
 -   Written in a friendly, optimistic, and supportive tone.
 -   Focused on providing a practical tip or an inspiring insight.
--   Formatted with a catchy title, the main content paragraphs, and a single-sentence summary.
+-   Formatted with a catchy title, the main content split into an array of paragraphs, and a single-sentence summary.
 
 Do not use markdown or complex formatting. Just generate the structured data.`,
 });
