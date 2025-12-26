@@ -6,16 +6,17 @@ const config: CapacitorConfig = {
   appName: 'MealGenna',
   webDir: 'public',
   server: {
-    url: 'https://www.mealgenna.com', 
+    url: 'https://www.mealgenna.com',
     cleartext: true
   },
   plugins: {
-    // Firebase Analytics and other plugins are configured here now
+    // Keep your existing plugins configuration here if any
   },
   ios: {
-      // ✅ Keep this empty or add valid options like 'scheme' or 'contentInset'
-      // usually you don't need anything here for standard plugins.
-    }
-  };
+    // ✅ THIS MUST BE EMPTY (or contain only 'scheme')
+    // Do NOT paste "packageClassList" here.
+    scheme: 'MealGenna' 
+  }
+};
 
 export default config;
