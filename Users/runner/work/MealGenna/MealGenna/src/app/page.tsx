@@ -35,7 +35,6 @@ import { registerNotifications, scheduleDailyNotifications } from '@/services/no
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaywallModal } from '@/components/PaywallModal';
 import { useAuth } from '@/hooks/use-auth';
-import { usePremium } from '@/hooks/use-premium';
 import { LimitModal } from '@/components/LimitModal';
 
 
@@ -113,8 +112,7 @@ export default function MealApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const { user, hasFreebie, useFreebie, verifySignInLink } = useAuth();
-  const { credits, useCredit, isInitialized: premiumInitialized } = usePremium();
+  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized } = useAuth();
 
   const [isClient, setIsClient] = useState(false);
   
