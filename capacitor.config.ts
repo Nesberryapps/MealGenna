@@ -13,11 +13,8 @@ const config: CapacitorConfig = {
     // Keep your existing plugins configuration here if any
   },
   ios: {
-    deploymentTarget: '15.0',
-    scheme: 'MealGenna',
-    useFrameworks: true
+    deploymentTarget: '15.0'
   }
 };
 
 export default config;
-// Force build update
