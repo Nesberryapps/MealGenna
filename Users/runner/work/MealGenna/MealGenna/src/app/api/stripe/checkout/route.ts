@@ -1,32 +1,30 @@
 
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-import { admin } from '@/lib/firebase-admin';
+import { stripe } from '../../../../lib/stripe';
+import { admin } from '../../../../lib/firebase-admin';
 
 export async function POST(req: Request) {
   try {
-    const { priceId, userEmail } = await req.json();
+    const { priceId } = await req.json();
 
     if (!priceId) {
       return new NextResponse('Missing priceId', { status: 400 });
     }
 
-    let userId: string;
+    let userId: string | undefined;
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
+    let userEmail: string | undefined;
 
-    if (token && userEmail) {
-        // If a token is provided (logged-in user), verify it and use the UID
+    if (token) {
         const decodedToken = await admin.auth().verifyIdToken(token);
         userId = decodedToken.uid;
+        userEmail = decodedToken.email;
     } else {
-        // If no token (guest checkout), create an anonymous user to track the purchase.
-        // The user can later claim this by signing in with the email they use at Stripe checkout.
         const userRecord = await admin.auth().createUser({});
         userId = userRecord.uid;
         console.log(`Created anonymous user with UID: ${userId} for guest checkout.`);
     }
     
-    // Safety check in case userId couldn't be determined
     if (!userId) {
         return new NextResponse('Could not determine user for checkout', { status: 500 });
     }
@@ -42,9 +40,7 @@ export async function POST(req: Request) {
       mode: 'payment',
       success_url: `${appUrl}/account?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/account`,
-      // If the user is already logged in, pre-fill the email. Otherwise, let Stripe collect it.
       ...(userEmail && { customer_email: userEmail }),
-      // Pass the Firebase UID (anonymous or real) to the webhook
       metadata: {
         userId,
         priceId,
