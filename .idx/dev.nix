@@ -8,8 +8,6 @@
     pkgs.nodejs_20
     pkgs.zulu
 
-    # 🔥 REQUIRED for iOS builds
-    pkgs.ruby
  ];
   # Sets environment variables in the workspace
   env = {};
