@@ -3,40 +3,25 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { X, Loader2, LogOut, Mail } from 'lucide-react';
+import { X, Loader2, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { PaywallModal } from '@/components/PaywallModal';
 import { Capacitor } from '@capacitor/core';
+import { usePremium } from '@/hooks/use-premium';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, isInitialized, credits, beginRecovery, signOut, isRecovering, refreshCredits } = useAuth();
+  const { user, isInitialized, signOut } = useAuth();
+  const { credits, refreshCredits } = usePremium();
   
-  const [email, setEmail] = useState('');
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      toast({ variant: 'destructive', title: 'Email is required' });
-      return;
-    }
-    const result = await beginRecovery(email);
-    if (result.success) {
-        toast({ title: 'Check your email!', description: result.message });
-    } else {
-        toast({ variant: 'destructive', title: 'Recovery Failed', description: result.message });
-    }
-    setEmail('');
-  };
   
   const handleSignOut = async () => {
       await signOut();
@@ -68,7 +53,7 @@ export default function AccountPage() {
            return { text: 'You are on the Mobile plan.', badge: <Badge variant="secondary" className="text-base">Mobile</Badge> };
       }
       if (!user) {
-          return { text: 'Sign in to see your status.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
+          return { text: 'Purchase credits to get started.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
       }
       const singleCredits = credits?.single || 0;
       const planCredits = credits?.['7-day-plan'] || 0;
@@ -83,7 +68,7 @@ export default function AccountPage() {
 
   return (
     <div className="container py-12 md:py-20">
-       {user && <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />}
+       <PaywallModal isOpen={isPaywallOpen} onClose={() => setIsPaywallOpen(false)} />
       <Card className="max-w-xl mx-auto relative">
          <Link href="/" className="absolute top-4 right-4">
               <Button variant="ghost" size="icon">
@@ -128,26 +113,15 @@ export default function AccountPage() {
                     </Button>
                 </div>
             ) : (
-                 <form onSubmit={handleSignIn} className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold">Sign In for Web</h3>
+                <div className="space-y-4 p-4 border rounded-lg text-center">
+                    <h3 className="font-semibold">Get Started on Web</h3>
                     <p className="text-sm text-muted-foreground">
-                        Sign in with a magic link to track your purchased credits on the web. No password needed.
+                        To use MealGenna on the web, please purchase a one-time credit pack. Your account will be created automatically during checkout.
                     </p>
-                    <div className="flex gap-2">
-                        <Input 
-                            type="email" 
-                            placeholder="your@email.com" 
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            disabled={isRecovering}
-                            required
-                        />
-                        <Button type="submit" disabled={isRecovering}>
-                            {isRecovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                            <span className="sr-only">Send Link</span>
-                        </Button>
-                    </div>
-                 </form>
+                    <Button onClick={() => setIsPaywallOpen(true)} className="w-full">
+                        Purchase Credits
+                    </Button>
+                </div>
             )
           )}
           
@@ -182,5 +156,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
