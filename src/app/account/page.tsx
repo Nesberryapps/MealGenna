@@ -44,22 +44,24 @@ export default function AccountPage() {
   }
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment_success') === 'true') {
-      toast({
-        title: "Payment Successful!",
-        description: "Your credits have been added. It may take a moment for them to appear.",
-      });
-      refreshCredits();
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (isClient) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('payment_success') === 'true') {
+          toast({
+            title: "Payment Successful!",
+            description: "Your credits have been added. It may take a moment for them to appear.",
+          });
+          refreshCredits();
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isClient]);
 
   const isLoading = !isInitialized;
 
   const getStatusContent = () => {
-      if (isLoading) {
+      if (!isClient || isLoading) {
           return { text: 'Loading status...', badge: <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> };
       }
       if (Capacitor.getPlatform() !== 'web') {
@@ -110,11 +112,11 @@ export default function AccountPage() {
                     <p className="text-sm text-center text-muted-foreground">Signed in as <span className="font-semibold text-primary">{user.email}</span></p>
                      <div className="p-4 border rounded-lg grid grid-cols-2 gap-4">
                         <div className="text-center">
-                            <p className="text-2xl font-bold">{credits?.single ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</p>
+                            <div className="text-2xl font-bold">{credits?.single ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</div>
                             <p className="text-sm text-muted-foreground">Single Meal Credits</p>
                         </div>
                          <div className="text-center">
-                            <p className="text-2xl font-bold">{credits?.['7-day-plan'] ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</p>
+                            <div className="text-2xl font-bold">{credits?.['7-day-plan'] ?? <Loader2 className="inline-block h-6 w-6 animate-spin" />}</div>
                             <p className="text-sm text-muted-foreground">Meal Plan Credits</p>
                         </div>
                     </div>
@@ -180,3 +182,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
