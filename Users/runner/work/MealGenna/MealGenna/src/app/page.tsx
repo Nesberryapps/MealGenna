@@ -35,6 +35,7 @@ import { registerNotifications, scheduleDailyNotifications } from '@/services/no
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { LimitModal } from '@/components/LimitModal';
+import { GoProModal } from '@/components/go-pro-modal';
 
 
 declare global {
@@ -88,6 +89,7 @@ export default function MealApp() {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
   
   const [selectedMood, setSelectedMood] = useState<Mood | '7-day-plan' | 'from pantry' | null>(null);
   const [preferences, setPreferences] = useState({
@@ -110,7 +112,7 @@ export default function MealApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized, firebaseUser } = useAuth();
+  const { user, credits, hasFreebie, useCredit, useFreebie, verifySignInLink, isInitialized } = useAuth();
 
   const [isClient, setIsClient] = useState(false);
   
@@ -120,18 +122,6 @@ export default function MealApp() {
 
   useEffect(() => {
     if (isClient) {
-      const checkLink = async () => {
-        if (window.location.href.includes('oobCode')) {
-          const result = await verifySignInLink(window.location.href);
-          if (result.success) {
-            toast({ title: 'Sign-in Successful!', description: result.message });
-          } else if (result.message !== 'Not a sign-in link.') {
-            toast({ variant: 'destructive', title: 'Sign-in Failed', description: result.message });
-          }
-        }
-      };
-      checkLink();
-      
       const date = new Date();
       const hour = date.getHours();
       let newHeading = "What's on the menu?";
@@ -335,10 +325,10 @@ export default function MealApp() {
             await handleGenerateMeal(items);
           } else {
             toast({ variant: 'destructive', title: 'Out of Credits', description: result.message });
-            handleDirectCheckout(generationType);
+            setIsGoProModalOpen(true);
           }
         } else {
-           handleDirectCheckout(generationType);
+           setIsGoProModalOpen(true);
         }
       } else {
         // Guest web user
@@ -347,7 +337,7 @@ export default function MealApp() {
           toast({ title: 'Free Generation Used', description: 'Your first one is on the house!' });
           await handleGenerateMeal(items);
         } else {
-           handleDirectCheckout(generationType);
+           setIsLimitModalOpen(true);
         }
       }
     } else if (isClient) {
@@ -356,47 +346,6 @@ export default function MealApp() {
       adLogic(() => handleGenerateMeal(items));
     }
   };
-
-  const handleDirectCheckout = async (type: 'single' | '7-day-plan') => {
-    setLoadingMood(type === 'single' ? selectedMood : '7-day-plan');
-    const priceId = type === 'single' 
-      ? process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!
-      : process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
-
-    try {
-      const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
-      const userEmail = firebaseUser?.email;
-
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
-        },
-        body: JSON.stringify({
-          priceId,
-          ...(userEmail && { userEmail }),
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not create checkout session.');
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned.');
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Purchase Failed',
-        description: error.message,
-      });
-    } finally {
-      setLoadingMood(null);
-    }
-  };
-
 
   const handleOpenPreferences = (mood: Mood | '7-day-plan' | 'from pantry') => {
     setSelectedMood(mood);
@@ -412,13 +361,13 @@ export default function MealApp() {
         if ((credits?.[generationType] ?? 0) > 0) {
           handleOpenPreferences(mood);
         } else {
-          handleDirectCheckout(generationType);
+          setIsGoProModalOpen(true);
         }
       } else {
         if (hasFreebie) {
           handleOpenPreferences(mood);
         } else {
-           handleDirectCheckout(generationType);
+           setIsLimitModalOpen(true);
         }
       }
     } else if (isClient) {
@@ -549,7 +498,7 @@ export default function MealApp() {
 
   const MoodCard = ({ mood, icon, title, description, onClick, isPlan = false }: { mood: Mood | '7-day-plan', icon: ReactNode, title: string, description: string, onClick: () => void, isPlan?: boolean }) => {
     
-    if (!isClient) {
+    if (!isClient || !isInitialized) {
       return (
           <Card className="relative flex flex-col text-center h-full">
               <CardHeader className="p-6">
@@ -585,7 +534,7 @@ export default function MealApp() {
 
     const getBadgeText = () => {
       if (isWeb) {
-        if (showPurchaseState) return 'Purchase';
+        if (showPurchaseState) return 'Get App';
         if (user) {
           const count = credits?.[generationType] ?? 0;
           return `${count} left`;
@@ -596,9 +545,9 @@ export default function MealApp() {
     };
 
     const getButtonContent = () => {
-        if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Going to Checkout...</>;
+        if (loadingMood === mood) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>;
         if (isWeb) {
-          if (showPurchaseState) return <><Star className="mr-2 h-4 w-4" />Get More</>;
+          if (showPurchaseState) return <><Star className="mr-2 h-4 w-4" />Get App</>;
           return <><Sparkles className="mr-2 h-4 w-4" />Generate</>;
         }
         return <><Video className="mr-2 h-4 w-4" />{isPlan ? 'Watch Ads' : 'Watch Ad'}</>;
@@ -626,12 +575,13 @@ export default function MealApp() {
 
   return (
     <>
+      <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} />
       <LimitModal 
         isOpen={isLimitModalOpen} 
         onClose={() => setIsLimitModalOpen(false)} 
-        onSwitchToPurchase={() => {
+        onGoToAppStores={() => {
           setIsLimitModalOpen(false);
-          handleDirectCheckout('single');
+          setIsGoProModalOpen(true);
         }}
       />
       <div className="container relative py-12 md:py-20">

@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const verifySignInLink = useCallback(async (href: string) => {
+    // Check is done on the client side
     if (auth.isSignInWithEmailLink(href)) {
       setIsSigningIn(true);
       
@@ -74,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Invalid or expired sign-in link.');
 
+        // Sign in with the custom token returned from the server
         await signInWithCustomToken(auth, data.customToken);
         
         return { success: true, message: `Welcome back, ${data.email}!`, email: data.email };
@@ -83,8 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } finally {
         setIsSigningIn(false);
         // Clean the URL to remove the sign-in link parameters
-        const cleanUrl = window.location.origin + window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
+        const newUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
       }
     }
     return { success: false, message: 'Not a sign-in link.' };
@@ -116,20 +118,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
       setUser(fbUser?.email ? { email: fbUser.email } : null);
-      fetchCredits(fbUser); // Fetch credits when auth state changes
-    });
-    return () => unsubscribeAuth();
-  }, [auth, fetchCredits]);
-  
-  useEffect(() => {
-    const checkUrlForSignIn = async () => {
-        if (isInitialized && !firebaseUser && window.location.search.includes('oobCode')) {
-            await verifySignInLink(window.location.href);
-        }
-    };
-    checkUrlForSignIn();
-  }, [isInitialized, firebaseUser, verifySignInLink]);
+      // Fetch or re-fetch credits whenever the user state changes
+      const unsubscribeCredits = fetchCredits(fbUser); 
+      
+      // On initial load, if the user is not signed in but there's a link, try to sign them in.
+      if (!fbUser && window.location.href.includes('oobCode=')) {
+        verifySignInLink(window.location.href);
+      }
 
+      return () => unsubscribeCredits();
+    });
+
+    return () => unsubscribeAuth();
+  }, [auth, fetchCredits, verifySignInLink]);
+  
   const beginRecovery = async (email: string) => {
     setIsRecovering(true);
     try {
