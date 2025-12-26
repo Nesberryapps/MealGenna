@@ -6,7 +6,10 @@ import { Capacitor } from '@capacitor/core';
 // For now, it will just log to the console. You can expand this later
 // to use server-side analytics if needed.
 const reportAdRewardConversion = () => {
-    console.log('Ad reward conversion event placeholder.');
+    if (window.gtag_report_conversion) {
+      window.gtag_report_conversion();
+    }
+    console.log('Ad reward conversion event reported.');
 };
 
 // 1. Initialize AdMob
@@ -79,12 +82,12 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
     return new Promise(async (resolve) => {
       let resolved = false;
       
-      const listener = await AdMob.addListener(
+      const rewardListener = await AdMob.addListener(
         RewardAdPluginEvents.Rewarded, 
         () => {
           reportAdRewardConversion();
           if (!resolved) { resolved = true; resolve(true); }
-          listener.remove();
+          rewardListener.remove();
         }
       );
 
@@ -102,6 +105,8 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
       } catch (e) {
         console.error(e);
         resolve(true); // Let user pass if ad fails
+        rewardListener.remove();
+        closeListener.remove();
       }
     });
   };
@@ -114,6 +119,10 @@ export const showSevenDayPlanAds = async (onComplete: () => void) => {
     
     if (secondAdSuccess) {
       onComplete();
+    } else {
+      alert("The second ad was not completed. Please try again to unlock the plan.");
     }
+  } else {
+      alert("You need to watch the ad to unlock this feature. Please try again.");
   }
 };
