@@ -4,62 +4,27 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Loader2, LogOut } from 'lucide-react';
+import { X, Loader2, LogOut, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Capacitor } from '@capacitor/core';
+import { GoProModal } from '@/components/go-pro-modal';
 
 export default function AccountPage() {
   const { toast } = useToast();
-  const { user, credits, refreshCredits, isInitialized, signOut, firebaseUser } = useAuth();
+  const { user, credits, refreshCredits, isInitialized, signOut } = useAuth();
   
   const [isClient, setIsClient] = useState(false);
+  const [isGoProModalOpen, setIsGoProModalOpen] = useState(false);
+
   useEffect(() => { setIsClient(true); }, []);
   
   const handleSignOut = async () => {
       await signOut();
       toast({ title: 'Signed Out', description: 'You have been signed out.' });
   }
-
-  const handleDirectCheckout = async (type: 'single' | '7-day-plan') => {
-    const priceId = type === 'single' 
-      ? process.env.NEXT_PUBLIC_STRIPE_SINGLE_PACK_PRICE_ID!
-      : process.env.NEXT_PUBLIC_STRIPE_PLAN_PACK_PRICE_ID!;
-
-    try {
-      const idToken = firebaseUser ? await firebaseUser.getIdToken() : undefined;
-      const userEmail = firebaseUser?.email;
-
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
-        },
-        body: JSON.stringify({
-          priceId,
-          ...(userEmail && { userEmail }),
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not create checkout session.');
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned.');
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Purchase Failed',
-        description: error.message,
-      });
-    }
-  };
-
 
   useEffect(() => {
     if (isClient) {
@@ -88,7 +53,7 @@ export default function AccountPage() {
            return { text: 'You are on the Mobile plan.', badge: <Badge variant="secondary" className="text-base">Mobile</Badge> };
       }
       if (!user) {
-          return { text: 'Purchase credits to get started.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
+          return { text: 'Sign in to sync credits.', badge: <Badge variant="outline" className="text-base">Guest</Badge> };
       }
       const singleCredits = credits?.single || 0;
       const planCredits = credits?.['7-day-plan'] || 0;
@@ -102,6 +67,8 @@ export default function AccountPage() {
   const status = getStatusContent();
 
   return (
+    <>
+    <GoProModal isOpen={isGoProModalOpen} onClose={() => setIsGoProModalOpen(false)} />
     <div className="container py-12 md:py-20">
       <Card className="max-w-xl mx-auto relative">
          <Link href="/" className="absolute top-4 right-4">
@@ -139,8 +106,8 @@ export default function AccountPage() {
                             <p className="text-sm text-muted-foreground">Meal Plan Credits</p>
                         </div>
                     </div>
-                     <Button onClick={() => handleDirectCheckout('single')} className="w-full">
-                        Purchase More Credits
+                     <Button onClick={() => setIsGoProModalOpen(true)} className="w-full">
+                        <Star className="mr-2 h-4 w-4" /> Get More With The App
                     </Button>
                     <Button onClick={handleSignOut} variant="outline" className="w-full">
                         <LogOut className="mr-2 h-4 w-4" /> Sign Out
@@ -150,10 +117,12 @@ export default function AccountPage() {
                 <div className="space-y-4 p-4 border rounded-lg text-center">
                     <h3 className="font-semibold">Get Started on Web</h3>
                     <p className="text-sm text-muted-foreground">
-                        To use MealGenna on the web, please purchase a one-time credit pack.
+                        Sign in to sync your credits or get the app for unlimited generations.
                     </p>
-                    <Button onClick={() => handleDirectCheckout('single')} className="w-full">
-                        Purchase Credits
+                    {/* The login flow is now primarily handled via magic link on the main page. 
+                        This button could open a login modal in the future. For now, it opens the app store modal. */}
+                    <Button onClick={() => setIsGoProModalOpen(true)} className="w-full">
+                       <Star className="mr-2 h-4 w-4" /> Get the App
                     </Button>
                 </div>
             )
@@ -183,14 +152,13 @@ export default function AccountPage() {
         </CardContent>
         <CardFooter className="flex-col items-start gap-4">
            <p className="text-sm text-muted-foreground">
-            Get the full experience on our mobile apps. One-time purchases are only available on web.
+            For the best experience and unlimited generations, download the MealGenna mobile app. One-time credit purchases on the web are no longer available.
           </p>
         </CardFooter>
       </Card>
     </div>
+    </>
   );
 }
-
-    
 
     
