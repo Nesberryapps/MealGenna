@@ -3,10 +3,10 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
     namespace "com.nesberry.mealgenna.pro"
-    compileSdkVersion 34
+    compileSdkVersion 35
     defaultConfig {
         applicationId "com.nesberry.mealgenna.pro"
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 34
         versionCode 1
         versionName "1.0"
