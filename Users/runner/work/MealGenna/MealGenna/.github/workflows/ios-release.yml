@@ -30,7 +30,8 @@ jobs:
       - name: Sync Capacitor Project & Install Pods
         run: |
           npx cap sync ios --deployment
-          cp src/lib/Podfile.template ios/App/Podfile
+          echo "platform :ios, '15.0'" > ios/App/Podfile
+          cat Podfile.capacitor.template >> ios/App/Podfile
           cd ios/App && pod install && cd ../..
         
       - name: Install Apple Certificate
