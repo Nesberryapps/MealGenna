@@ -27,8 +27,6 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      # Note: We skip 'npm run build' because this is a Live Server app
-      # We just sync the dummy index.html file
       - name: Sync Capacitor
         run: npx cap sync android
 

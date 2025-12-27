@@ -1,11 +1,15 @@
+# DO NOT MODIFY. IF YOU BREAK THIS, THE BUILD WILL FAIL.
+platform :ios, '15.0'
 use_frameworks!
 
-target 'App' do
-  # CocoaPods Pods for App
-  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/cordova-ios-plugin'
-  # Add your Pods here
-  pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
-  pod 'CapacitorFilesystem', :path => '../../node_modules/@capacitor/filesystem'
-  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
+# Fixes an issue with Xcode 12.5
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+    end
+  end
 end
+
+require_relative '../../node_modules/@capacitor/ios/scripts/pods'
+install! 'cocoapods', :integrate_targets => false

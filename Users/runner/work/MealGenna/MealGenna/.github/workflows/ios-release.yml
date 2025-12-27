@@ -27,17 +27,12 @@ jobs:
           rm -rf ios
           npx cap add ios
 
-      - name: Sync Capacitor Project & Overwrite Podfile
+      - name: Sync Capacitor Project & Install Pods
         run: |
-          npx cap sync ios || true
-          cp src/lib/Podfile.template ios/App/Podfile
+          npx cap sync ios --deployment
+          cp Podfile.capacitor.template ios/App/Podfile
+          cd ios/App && pod install && cd ../..
         
-      - name: Install CocoaPods
-        run: |
-          cd ios/App
-          pod install
-          cd ../..
-
       - name: Install Apple Certificate
         env:
           P12_BASE64: ${{ secrets.P12_BASE64 }}
