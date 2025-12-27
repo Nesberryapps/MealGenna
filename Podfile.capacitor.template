@@ -1,5 +1,11 @@
+use_frameworks!
 
 target 'App' do
-  capacitor_pods
+  # CocoaPods Pods for App
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/cordova-ios-plugin'
   # Add your Pods here
+  pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+  pod 'CapacitorFilesystem', :path => '../../node_modules/@capacitor/filesystem'
+  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
 end
