@@ -3,7 +3,7 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
     namespace "com.nesberry.mealgenna.pro"
-    compileSdkVersion 34 // Align with a stable, supported SDK version
+    compileSdkVersion 34
     defaultConfig {
         applicationId "com.nesberry.mealgenna.pro"
         minSdkVersion 22
@@ -16,25 +16,15 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
-    // Added signing configuration block
     signingConfigs {
         release {
-            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
-                storeFile file(MYAPP_RELEASE_STORE_FILE)
-                storePassword MYAPP_RELEASE_STORE_PASSWORD
-                keyAlias MYAPP_RELEASE_KEY_ALIAS
-                keyPassword MYAPP_RELEASE_KEY_PASSWORD
-            }
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release // Use the release signing config
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            storeFile file('keystore.jks')
+            storePassword System.getenv("MYAPP_RELEASE_STORE_PASSWORD")
+            keyAlias System.getenv("MYAPP_RELEASE_KEY_ALIAS")
+            keyPassword System.getenv("MYAPP_RELEASE_KEY_PASSWORD")
         }
     }
 }
