@@ -11,9 +11,6 @@ const config: CapacitorConfig = {
   },
   plugins: {
     // Keep your existing plugins configuration here if any
-  },
-  ios: {
-    deploymentTarget: '15.0'
   }
 };
 
