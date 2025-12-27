@@ -1,32 +1,19 @@
-# DO NOT MODIFY.
-# This file is source-controlled for consistency in the CI/CD pipeline.
-
 platform :ios, '15.0'
-use_frameworks!
+
+require_relative '../../node_modules/@capacitor/ios/scripts/pods'
+require_relative '../../node_modules/@capacitor-community/admob/ios/CapacitorCommunityAdmob'
+
+def capacitor_pods
+  # Automatic Capacitor plugin pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+  pod 'CapacitorFilesystem', :path => '../../node_modules/@capacitor/filesystem'
+  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
+  # Add your own pods here
+end
 
 target 'App' do
-  # This is a workaround for a cocoapods issue with locally sourced pods
-  # that have a s.dependency of another locally sourced pod
-  # https://github.com/CocoaPods/CocoaPods/issues/4192
-  def fix_deployment_target(installer)
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-      end
-    end
-  end
-
-  post_install do |installer|
-    fix_deployment_target(installer)
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=1']
-      end
-    end
-  end
-  
-  # Capacitor Pods
-  require_relative '../../node_modules/@capacitor/ios/scripts/pods'
-  install_capacitor_pods
-  
+  use_frameworks!
+  capacitor_pods
 end
