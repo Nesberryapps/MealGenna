@@ -288,6 +288,9 @@ export default function MealApp() {
         const result = await suggestMeals(input);
         setGeneratedMeals(result);
       }
+      if (window.gtag_report_conversion) {
+        window.gtag_report_conversion();
+      }
     } catch (error) {
         toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate ideas. Please try again.' });
         if (type === '7-day-plan') setIsMealPlanOpen(false);

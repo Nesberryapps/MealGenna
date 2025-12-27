@@ -1,7 +1,9 @@
-use_frameworks!
-require_relative '../../node_modules/@capacitor/ios/scripts/pods'
 
-# post_install hook to set the iOS deployment target for all pods
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
