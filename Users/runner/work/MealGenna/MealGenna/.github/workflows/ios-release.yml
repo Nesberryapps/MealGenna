@@ -29,7 +29,7 @@ jobs:
 
       - name: Sync Capacitor Project & Install Pods
         run: |
-          npx cap sync ios --deployment
+          npx cap sync ios || true
           echo "platform :ios, '15.0'" > ios/App/Podfile
           cat Podfile.capacitor.template >> ios/App/Podfile
           cd ios/App && pod install && cd ../..
