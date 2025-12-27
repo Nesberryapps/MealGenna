@@ -1,7 +1,8 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# platform :ios, '13.0' # This will be ignored and replaced by the line below.
-platform :ios, '15.0' # AdMob requires iOS 15 or higher.
+# Set the platform to iOS 15.0, as required by modern plugins like AdMob.
+platform :ios, '15.0'
+use_frameworks! :linkage => :static
 
 target 'App' do
   capacitor_pods
