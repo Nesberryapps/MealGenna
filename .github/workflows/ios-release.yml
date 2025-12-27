@@ -27,11 +27,11 @@ jobs:
           rm -rf ios
           npx cap add ios
 
-      - name: Sync Capacitor Project & Overwrite Podfile
+      - name: Copy Web Assets and Overwrite Podfile
         run: |
-          npx cap sync ios
+          npx cap copy ios
           cp src/lib/Podfile.template ios/App/Podfile
-
+        
       - name: Install CocoaPods
         run: |
           cd ios/App
@@ -107,4 +107,3 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-
