@@ -1,42 +1,67 @@
-apply plugin: 'com.android.application'
+import groovy.json.JsonSlurper
+
+def appConfig() {
+    def configFile = new File(project.projectDir, "../../capacitor.config.json")
+    if (!configFile.exists()) {
+        return [:]
+    }
+    return new JsonSlurper().parseText(configFile.text)
+}
+
+def config = appConfig()
+def appId = config.appId ?: "com.example.app"
+def appName = config.appName ?: "MyApp"
+def appVersion = System.getenv("CAPACITOR_ANDROID_VERSION_NAME") ?: "1.0"
+def appVersionCode = Integer.parseInt(System.getenv("CAPACITOR_ANDROID_VERSION_CODE") ?: "1")
 
 android {
-    namespace "com.nesberry.mealgenna.pro"
+    namespace appId
     compileSdkVersion 34
+
     defaultConfig {
-        applicationId "com.nesberry.mealgenna.pro"
-        minSdkVersion 26
+        applicationId appId
+        minSdkVersion 22
         targetSdkVersion 34
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        aaptOptions {
-            // You can add options here
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('keystore.jks')
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("ANDROID_ALIAS")
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
+
+    buildFeatures {
+        dataBinding true
     }
 }
 
+repositories {
+    google()
+    mavenCentral()
+}
+
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
-    implementation "androidx.core:core-splashscreen:1.0.0"
-    implementation "androidx.webkit:webkit:1.4.0"
-    testImplementation "junit:junit:4.13.2"
-    androidTestImplementation "androidx.test.ext:junit:1.1.5"
-    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation project(':capacitor-android')
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation project(':capacitor-community-admob')
+    implementation project(':capacitor-filesystem')
+    implementation project(':capacitor-local-notifications')
 }
