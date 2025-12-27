@@ -1,9 +1,9 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# Force iOS 15.0 (Fixes the "Higher minimum target" error)
+# 1. Force iOS 15.0 (This fixes the "higher minimum deployment target" error)
 platform :ios, '15.0'
 
-# Static Linking (Required for AdMob)
+# 2. Use Static Linking (Required for AdMob)
 use_frameworks! :linkage => :static
 
 def capacitor_pods
@@ -14,7 +14,7 @@ end
 
 target 'App' do
   capacitor_pods
-  # Pin Google Ads SDK to 11.3.0 to match the plugin version
+  # Pin Google Ads to a stable version
   pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
 
