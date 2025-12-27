@@ -30,6 +30,15 @@ jobs:
       - name: Sync iOS Project
         run: npx cap sync ios
 
+      - name: Set iOS Deployment Target in Podfile
+        run: |
+          cd ios/App
+          # This command inserts "platform :ios, '15.0'" right after the first line of the Podfile.
+          sed -i '' '2i\
+          platform :ios, '\''15.0'\''
+          ' Podfile
+          cd ../..
+
       - name: Install CocoaPods
         run: |
           cd ios/App
