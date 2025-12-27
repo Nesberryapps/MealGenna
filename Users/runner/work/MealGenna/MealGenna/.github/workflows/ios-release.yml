@@ -22,22 +22,13 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Clean and Rebuild iOS Project
+      - name: Clean and Add iOS Platform
         run: |
           rm -rf ios
           npx cap add ios
 
-      - name: Sync iOS Project
-        run: npx cap sync ios
-
-      - name: Set iOS Deployment Target in Podfile
-        run: |
-          cd ios/App
-          # This command inserts "platform :ios, '15.0'" right after the first line of the Podfile.
-          sed -i '' '2i\
-          platform :ios, '\''15.0'\''
-          ' Podfile
-          cd ../..
+      - name: Overwrite Podfile with Template
+        run: cp src/lib/Podfile.template ios/App/Podfile
 
       - name: Install CocoaPods
         run: |
@@ -78,9 +69,6 @@ jobs:
       - name: Build iOS App
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
