@@ -29,9 +29,9 @@ jobs:
 
       - name: Sync Capacitor Project & Overwrite Podfile
         run: |
-          npx cap sync ios
+          npx cap sync ios || true
           cp src/lib/Podfile.template ios/App/Podfile
-
+        
       - name: Install CocoaPods
         run: |
           cd ios/App
