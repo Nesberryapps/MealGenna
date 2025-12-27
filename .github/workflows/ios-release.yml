@@ -27,14 +27,11 @@ jobs:
           rm -rf ios
           npx cap add ios
 
-      - name: Set iOS Deployment Target in Podfile
-        run: |
-          echo "platform :ios, '15.0'" > ios/App/Podfile
-          cat Podfile.capacitor.template >> ios/App/Podfile
-
       - name: Sync Capacitor Project & Install Pods
         run: |
-          npx cap sync ios
+          npx cap sync ios --deployment
+          cp src/lib/Podfile.template ios/App/Podfile
+          cd ios/App && pod install && cd ../..
         
       - name: Install Apple Certificate
         env:
