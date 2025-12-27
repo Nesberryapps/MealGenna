@@ -1,9 +1,32 @@
-require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+# DO NOT MODIFY.
+# This file is source-controlled for consistency in the CI/CD pipeline.
 
-# Set the platform to iOS 15.0, as required by the AdMob plugin.
 platform :ios, '15.0'
+use_frameworks!
 
 target 'App' do
-  capacitor_pods
-  # Add your Pods here
+  # This is a workaround for a cocoapods issue with locally sourced pods
+  # that have a s.dependency of another locally sourced pod
+  # https://github.com/CocoaPods/CocoaPods/issues/4192
+  def fix_deployment_target(installer)
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      end
+    end
+  end
+
+  post_install do |installer|
+    fix_deployment_target(installer)
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=1']
+      end
+    end
+  end
+  
+  # Capacitor Pods
+  require_relative '../../node_modules/@capacitor/ios/scripts/pods'
+  install_capacitor_pods
+  
 end

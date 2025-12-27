@@ -27,11 +27,10 @@ jobs:
           rm -rf ios
           npx cap add ios
 
-      - name: Sync Capacitor Project
-        run: npx cap sync ios
-
-      - name: Overwrite Podfile
-        run: cp src/lib/Podfile.template ios/App/Podfile
+      - name: Sync Capacitor Project & Overwrite Podfile
+        run: |
+          npx cap sync ios
+          cp src/lib/Podfile.template ios/App/Podfile
 
       - name: Install CocoaPods
         run: |
