@@ -27,9 +27,9 @@ jobs:
           rm -rf ios
           npx cap add ios
 
-      - name: Copy Web Assets and Overwrite Podfile
+      - name: Sync Capacitor Project & Overwrite Podfile
         run: |
-          npx cap copy ios
+          npx cap sync ios || true
           cp src/lib/Podfile.template ios/App/Podfile
         
       - name: Install CocoaPods
