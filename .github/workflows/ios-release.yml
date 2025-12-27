@@ -27,17 +27,16 @@ jobs:
           rm -rf ios
           npx cap add ios
 
-      - name: Overwrite Podfile with Template
-        run: cp src/lib/Podfile.template ios/App/Podfile
+      - name: Sync Capacitor Project & Overwrite Podfile
+        run: |
+          npx cap sync ios
+          cp src/lib/Podfile.template ios/App/Podfile
 
       - name: Install CocoaPods
         run: |
           cd ios/App
           pod install
           cd ../..
-
-      - name: Sync Capacitor Project
-        run: npx cap sync ios
 
       - name: Install Apple Certificate
         env:
@@ -108,3 +107,4 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+
