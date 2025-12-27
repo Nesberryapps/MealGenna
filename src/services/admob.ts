@@ -23,10 +23,9 @@ export const initializeAdMob = async () => {
     }
 
     await AdMob.initialize({
-      testingDevices: ['YOUR_TEST_DEVICE_ID'], 
-      initializeForTesting: true,
+      initializeForTesting: false,
     });
-    console.log('AdMob initialized');
+    console.log('AdMob initialized for production.');
   } catch (e) {
     console.error('Failed to init AdMob', e);
   }
