@@ -11,9 +11,6 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        aaptOptions {
-             // You can add options here
-        }
     }
     signingConfigs {
         release {
@@ -32,32 +29,31 @@ android {
     }
 }
 
-// Enforce specific versions for androidx.core to resolve build conflicts
-configurations.all {
-    resolutionStrategy {
-        force 'androidx.core:core:1.13.1'
-        force 'androidx.core:core-ktx:1.13.1'
-    }
-}
-
-
 repositories {
     google()
     mavenCentral()
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "androidx.appcompat:appcompat:$androidxProjectVersion"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
-    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
-    implementation "com.google.android.material:material:$androidxMaterialVersion"
-    implementation "androidx.constraintlayout:constraintlayout:$androidxConstraintLayoutVersion"
-    implementation "com.google.android.gms:play-services-ads:$playServicesAdsVersion"
-    testImplementation "junit:junit:$junitVersion"
-    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "com.google.android.material:material:1.12.0"
+    implementation "com.google.android.gms:play-services-ads:23.2.0"
     implementation project(':capacitor-android')
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation project(':capacitor-community-admob')
+    implementation project(':capacitor-filesystem')
+    implementation project(':capacitor-local-notifications')
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "androidx.core:core-ktx:1.13.1"
+    }
 }
 
 apply from: 'capacitor.build.gradle'
