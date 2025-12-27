@@ -11,9 +11,6 @@ const config: CapacitorConfig = {
   },
   plugins: {
     // Firebase Analytics and other plugins are configured here now
-  },
-  ios: {
-    deploymentTarget: '15.0'
   }
 };
 
