@@ -1,7 +1,7 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# 1. Force iOS 15.0 (This fixes the "higher minimum deployment target" error)
-platform :ios, '15.0'
+# 1. Force iOS 14.0 (This fixes the "higher minimum deployment target" error)
+platform :ios, '14.0'
 
 # 2. Use Static Linking (Required for AdMob)
 use_frameworks! :linkage => :static
