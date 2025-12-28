@@ -1,9 +1,7 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# 1. Force iOS 15.0 (Fixes the AdMob dependency error)
+# 1. Force iOS 15.0 (Required for AdMob)
 platform :ios, '15.0'
-
-# 2. Static Linking (Required for AdMob)
 use_frameworks! :linkage => :static
 
 def capacitor_pods
@@ -19,7 +17,7 @@ end
 
 target 'App' do
   capacitor_pods
-  # Pin AdMob to stable version
+  # Pin Google Ads to a stable version
   pod 'Google-Mobile-Ads-SDK', '11.13.0'
 end
 
