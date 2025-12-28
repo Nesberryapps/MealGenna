@@ -1,7 +1,7 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# 1. Force iOS 14.0 (This fixes the "higher minimum deployment target" error)
-platform :ios, '14.0'
+# 1. Force iOS 15.0 (Required for AdMob)
+platform :ios, '15.0'
 
 # 2. Use Static Linking (Required for AdMob)
 use_frameworks! :linkage => :static
@@ -10,18 +10,23 @@ def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+  
+  # KEEP THESE (They are safe and needed for your features)
+  pod 'CapacitorFilesystem', :path => '../../node_modules/@capacitor/filesystem'
+  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
 end
 
 target 'App' do
   capacitor_pods
-  # Pin Google Ads to a stable version
-  pod 'Google-Mobile-Ads-SDK', '12.12.0'
+  
+  # 3. Pin Google Ads SDK to a stable version (Prevents build errors)
+  pod 'Google-Mobile-Ads-SDK', '11.13.0'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # Force 15.0 everywhere
+      # 4. Force settings for all plugins
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       config.build_settings['ENABLE_BITCODE'] = 'NO'
     end

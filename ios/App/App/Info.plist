@@ -55,10 +55,12 @@
             <string>cstr6suwn9.skadnetwork</string>
         </dict>
     </array>
+    
+    <!-- Tracking Permission (Required for AdMob) -->
     <key>NSUserTrackingUsageDescription</key>
     <string>This identifier will be used to deliver personalized ads to you.</string>
 
-    <!-- Camera/Photo Permissions -->
+    <!-- Camera & Photo Permissions (Required for Scanning features) -->
     <key>NSCameraUsageDescription</key>
     <string>MealGenna needs access to your camera to scan food items.</string>
     <key>NSPhotoLibraryUsageDescription</key>
@@ -66,7 +68,7 @@
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>MealGenna needs access to save meal plans to your photos.</string>
 
-    <!-- File Sharing (For Download Button) -->
+    <!-- File Sharing (Required for "Download Recipe" button) -->
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
