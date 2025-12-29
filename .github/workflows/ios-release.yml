@@ -99,3 +99,22 @@ jobs:
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          
+      - name: Debug: show admob podspec & plugin version
+        run: |
+          echo "=== npm listing for @capacitor-community/admob ==="
+          npm ls @capacitor-community/admob --depth=0 || true
+          echo
+          echo "=== show plugin files if present ==="
+          ls -la node_modules/@capacitor-community/admob || true
+          echo
+          echo "=== print CapacitorCommunityAdmob.podspec (if exists) ==="
+          if [ -f node_modules/@capacitor-community/admob/CapacitorCommunityAdmob.podspec ]; then
+            sed -n '1,200p' node_modules/@capacitor-community/admob/CapacitorCommunityAdmob.podspec
+          else
+            grep -R \"deployment_target\" node_modules/@capacitor-community/admob -n || true
+            grep -R \"s.ios.deployment_target\" node_modules/@capacitor-community/admob -n || true
+          fi
+          echo
+          echo "=== check Google-Mobile-Ads-SDK podspec references ==="
+          grep -R \"Google-Mobile-Ads-SDK\" node_modules -n || true
