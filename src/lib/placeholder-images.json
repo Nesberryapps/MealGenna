@@ -1,3 +1,94 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "pasta-bolognese",
+      "description": "A classic Italian pasta dish with a rich meat sauce.",
+      "imageUrl": "https://images.unsplash.com/photo-1653122025256-d1ac2880c511?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwYXN0YSUyMGJvbG9nbmVzZXxlbnwwfHx8fDE3NjY5ODUyOTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pasta bolognese"
+    },
+    {
+      "id": "chicken-stir-fry",
+      "description": "Quick and healthy chicken and vegetable stir-fry.",
+      "imageUrl": "https://images.unsplash.com/photo-1757715375851-9dcb68bcef0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaGlja2VuJTIwc3Rpci1mcnl8ZW58MHx8fHwxNzY3MDE5NDI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chicken stir-fry"
+    },
+    {
+      "id": "taco-salad",
+      "description": "A fresh and vibrant salad with all the flavors of a taco.",
+      "imageUrl": "https://images.unsplash.com/photo-1725030660031-585ea459d55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx0YWNvJTIwc2FsYWR8ZW58MHx8fHwxNzY2OTUzNjU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "taco salad"
+    },
+    {
+      "id": "vegetarian-chili",
+      "description": "Hearty and spicy chili made with beans and vegetables.",
+      "imageUrl": "https://images.unsplash.com/photo-1761315412830-2f59480377b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8dmVnZXRhcmlhbiUyMGNoaWxpfGVufDB8fHx8MTc2NzAxOTQyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vegetarian chili"
+    },
+    {
+      "id": "grilled-salmon",
+      "description": "Perfectly grilled salmon with a side of asparagus.",
+      "imageUrl": "https://images.unsplash.com/photo-1676300184021-96fa00e1a987?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxncmlsbGVkJTIwc2FsbW9ufGVufDB8fHx8MTc2NjkzOTgzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "grilled salmon"
+    },
+    {
+      "id": "margarita-pizza",
+      "description": "Classic pizza with fresh tomatoes, mozzarella, and basil.",
+      "imageUrl": "https://images.unsplash.com/photo-1702716059239-385baacdabdc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYXJnYXJpdGElMjBwaXp6YXxlbnwwfHx8fDE3NjcwMTk0MjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "margarita pizza"
+    },
+    {
+      "id": "beef-burgers",
+      "description": "Juicy homemade beef burgers on a brioche bun.",
+      "imageUrl": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxiZWVmJTIwYnVyZ2VyfGVufDB8fHx8MTc2NjkyNzU1NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "beef burger"
+    },
+    {
+      "id": "quinoa-salad",
+      "description": "A light and refreshing quinoa salad with mixed greens.",
+      "imageUrl": "https://images.unsplash.com/photo-1615865417491-9941019fbc00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxxdWlub2ElMjBzYWxhZHxlbnwwfHx8fDE3NjY5OTcwNzV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "quinoa salad"
+    },
+    {
+      "id": "pancakes",
+      "description": "Fluffy buttermilk pancakes with maple syrup and berries.",
+      "imageUrl": "https://images.unsplash.com/photo-1668507740203-0654d38b6201?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwYW5jYWtlcyUyMGJyZWFrZmFzdHxlbnwwfHx8fDE3NjY5MzY0Mjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pancakes breakfast"
+    },
+    {
+      "id": "scrambled-eggs",
+      "description": "Creamy scrambled eggs with toast.",
+      "imageUrl": "https://images.unsplash.com/photo-1583552336796-531290f1fe2a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzY3JhbWJsZWQlMjBlZ2dzfGVufDB8fHx8MTc2NzAxOTQyNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "scrambled eggs"
+    },
+    {
+      "id": "oatmeal",
+      "description": "Warm oatmeal with fruits and nuts.",
+      "imageUrl": "https://images.unsplash.com/photo-1690959991427-7bdc2bbc84e1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxvYXRtZWFsJTIwYnJlYWtmYXN0fGVufDB8fHx8MTc2NjkyOTM2OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "oatmeal breakfast"
+    },
+    {
+      "id": "chicken-soup",
+      "description": "Comforting chicken noodle soup.",
+      "imageUrl": "https://images.unsplash.com/photo-1612966948332-81d747414a8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjaGlja2VuJTIwc291cHxlbnwwfHx8fDE3NjY5Mzc3Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chicken soup"
+    },
+    {
+      "id": "club-sandwich",
+      "description": "A classic triple-decker club sandwich.",
+      "imageUrl": "https://images.unsplash.com/photo-1567234669003-dce7a7a88821?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjbHViJTIwc2FuZHdpY2h8ZW58MHx8fHwxNzY3MDE4ODMwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "club sandwich"
+    },
+    {
+      "id": "sushi-rolls",
+      "description": "Assorted sushi rolls with wasabi and ginger.",
+      "imageUrl": "https://images.unsplash.com/photo-1583623025817-d180a2221d0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdXNoaSUyMHJvbGxzfGVufDB8fHx8MTc2NzAxOTQyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sushi rolls"
+    },
+    {
+      "id": "steak-dinner",
+      "description": "A perfectly cooked steak with potatoes and vegetables.",
+      "imageUrl": "https://images.unsplash.com/photo-1606374894242-19110fdbd56c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c3RlYWslMjBkaW5uZXJ8ZW58MHx8fHwxNzY3MDE5NDI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "steak dinner"
+    }
+  ]
 }
