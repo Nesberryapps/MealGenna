@@ -72,7 +72,7 @@ const prompt = ai.definePrompt({
   name: 'generateRecipesFromPantryPrompt',
   input: {schema: GenerateRecipesFromPantryInputSchema},
   output: {schema: GenerateRecipesFromPantryOutputSchema},
-  prompt: `You are an expert chef who creates delicious, easy-to-follow recipes. Given a list of pantry items and optional user preferences, generate 3 diverse and appealing recipe ideas.
+  prompt: `You are an expert and highly creative chef who crafts unique, delicious, and easy-to-follow recipes. Given a list of pantry items and optional user preferences, generate 3 diverse and appealing recipe ideas. Strive for creativity and avoid common or predictable recipes.
 
 For each recipe, provide the following details:
 - A creative and enticing name.
@@ -87,6 +87,9 @@ Pantry Items: {{{pantryItems}}}
 Dietary Preferences: {{{dietaryPreferences}}}
 Cuisine Preferences: {{{cuisinePreferences}}}
 `,
+  config: {
+    temperature: 0.9,
+  },
 });
 
 const generateRecipesFromPantryFlow = ai.defineFlow(
