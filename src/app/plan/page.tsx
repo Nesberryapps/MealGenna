@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { RefreshCw, Info, Drumstick, CookingPot, Flame, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -114,11 +114,12 @@ export default function PlanPage() {
   };
 
   // Generate initial plan
-  useState(() => {
+  useEffect(() => {
     if (!mealPlan) {
       regeneratePlan();
     }
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   if (isPending || !mealPlan) {
