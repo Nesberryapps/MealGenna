@@ -27,6 +27,8 @@ const MealPlanOutputSchema = z.array(DailyMealPlanSchema).length(7);
 export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
 
 
+const SingleDayMealPlanSchema = z.array(MealSchema).length(3);
+
 export async function generateMealPlan(): Promise<DailyMealPlan[]> {
   const result = await generateMealPlanFlow();
   
@@ -45,13 +47,13 @@ export async function generateMealPlan(): Promise<DailyMealPlan[]> {
   return result;
 }
 
-
 const prompt = ai.definePrompt({
-  name: 'generateMealPlanPrompt',
-  output: { schema: MealPlanOutputSchema },
-  prompt: `You are an expert meal planner and highly creative chef. Generate a diverse, exciting, and delicious 7-day meal plan.
+  name: 'generateDailyMealPlanPrompt',
+  input: { schema: z.object({ day: z.string() }) },
+  output: { schema: SingleDayMealPlanSchema },
+  prompt: `You are an expert meal planner and highly creative chef. Generate a diverse, exciting, and delicious meal plan for a single day: {{{day}}}.
 
-For each of the 7 days, provide a unique meal for Breakfast, Lunch, and Dinner. Ensure there is a wide variety of meals throughout the week. Avoid repetition and common recipes; aim for creativity and inspiration.
+Provide a unique meal for Breakfast, Lunch, and Dinner.
 
 For each meal, provide a full recipe object with the following details:
 - A creative and enticing name.
@@ -73,10 +75,17 @@ const generateMealPlanFlow = ai.defineFlow(
     outputSchema: MealPlanOutputSchema,
   },
   async () => {
-    const { output } = await prompt();
-    if (!output) {
-      throw new Error('Failed to generate a meal plan.');
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const mealPlan: DailyMealPlan[] = [];
+
+    for (const day of days) {
+        const { output } = await prompt({ day });
+        if (!output) {
+            throw new Error(`Failed to generate a meal plan for ${day}.`);
+        }
+        mealPlan.push({ day, meals: output });
     }
-    return output;
+
+    return mealPlan;
   }
 );
