@@ -56,6 +56,8 @@ const generateMealPlanFlow = ai.defineFlow(
     const mealPlanPrompt = ai.definePrompt({
         name: 'generateFullMealPlanPrompt',
         output: { schema: MealPlanOutputSchema },
+        // Use a more powerful model for this complex generation task
+        model: 'googleai/gemini-2.5-pro',
         prompt: `You are an expert meal planner and highly creative chef. Generate a diverse, exciting, and delicious 7-day meal plan.
     
     For each day of the week, provide a unique meal for Breakfast, Lunch, and Dinner.
@@ -71,8 +73,6 @@ const generateMealPlanFlow = ai.defineFlow(
     `,
         config: {
           temperature: 0.9,
-          // Use a more powerful model for this complex generation task
-          model: 'googleai/gemini-2.5-pro'
         },
     });
 
