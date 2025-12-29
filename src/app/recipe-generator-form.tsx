@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useActionState, useRef } from 'react';
 import Image from 'next/image';
-import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info, Download, Smartphone } from 'lucide-react';
+import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info, Download, Smartphone, ShoppingCart } from 'lucide-react';
 import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -96,6 +96,11 @@ const showAdAndGenerateRecipes = async (form: HTMLFormElement) => {
   }
 };
 // --- End of AdMob Placeholder ---
+
+const createShoppingUrl = (ingredients: string[]) => {
+  const query = ingredients.join(' ');
+  return `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
+};
 
 
 export function RecipeGeneratorForm() {
@@ -367,8 +372,7 @@ export function RecipeGeneratorForm() {
                   <p className="text-sm text-muted-foreground">Optional: Help us narrow down the results.</p>
               </div>
               <div className="space-y-2">
-                  <Label htmlFor="cuisinePreferences">Cuisine Preferences</Label>
-                  <Select name="cuisinePreferences" defaultValue="any">
+                  <Label htmlFor="cuisinePreferences">Cuisine Preferences</Label>                  <Select name="cuisinePreferences" defaultValue="any">
                       <SelectTrigger>
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
@@ -453,6 +457,10 @@ export function RecipeGeneratorForm() {
                                         <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground">
                                             {recipe.ingredients.map((item, i) => <li key={i}>{item}</li>)}
                                         </ul>
+                                        <Button onClick={() => window.open(createShoppingUrl(recipe.ingredients), '_blank')} variant="outline" className="w-full">
+                                            <ShoppingCart className="mr-2" />
+                                            Shop for Ingredients
+                                        </Button>
                                     </div>
 
                                     {/* Instructions */}

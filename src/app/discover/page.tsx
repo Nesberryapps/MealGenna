@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { Shuffle, Info, Drumstick, CookingPot, Flame, Download, Loader2 } from 'lucide-react';
+import { Shuffle, Info, Drumstick, CookingPot, Flame, Download, Loader2, ShoppingCart } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -22,6 +22,11 @@ import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
 import { handleDownload } from '@/lib/pdf';
 import { getDiscoverMeal } from '../actions';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const createShoppingUrl = (ingredients: string[]) => {
+  const query = ingredients.join(' ');
+  return `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
+};
 
 export default function DiscoverPage() {
   const [meal, setMeal] = useState<Recipe & { imageUrl?: string } | null>(null);
@@ -100,6 +105,10 @@ export default function DiscoverPage() {
                           <li key={i}>{item}</li>
                         ))}
                       </ul>
+                      <Button onClick={() => window.open(createShoppingUrl(meal.ingredients), '_blank')} variant="outline" className="w-full">
+                        <ShoppingCart className="mr-2" />
+                        Shop for Ingredients
+                      </Button>
                     </div>
 
                     {/* Instructions */}

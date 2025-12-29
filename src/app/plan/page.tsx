@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
-import { RefreshCw, Info, Drumstick, CookingPot, Flame, Download, Loader2 } from 'lucide-react';
+import { RefreshCw, Info, Drumstick, CookingPot, Flame, Download, Loader2, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,6 +34,11 @@ const DAYS_OF_WEEK = [
   'Sunday',
 ];
 
+const createShoppingUrl = (ingredients: string[]) => {
+  const query = ingredients.join(' ');
+  return `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
+};
+
 
 function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string; onAccordionChange: (mealName: string) => void }) {
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -64,7 +69,7 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
             className="object-cover"
           />
         ) : (
-          (isFetchingDetails || meal.details) && ( // Show loader only when fetching or if details are loaded but image isn't yet.
+          (isFetchingDetails) && ( 
             <div className="w-full h-full flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
@@ -107,6 +112,10 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
                           <li key={i}>{item}</li>
                         ))}
                       </ul>
+                       <Button onClick={() => meal.details && window.open(createShoppingUrl(meal.details.ingredients), '_blank')} variant="outline" className="w-full">
+                        <ShoppingCart className="mr-2" />
+                        Shop for Ingredients
+                      </Button>
                     </div>
 
                     {/* Instructions */}
@@ -139,7 +148,7 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
                             {meal.details.nutritionalFacts.protein}
                         </p>
                         <p>
-                            <strong>Carbs:</strong> {meal.details.nutritionalFacts.carbs}
+                            <strong>Carbs:</strong> {meal.details.nutrutionalFacts.carbs}
                         </p>
                         <p>
                             <strong>Fat:</strong> {meal.details.nutritionalFacts.fat}
