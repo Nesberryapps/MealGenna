@@ -9,12 +9,6 @@ const config: CapacitorConfig = {
     url: 'https://www.mealgenna.com',
     cleartext: true
   },
-  plugins: {
-    // Keep your existing plugins configuration here if any
-  },
-  ios: {
-    deploymentTarget: '15.0'
-  }
 };
 
 export default config;
