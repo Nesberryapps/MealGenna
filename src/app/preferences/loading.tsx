@@ -9,7 +9,7 @@ export default function Loading() {
         <Skeleton className="h-5 w-80 mx-auto" />
       </div>
 
-      {[...Array(3)].map((_, cardIndex) => (
+      {[...Array(4)].map((_, cardIndex) => (
         <Card key={cardIndex}>
           <CardHeader>
             <Skeleton className="h-7 w-40" />

@@ -24,7 +24,7 @@ export function Header() {
             <NavLink href="/">AI Generator</NavLink>
             <NavLink href="/discover">Discover</NavLink>
             <NavLink href="/plan">Meal Plan</NavLink>
-            <NavLink href="/preferences">Preferences</NavLink>
+            <NavLink href="/settings">Settings</NavLink>
         </nav>
       </div>
     </header>

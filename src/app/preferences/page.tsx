@@ -1,3 +1,4 @@
+
 import {
     Card,
     CardContent,
@@ -6,21 +7,16 @@ import {
     CardTitle,
   } from '@/components/ui/card';
   import { Label } from '@/components/ui/label';
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from '@/components/ui/select';
   import { Checkbox } from "@/components/ui/checkbox";
   import { ALLERGIES, CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
+  import Link from 'next/link';
+  import { Button } from '@/components/ui/button';
   
-  export default function PreferencesPage() {
+  export default function SettingsPage() {
     return (
       <div className="w-full max-w-2xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold font-headline">Your Preferences</h1>
+          <h1 className="text-4xl font-bold font-headline">Settings</h1>
           <p className="text-muted-foreground mt-2">
             Tailor your meal suggestions to your taste and needs.
           </p>
@@ -78,6 +74,29 @@ import {
                 </div>
                 ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>More Information</CardTitle>
+            <CardDescription>
+              View our policies, learn more about us, or get in touch.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-start gap-2">
+            <Button variant="ghost" asChild>
+                <Link href="/about">About Us</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+                <Link href="/contact">Contact Us</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+                <Link href="/terms">Terms & Conditions</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+                <Link href="/privacy">Privacy Policy</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

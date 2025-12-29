@@ -10,7 +10,7 @@ const navItems = [
   { href: '/', icon: Sparkles, label: 'Generate' },
   { href: '/discover', icon: Shuffle, label: 'Discover' },
   { href: '/plan', icon: BookOpen, label: 'Plan' },
-  { href: '/preferences', icon: Settings, label: 'Settings' },
+  { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function BottomNav() {
