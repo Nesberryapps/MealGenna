@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useEffect, useState, useActionState, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Loader2, Sparkles, Camera, X, ChevronsUpDown } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info } from 'lucide-react';
 
 import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 
 function SubmitButton() {
@@ -275,20 +276,63 @@ export function RecipeGeneratorForm() {
       </Card>
 
       {state.recipes && state.recipes.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Recipe Ideas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3 list-disc list-inside">
-              {state.recipes.map((recipe, index) => (
-                <li key={`${state.timestamp}-${index}`} className="text-foreground">
-                  {recipe}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <div className="space-y-8">
+            <h2 className="text-3xl font-bold text-center font-headline">Recipe Ideas</h2>
+            <Accordion type="single" collapsible className="w-full space-y-4">
+                {state.recipes.map((recipe, index) => (
+                    <Card key={`${state.timestamp}-${index}`} className="overflow-hidden">
+                        {recipe.imageUrl && (
+                            <div className="relative aspect-video w-full">
+                                <Image src={recipe.imageUrl} alt={recipe.name} fill className="object-cover" />
+                            </div>
+                        )}
+                         <CardHeader>
+                            <CardTitle className="font-headline text-2xl">{recipe.name}</CardTitle>
+                            <CardDescription>{recipe.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <AccordionItem value={`item-${index}`} className="border-b-0">
+                                <AccordionTrigger>
+                                    <div className="flex items-center gap-2 text-primary">
+                                        <Info className="h-5 w-5" />
+                                        <span>View Recipe Details</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="space-y-6 pt-4">
+                                    {/* Ingredients */}
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Drumstick /> Ingredients</h3>
+                                        <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground">
+                                            {recipe.ingredients.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+
+                                    {/* Instructions */}
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><CookingPot /> Instructions</h3>
+                                        <ol className="list-decimal list-inside space-y-2 pl-2">
+                                            {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
+                                        </ol>
+                                        <p className="text-sm text-muted-foreground"><strong>Cook Time:</strong> {recipe.cookTime}</p>
+                                    </div>
+
+                                    {/* Nutritional Facts */}
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Flame /> Nutritional Facts</h3>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                            <p><strong>Calories:</strong> {recipe.nutritionalFacts.calories}</p>
+                                            <p><strong>Protein:</strong> {recipe.nutritionalFacts.protein}</p>
+                                            <p><strong>Carbs:</strong> {recipe.nutritionalFacts.carbs}</p>
+                                            <p><strong>Fat:</strong> {recipe.nutritionalFacts.fat}</p>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </CardContent>
+                    </Card>
+                ))}
+            </Accordion>
+        </div>
       )}
     </div>
   );

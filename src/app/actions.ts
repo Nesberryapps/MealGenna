@@ -1,9 +1,9 @@
-
 'use server';
 
 import {
   generateRecipesFromPantry,
   GenerateRecipesFromPantryInput,
+  type Recipe,
 } from '@/ai/flows/generate-recipes-from-pantry';
 import {
   identifyPantryItems,
@@ -18,7 +18,7 @@ const recipeRequestSchema = z.object({
 });
 
 export type RecipeResult = {
-  recipes: string[];
+  recipes: (Recipe & { imageUrl?: string })[];
   error?: string;
   timestamp?: number;
 };
@@ -49,12 +49,7 @@ export async function getRecipes(
     };
     const result = await generateRecipesFromPantry(input);
 
-    const recipeArray = result.recipes
-      .split('\n')
-      .map(recipe => recipe.trim().replace(/^\d+\.\s*/, ''))
-      .filter(recipe => recipe.length > 0);
-
-    return { recipes: recipeArray, timestamp: Date.now() };
+    return { recipes: result.recipes, timestamp: Date.now() };
   } catch (e) {
     console.error(e);
     return {
