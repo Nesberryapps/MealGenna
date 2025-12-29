@@ -26,9 +26,6 @@ const DailyMealPlanSchema = z.object({
 const MealPlanOutputSchema = z.array(DailyMealPlanSchema).length(7);
 export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
 
-
-const SingleDayMealPlanSchema = z.array(MealSchema).length(3);
-
 export async function generateMealPlan(): Promise<DailyMealPlan[]> {
   const result = await generateMealPlanFlow();
   
@@ -55,7 +52,6 @@ const generateMealPlanFlow = ai.defineFlow(
     outputSchema: MealPlanOutputSchema,
   },
   async () => {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
     const mealPlanPrompt = ai.definePrompt({
         name: 'generateFullMealPlanPrompt',
@@ -75,6 +71,8 @@ const generateMealPlanFlow = ai.defineFlow(
     `,
         config: {
           temperature: 0.9,
+          // Use a more powerful model for this complex generation task
+          model: 'googleai/gemini-2.5-pro'
         },
     });
 
