@@ -189,6 +189,7 @@ export const CUISINE_PREFERENCES = [
   { id: 'asian', label: 'Asian' },
   { id: 'indian', label: 'Indian' },
   { id: 'mediterranean', label: 'Mediterranean' },
+  { id: 'caribbean', label: 'Caribbean' },
 ];
 
 export const ALLERGIES = [
