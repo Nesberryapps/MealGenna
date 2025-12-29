@@ -3,21 +3,10 @@
 
 import { useEffect, useState, useActionState, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Loader2, Sparkles, Camera, X, ChevronsUpDown } from 'lucide-react';
 
 import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from '@/components/ui/form';
 import {
   Card,
   CardContent,
@@ -33,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -41,12 +31,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
-
-const formSchema = z.object({
-  pantryItems: z.string().min(3, 'Please list at least one item.'),
-  dietaryPreferences: z.string().optional(),
-  cuisinePreferences: z.string().optional(),
-});
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -76,19 +60,8 @@ export function RecipeGeneratorForm() {
   const [isPantryOpen, setIsPantryOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      pantryItems: '',
-      dietaryPreferences: 'any',
-      cuisinePreferences: 'any',
-    },
-  });
-
-  useEffect(() => {
-    form.setValue('pantryItems', pantryItems.join(', '));
-  }, [pantryItems, form]);
 
   useEffect(() => {
     if (state.error) {
@@ -210,113 +183,94 @@ export function RecipeGeneratorForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form
-              action={formAction}
-              className="space-y-6"
-            >
-              <FormItem>
-                <FormLabel>Pantry Items</FormLabel>
-                <FormControl>
-                  <Collapsible open={isPantryOpen} onOpenChange={setIsPantryOpen} className="w-full space-y-2">
-                    <div className="p-4 border-dashed border-2 rounded-lg min-h-[80px] flex items-center justify-center">
-                      {pantryItems.length > 0 ? (
-                        <div className='w-full'>
-                            <div className='flex justify-between items-center'>
-                                <p className='text-sm text-muted-foreground'>{pantryItems.length} items found</p>
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="w-9 p-0">
-                                    <ChevronsUpDown className="h-4 w-4" />
-                                    <span className="sr-only">Toggle</span>
-                                    </Button>
-                                </CollapsibleTrigger>
-                            </div>
-                            <CollapsibleContent className="flex flex-wrap gap-2 pt-4">
-                                {pantryItems.map(item => (
-                                <Badge key={item} variant="secondary" className="text-base">
-                                    {item}
-                                    <button onClick={() => removeItem(item)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                                    <X className="h-3 w-3" />
-                                    </button>
-                                </Badge>
-                                ))}
-                            </CollapsibleContent>
+          <form
+            ref={formRef}
+            action={formAction}
+            className="space-y-6"
+          >
+            <div className="space-y-2">
+              <Label>Pantry Items</Label>
+              <Collapsible open={isPantryOpen} onOpenChange={setIsPantryOpen} className="w-full space-y-2">
+                <div className="p-4 border-dashed border-2 rounded-lg min-h-[80px] flex items-center justify-center">
+                  {pantryItems.length > 0 ? (
+                    <div className='w-full'>
+                        <div className='flex justify-between items-center'>
+                            <p className='text-sm text-muted-foreground'>{pantryItems.length} items found</p>
+                            <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="w-9 p-0">
+                                <ChevronsUpDown className="h-4 w-4" />
+                                <span className="sr-only">Toggle</span>
+                                </Button>
+                            </CollapsibleTrigger>
                         </div>
-                      ) : (
-                        <div className="text-muted-foreground text-center py-4">
-                          Click "Scan Pantry" to start adding items.
-                        </div>
-                      )}
+                        <CollapsibleContent className="flex flex-wrap gap-2 pt-4">
+                            {pantryItems.map(item => (
+                            <Badge key={item} variant="secondary" className="text-base">
+                                {item}
+                                <button onClick={() => removeItem(item)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                <X className="h-3 w-3" />
+                                </button>
+                            </Badge>
+                            ))}
+                        </CollapsibleContent>
                     </div>
-                  </Collapsible>
-                </FormControl>
-                <input type="hidden" {...form.register('pantryItems')} />
-                <FormDescription>
-                  Click "Scan Pantry" to add items with your camera.
-                </FormDescription>
-              </FormItem>
-
-              <div className="flex justify-center">
-                <Button type="button" onClick={() => setIsScanning(true)}>
-                  <Camera className="mr-2" />
-                  Scan Pantry
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="dietaryPreferences"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dietary Preferences</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="any">Any</SelectItem>
-                          {DIETARY_PREFERENCES.map(pref => (
-                            <SelectItem key={pref.id} value={pref.label}>{pref.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Optional: Help us narrow down the results.</FormDescription>
-                    </FormItem>
+                  ) : (
+                    <div className="text-muted-foreground text-center py-4">
+                      Click "Scan Pantry" to start adding items.
+                    </div>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cuisinePreferences"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cuisine Preferences</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="any">Any</SelectItem>
-                          {CUISINE_PREFERENCES.map(pref => (
-                            <SelectItem key={pref.id} value={pref.label}>{pref.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Optional: Craving a specific flavor?</FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
+                </div>
+              </Collapsible>
+              <input type="hidden" name="pantryItems" value={pantryItems.join(', ')} />
+              <p className="text-sm text-muted-foreground">
+                Click "Scan Pantry" to add items with your camera.
+              </p>
+            </div>
 
-              <div className="flex justify-center pt-4">
-                <SubmitButton />
+            <div className="flex justify-center">
+              <Button type="button" onClick={() => setIsScanning(true)}>
+                <Camera className="mr-2" />
+                Scan Pantry
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                  <Label htmlFor="dietaryPreferences">Dietary Preferences</Label>
+                  <Select name="dietaryPreferences" defaultValue="any">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any</SelectItem>
+                      {DIETARY_PREFERENCES.map(pref => (
+                        <SelectItem key={pref.id} value={pref.label}>{pref.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">Optional: Help us narrow down the results.</p>
               </div>
-            </form>
-          </Form>
+              <div className="space-y-2">
+                  <Label htmlFor="cuisinePreferences">Cuisine Preferences</Label>
+                  <Select name="cuisinePreferences" defaultValue="any">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any</SelectItem>
+                      {CUISINE_PREFERENCES.map(pref => (
+                        <SelectItem key={pref.id} value={pref.label}>{pref.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">Optional: Craving a specific flavor?</p>
+              </div>
+            </div>
+
+            <div className="flex justify-center pt-4">
+              <SubmitButton />
+            </div>
+          </form>
         </CardContent>
       </Card>
 
