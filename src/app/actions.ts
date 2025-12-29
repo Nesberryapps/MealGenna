@@ -2,17 +2,15 @@
 
 import {
   generateRecipesFromPantry,
-  GenerateRecipesFromPantryInput,
-  Recipe,
+  type GenerateRecipesFromPantryInput,
 } from '@/ai/flows/generate-recipes-from-pantry';
 import {
   identifyPantryItems,
   IdentifyPantryItemsInput,
 } from '@/ai/flows/identify-pantry-items-flow';
 import { generateDiscoverMeal } from '@/ai/flows/generate-discover-meal';
-import { generateMealPlan, generateRecipeDetails, type DailyMealPlan, type SimpleRecipe } from '@/ai/flows/generate-meal-plan';
+import { generateMealPlan, generateRecipeDetails, type Recipe } from '@/ai/flows/generate-meal-plan';
 import { z } from 'zod';
-import placeholderImages from '@/lib/placeholder-images.json';
 
 const recipeRequestSchema = z.object({
   pantryItems: z.string().min(3, { message: 'Please list at least one item.' }),
@@ -97,11 +95,9 @@ export async function getDiscoverMeal(): Promise<Recipe> {
     return result;
 }
 
-// Updated MealPlan type to reflect the new structure
 export type Meal = {
   name: string;
   details?: Recipe;
-  placeholderImageUrl?: string;
 };
 
 export type DayPlan = {
@@ -118,25 +114,17 @@ export type MealPlan = {
 export async function getMealPlan(): Promise<MealPlan> {
     const result = await generateMealPlan();
     
-    // Convert the array of daily plans into the MealPlan object structure
     const plan: MealPlan = {};
-    const imageCount = placeholderImages.placeholderImages.length;
-
-    let imageIndex = 0;
-
     result.forEach(dayPlan => {
         plan[dayPlan.day] = {
             breakfast: { 
                 name: dayPlan.meals.find(m => m.type === 'Breakfast')!.recipe.name,
-                placeholderImageUrl: placeholderImages.placeholderImages[imageIndex++ % imageCount].imageUrl,
             },
             lunch: { 
                 name: dayPlan.meals.find(m => m.type === 'Lunch')!.recipe.name,
-                placeholderImageUrl: placeholderImages.placeholderImages[imageIndex++ % imageCount].imageUrl,
             },
             dinner: { 
                 name: dayPlan.meals.find(m => m.type === 'Dinner')!.recipe.name,
-                placeholderImageUrl: placeholderImages.placeholderImages[imageIndex++ % imageCount].imageUrl,
             },
         };
     });

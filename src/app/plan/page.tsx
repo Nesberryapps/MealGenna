@@ -52,28 +52,23 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
     }
   }, [meal.details]);
 
-  const imageUrl = meal.details?.imageUrl || meal.placeholderImageUrl;
 
   return (
     <Card className="bg-card rounded-lg overflow-hidden border w-full flex flex-col">
-      <div className="relative aspect-video w-full bg-muted">
-        {imageUrl ? (
-            <Image
-            src={imageUrl}
+       <div className="relative aspect-video w-full bg-muted">
+        {meal.details?.imageUrl ? (
+          <Image
+            src={meal.details.imageUrl}
             alt={meal.name}
             fill
             className="object-cover"
-            />
+          />
         ) : (
+          (isFetchingDetails || meal.details) && ( // Show loader only when fetching or if details are loaded but image isn't yet.
             <div className="w-full h-full flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-        )}
-        {/* Show a mini loader if we're fetching a new image over the placeholder */}
-        {isFetchingDetails && meal.placeholderImageUrl && !meal.details?.imageUrl && (
-            <div className="absolute bottom-2 right-2 bg-background/80 rounded-full p-1">
-                <Loader2 className="h-4 w-4 animate-spin text-primary"/>
-            </div>
+          )
         )}
       </div>
       <CardHeader>
@@ -131,25 +126,25 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
 
                     {/* Nutritional Facts */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
                         <Flame /> Nutritional Facts
-                      </h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        </h3>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
                         <p>
-                          <strong>Calories:</strong>{' '}
-                          {meal.details.nutritionalFacts.calories}
+                            <strong>Calories:</strong>{' '}
+                            {meal.details.nutritionalFacts.calories}
                         </p>
                         <p>
-                          <strong>Protein:</strong>{' '}
-                          {meal.details.nutritionalFacts.protein}
+                            <strong>Protein:</strong>{' '}
+                            {meal.details.nutritionalFacts.protein}
                         </p>
                         <p>
-                          <strong>Carbs:</strong> {meal.details.nutritionalFacts.carbs}
+                            <strong>Carbs:</strong> {meal.details.nutritionalFacts.carbs}
                         </p>
                         <p>
-                          <strong>Fat:</strong> {meal.details.nutritionalFacts.fat}
+                            <strong>Fat:</strong> {meal.details.nutritionalFacts.fat}
                         </p>
-                      </div>
+                        </div>
                     </div>
                 </>
               )}
