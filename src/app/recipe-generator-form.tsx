@@ -71,8 +71,6 @@ export function RecipeGeneratorForm() {
     },
   });
 
-  const formRef = useRef<HTMLFormElement>(null);
-
   useEffect(() => {
     if (state.error) {
       toast({
@@ -97,9 +95,7 @@ export function RecipeGeneratorForm() {
         <CardContent>
           <Form {...form}>
             <form
-              ref={formRef}
               action={formAction}
-              onSubmit={form.handleSubmit(() => formRef.current?.requestSubmit())}
               className="space-y-6"
             >
               <FormField
