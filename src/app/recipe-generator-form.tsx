@@ -1,13 +1,14 @@
+
 'use client';
 
-import { useEffect, useRef, useActionState } from 'react';
+import { useEffect, useState, useActionState, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Camera, X } from 'lucide-react';
 
-import { getRecipes, type RecipeResult } from '@/app/actions';
+import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,9 +17,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
   CardContent,
@@ -34,6 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 
 const formSchema = z.object({
@@ -58,9 +59,17 @@ function SubmitButton() {
 
 export function RecipeGeneratorForm() {
   const { toast } = useToast();
-  const [state, formAction] = useActionState<RecipeResult, FormData>(getRecipes, {
-    recipes: [],
-  });
+  const [state, formAction, isPending] = useActionState<RecipeResult, FormData>(
+    getRecipes,
+    { recipes: [] }
+  );
+
+  const [pantryItems, setPantryItems] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isIdentifying, setIsIdentifying] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean>();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -72,6 +81,10 @@ export function RecipeGeneratorForm() {
   });
 
   useEffect(() => {
+    form.setValue('pantryItems', pantryItems.join(', '));
+  }, [pantryItems, form]);
+
+  useEffect(() => {
     if (state.error) {
       toast({
         variant: 'destructive',
@@ -81,6 +94,94 @@ export function RecipeGeneratorForm() {
     }
   }, [state, toast]);
 
+  useEffect(() => {
+    if (isScanning) {
+      const getCameraPermission = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          setIsScanning(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
+          });
+        }
+      };
+      getCameraPermission();
+
+      return () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach(track => track.stop());
+        }
+      }
+    }
+  }, [isScanning, toast]);
+
+  const handleCapture = async () => {
+    if (videoRef.current && canvasRef.current) {
+      setIsIdentifying(true);
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const photoDataUri = canvas.toDataURL('image/jpeg');
+
+        const result = await getIdentifiedItems(photoDataUri);
+
+        if (result.error) {
+          toast({ variant: 'destructive', title: 'Identification Failed', description: result.error });
+        } else {
+          setPantryItems(prev => [...new Set([...prev, ...result.items])]);
+        }
+      }
+      setIsScanning(false);
+      setIsIdentifying(false);
+    }
+  };
+
+  const removeItem = (itemToRemove: string) => {
+    setPantryItems(prev => prev.filter(item => item !== itemToRemove));
+  };
+
+  if (isScanning) {
+    return (
+      <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
+        <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
+        <canvas ref={canvasRef} className="hidden"></canvas>
+        {isIdentifying && (
+          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+            <Loader2 className="animate-spin h-10 w-10" />
+            <p className="mt-4 text-lg">Identifying items...</p>
+          </div>
+        )}
+        <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-4">
+          <Button onClick={() => setIsScanning(false)} variant="outline" size="lg">Cancel</Button>
+          <Button onClick={handleCapture} size="lg">Capture</Button>
+        </div>
+        {hasCameraPermission === false && (
+          <Alert variant="destructive" className="absolute top-4">
+            <AlertTitle>Camera Access Required</AlertTitle>
+            <AlertDescription>
+              Please allow camera access to use this feature. You may need to change permissions in your browser settings.
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+    );
+  }
+
+
   return (
     <div className="space-y-8">
       <Card className="shadow-lg">
@@ -89,7 +190,7 @@ export function RecipeGeneratorForm() {
             What's in your pantry?
           </CardTitle>
           <CardDescription className="text-center">
-            Enter the ingredients you have, and we'll whip up some recipe ideas for you.
+            Scan your ingredients, and we'll whip up some recipe ideas for you.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,26 +199,40 @@ export function RecipeGeneratorForm() {
               action={formAction}
               className="space-y-6"
             >
-              <FormField
-                control={form.control}
-                name="pantryItems"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pantry Items</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="e.g., chicken breast, tomatoes, rice, onion, garlic"
-                        className="min-h-[120px] resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Separate items with commas.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormItem>
+                <FormLabel>Pantry Items</FormLabel>
+                <FormControl>
+                  <div className="p-4 border-dashed border-2 rounded-lg min-h-[120px]">
+                    {pantryItems.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {pantryItems.map(item => (
+                          <Badge key={item} variant="secondary" className="text-base">
+                            {item}
+                            <button onClick={() => removeItem(item)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground text-center py-8">
+                        Click "Scan Pantry" to start adding items.
+                      </div>
+                    )}
+                  </div>
+                </FormControl>
+                <input type="hidden" {...form.register('pantryItems')} />
+                <FormDescription>
+                  Click "Scan Pantry" to add items with your camera.
+                </FormDescription>
+              </FormItem>
+
+              <div className="flex justify-center">
+                <Button type="button" onClick={() => setIsScanning(true)}>
+                  <Camera className="mr-2" />
+                  Scan Pantry
+                </Button>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField

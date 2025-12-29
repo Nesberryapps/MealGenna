@@ -5,6 +5,10 @@ import {
   generateRecipesFromPantry,
   GenerateRecipesFromPantryInput,
 } from '@/ai/flows/generate-recipes-from-pantry';
+import {
+  identifyPantryItems,
+  IdentifyPantryItemsInput,
+} from '@/ai/flows/identify-pantry-items-flow';
 import { z } from 'zod';
 
 const recipeRequestSchema = z.object({
@@ -56,6 +60,36 @@ export async function getRecipes(
     return {
       recipes: [],
       error: 'Failed to generate recipes. Please try again later.',
+    };
+  }
+}
+
+export type IdentifyResult = {
+  items: string[];
+  error?: string;
+};
+
+export async function getIdentifiedItems(
+  photoDataUri: string
+): Promise<IdentifyResult> {
+  if (!photoDataUri) {
+    return {
+      items: [],
+      error: 'No photo provided.',
+    };
+  }
+
+  try {
+    const input: IdentifyPantryItemsInput = {
+      photoDataUri,
+    };
+    const result = await identifyPantryItems(input);
+    return { items: result.items };
+  } catch (e) {
+    console.error(e);
+    return {
+      items: [],
+      error: 'Failed to identify items from the image. Please try again.',
     };
   }
 }
