@@ -160,29 +160,31 @@ export function RecipeGeneratorForm() {
   if (isScanning) {
     return (
       <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
-        <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
-        <canvas ref={canvasRef} className="hidden"></canvas>
-        {isIdentifying && (
-          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-            <Loader2 className="animate-spin h-10 w-10" />
-            <p className="mt-4 text-lg">Identifying items...</p>
-          </div>
-        )}
-        <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-4">
-          <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
-          <Button onClick={handleCapture} size="lg" disabled={isIdentifying}>
-            <Camera className="mr-2" />
-            Capture
-          </Button>
+        <div className="relative w-full h-full">
+            <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
+            <canvas ref={canvasRef} className="hidden"></canvas>
+            {isIdentifying && (
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-20">
+                <Loader2 className="animate-spin h-10 w-10" />
+                <p className="mt-4 text-lg">Identifying items...</p>
+              </div>
+            )}
+            <div className="absolute bottom-10 left-4 right-4 flex justify-center gap-4 z-20">
+              <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
+              <Button onClick={handleCapture} size="lg" disabled={isIdentifying}>
+                <Camera className="mr-2" />
+                Capture
+              </Button>
+            </div>
+            {hasCameraPermission === false && (
+              <Alert variant="destructive" className="absolute top-4 z-20">
+                <AlertTitle>Camera Access Required</AlertTitle>
+                <AlertDescription>
+                  Please allow camera access to use this feature. You may need to change permissions in your browser settings.
+                </AlertDescription>
+              </Alert>
+            )}
         </div>
-        {hasCameraPermission === false && (
-          <Alert variant="destructive" className="absolute top-4">
-            <AlertTitle>Camera Access Required</AlertTitle>
-            <AlertDescription>
-              Please allow camera access to use this feature. You may need to change permissions in your browser settings.
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
     );
   }
