@@ -34,54 +34,54 @@ import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 import { handleDownload } from '@/lib/pdf';
 
 
-function SubmitButton() {
-  const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+// --- AdMob Placeholder ---
+// This function is a placeholder for your future AdMob integration.
+// You will replace this with the actual call to the Capacitor AdMob plugin.
+const showAdAndGenerateRecipes = async (form: HTMLFormElement) => {
+  // --- Step 1: Integrate Capacitor AdMob Plugin ---
+  //
+  // const showAd = async () => {
+  //   try {
+  //     // Import the AdMob plugin from Capacitor
+  //     // const { AdMob } = await import('@capacitor-community/admob');
+  //
+  //     // Prepare and show the Rewarded Interstitial ad
+  //     // await AdMob.prepareRewardVideoAd({ adId: 'YOUR_ADMOB_REWARDED_AD_ID' });
+  //     // const rewardInfo = await AdMob.showRewardVideoAd();
+  //
+  //     // Check if the user completed the ad view
+  //     // return rewardInfo.rewarded;
+  //     return true; // For testing without the plugin
+  //
+  //   } catch (error) {
+  //     console.error("AdMob Error:", error);
+  //     // If ads fail, you can decide to let the user proceed or not.
+  //     // Returning true here allows recipe generation even if ads fail.
+  //     return true;
+  //   }
+  // };
 
-  useEffect(() => {
-    const form = formRef.current;
-    if (!form) return;
+  // --- Step 2: Show Ad and Generate Recipes ---
+  
+  // const adWatched = await showAd();
+  const adWatched = true; // For now, we'll assume the ad was watched.
 
-    const handleSubmit = (event: Event) => {
-      setPending(true);
-    };
+  if (adWatched) {
+    // If the ad was watched, we submit the form to the server action.
+    form.requestSubmit();
+  } else {
+    // Optional: You could show a message if the user doesn't watch the ad.
+    console.log("Ad not watched. Recipes will not be generated.");
+  }
+};
+// --- End of AdMob Placeholder ---
 
-    const handleEnd = () => {
-      setPending(false);
-    };
-
-    form.addEventListener('submit', handleSubmit);
-    // Not a standard event, so we'll listen on the button for clicks that finish
-    document.querySelectorAll('form button[type="submit"]').forEach(button => {
-        button.addEventListener('click', handleEnd);
-    });
-
-
-    return () => {
-      form.removeEventListener('submit', handleSubmit);
-      document.querySelectorAll('form button[type="submit"]').forEach(button => {
-        button.removeEventListener('click', handleEnd);
-    });
-    };
-  }, []);
-
-  return (
-    <Button ref={formRef as any} type="submit" disabled={pending} className="w-full md:w-auto">
-      {pending ? (
-        <Loader2 className="animate-spin" />
-      ) : (
-        <Sparkles className="mr-2" />
-      )}
-      Generate Recipes
-    </Button>
-  );
-}
 
 export function RecipeGeneratorForm() {
   const { toast } = useToast();
   const [state, formAction] = useActionState<RecipeResult, FormData>(
     getRecipes,
-    { recipes: [] }
+    { recipes: [], error: undefined, timestamp: undefined }
   );
 
   const [pantryItems, setPantryItems] = useState<string[]>([]);
@@ -167,6 +167,25 @@ export function RecipeGeneratorForm() {
   const removeItem = (itemToRemove: string) => {
     setPantryItems(prev => prev.filter(item => item !== itemToRemove));
   };
+  
+  const [isPending, setIsPending] = useState(false);
+  const handleGenerateClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (formRef.current) {
+      setIsPending(true);
+      showAdAndGenerateRecipes(formRef.current);
+    }
+  };
+
+  useEffect(() => {
+    // When the action is done (we get a timestamp), set pending to false
+    if (state.timestamp) {
+      setIsPending(false);
+    }
+     if (state.error) {
+      setIsPending(false);
+    }
+  }, [state.timestamp, state.error]);
 
   if (isScanning) {
     return (
@@ -299,11 +318,40 @@ export function RecipeGeneratorForm() {
             </div>
 
             <div className="flex justify-center pt-4">
-              <SubmitButton />
+               <Button onClick={handleGenerateClick} disabled={isPending} className="w-full md:w-auto">
+                {isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2" />
+                )}
+                Generate Recipes
+              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {isPending && !state.recipes && (
+         <div className="space-y-8">
+             <h2 className="text-3xl font-bold text-center font-headline">Generating your recipes...</h2>
+              <div className="space-y-4">
+                  {[...Array(3)].map((_, index) => (
+                      <Card key={index}>
+                          <CardHeader>
+                              <Skeleton className="h-8 w-3/4" />
+                              <Skeleton className="h-4 w-1/2 mt-2" />
+                          </CardHeader>
+                          <CardContent>
+                              <Skeleton className="w-full h-48 aspect-video" />
+                          </CardContent>
+                          <CardFooter>
+                              <Skeleton className="h-10 w-full" />
+                          </CardFooter>
+                      </Card>
+                  ))}
+            </div>
+        </div>
+      )}
 
       {state.recipes && state.recipes.length > 0 && (
         <div className="space-y-8">
@@ -311,10 +359,14 @@ export function RecipeGeneratorForm() {
             <Accordion type="single" collapsible className="w-full space-y-4">
                 {state.recipes.map((recipe, index) => (
                     <Card key={`${state.timestamp}-${index}`} className="overflow-hidden">
-                        {recipe.imageUrl && (
+                        {recipe.imageUrl ? (
                             <div className="relative aspect-video w-full">
                                 <Image src={recipe.imageUrl} alt={recipe.name} fill className="object-cover" />
                             </div>
+                        ) : (
+                           <div className="relative aspect-video w-full bg-muted flex items-center justify-center">
+                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                           </div>
                         )}
                          <CardHeader>
                             <CardTitle className="font-headline text-2xl">{recipe.name}</CardTitle>
@@ -373,3 +425,5 @@ export function RecipeGeneratorForm() {
     </div>
   );
 }
+
+    
