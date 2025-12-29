@@ -6,7 +6,7 @@ import { useFormStatus } from 'react-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2, Sparkles, Camera, X } from 'lucide-react';
+import { Loader2, Sparkles, Camera, X, ChevronsUpDown } from 'lucide-react';
 
 import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,11 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 
 const formSchema = z.object({
@@ -68,6 +73,7 @@ export function RecipeGeneratorForm() {
   const [isScanning, setIsScanning] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean>();
+  const [isPantryOpen, setIsPantryOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -146,6 +152,7 @@ export function RecipeGeneratorForm() {
         }
         else {
           setPantryItems(prev => [...new Set([...prev, ...result.items])]);
+          setIsPantryOpen(true);
         }
       }
       setIsScanning(false);
@@ -160,7 +167,7 @@ export function RecipeGeneratorForm() {
   if (isScanning) {
     return (
       <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full max-w-screen-md mx-auto">
             <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
             <canvas ref={canvasRef} className="hidden"></canvas>
             {isIdentifying && (
@@ -169,15 +176,16 @@ export function RecipeGeneratorForm() {
                 <p className="mt-4 text-lg">Identifying items...</p>
               </div>
             )}
-            <div className="absolute bottom-10 left-4 right-4 flex justify-center gap-4 z-20">
-              <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
-              <Button onClick={handleCapture} size="lg" disabled={isIdentifying}>
-                <Camera className="mr-2" />
-                Capture
-              </Button>
+             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex justify-center items-center gap-4 z-30 w-full px-4">
+                <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
+                <Button onClick={handleCapture} size="lg" disabled={isIdentifying} className='h-16 w-16 rounded-full p-0 border-4 border-white/50'>
+                    <Camera className='h-8 w-8'/>
+                </Button>
+                <div className='w-[88px]'></div>
             </div>
+
             {hasCameraPermission === false && (
-              <Alert variant="destructive" className="absolute top-4 z-20">
+              <Alert variant="destructive" className="absolute top-4 left-4 right-4 z-20 w-[calc(100%-2rem)]">
                 <AlertTitle>Camera Access Required</AlertTitle>
                 <AlertDescription>
                   Please allow camera access to use this feature. You may need to change permissions in your browser settings.
@@ -210,24 +218,37 @@ export function RecipeGeneratorForm() {
               <FormItem>
                 <FormLabel>Pantry Items</FormLabel>
                 <FormControl>
-                  <div className="p-4 border-dashed border-2 rounded-lg min-h-[120px]">
-                    {pantryItems.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {pantryItems.map(item => (
-                          <Badge key={item} variant="secondary" className="text-base">
-                            {item}
-                            <button onClick={() => removeItem(item)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground text-center py-8">
-                        Click "Scan Pantry" to start adding items.
-                      </div>
-                    )}
-                  </div>
+                  <Collapsible open={isPantryOpen} onOpenChange={setIsPantryOpen} className="w-full space-y-2">
+                    <div className="p-4 border-dashed border-2 rounded-lg min-h-[80px] flex items-center justify-center">
+                      {pantryItems.length > 0 ? (
+                        <div className='w-full'>
+                            <div className='flex justify-between items-center'>
+                                <p className='text-sm text-muted-foreground'>{pantryItems.length} items found</p>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="w-9 p-0">
+                                    <ChevronsUpDown className="h-4 w-4" />
+                                    <span className="sr-only">Toggle</span>
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </div>
+                            <CollapsibleContent className="flex flex-wrap gap-2 pt-4">
+                                {pantryItems.map(item => (
+                                <Badge key={item} variant="secondary" className="text-base">
+                                    {item}
+                                    <button onClick={() => removeItem(item)} className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                    <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                                ))}
+                            </CollapsibleContent>
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground text-center py-4">
+                          Click "Scan Pantry" to start adding items.
+                        </div>
+                      )}
+                    </div>
+                  </Collapsible>
                 </FormControl>
                 <input type="hidden" {...form.register('pantryItems')} />
                 <FormDescription>
