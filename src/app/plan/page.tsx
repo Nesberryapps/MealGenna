@@ -9,6 +9,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Accordion,
@@ -51,19 +52,27 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
     }
   }, [meal.details]);
 
+  const imageUrl = meal.details?.imageUrl || meal.placeholderImageUrl;
+
   return (
     <Card className="bg-card rounded-lg overflow-hidden border w-full flex flex-col">
       <div className="relative aspect-video w-full bg-muted">
-        {meal.details?.imageUrl ? (
+        {imageUrl ? (
             <Image
-            src={meal.details.imageUrl}
-            alt={meal.details.name}
+            src={imageUrl}
+            alt={meal.name}
             fill
             className="object-cover"
             />
         ) : (
             <div className="w-full h-full flex items-center justify-center">
-                {(isFetchingDetails || !meal.details) && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>}
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
+            </div>
+        )}
+        {/* Show a mini loader if we're fetching a new image over the placeholder */}
+        {isFetchingDetails && meal.placeholderImageUrl && !meal.details?.imageUrl && (
+            <div className="absolute bottom-2 right-2 bg-background/80 rounded-full p-1">
+                <Loader2 className="h-4 w-4 animate-spin text-primary"/>
             </div>
         )}
       </div>
@@ -83,7 +92,7 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-6 pt-4">
-              {isFetchingDetails && !meal.details && (
+              {(isFetchingDetails && !meal.details) && (
                   <div className="space-y-4">
                       <Skeleton className="h-4 w-24" />
                       <Skeleton className="h-3 w-full" />
@@ -148,12 +157,12 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
           </AccordionItem>
         </Accordion>
       </CardContent>
-       <CardContent className="pt-0">
+       <CardFooter className="pt-0">
         <Button onClick={() => meal.details && handleDownload(meal.details)} variant="outline" className="w-full" disabled={!meal.details}>
           <Download className="mr-2" />
           Download PDF
         </Button>
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 }
@@ -176,10 +185,10 @@ export default function PlanPage() {
       const details = await getRecipeDetails(mealName);
       setMealPlan(currentPlan => {
         if (!currentPlan) return null;
-        const newPlan = { ...currentPlan };
-        // Deep copy to ensure state updates correctly
-        newPlan[day] = { ...newPlan[day] };
-        newPlan[day][mealType] = { ...newPlan[day][mealType], details };
+        
+        // Create a deep copy to ensure React detects the state change
+        const newPlan = JSON.parse(JSON.stringify(currentPlan));
+        newPlan[day][mealType].details = details;
         return newPlan;
       });
     } catch (error) {
@@ -188,14 +197,6 @@ export default function PlanPage() {
         variant: "destructive",
         title: "Error fetching recipe",
         description: `Could not load details for ${mealName}. Please try again.`,
-      });
-       setMealPlan(currentPlan => {
-        if (!currentPlan) return null;
-        // Reset the specific meal to allow for a retry
-        const newPlan = { ...currentPlan };
-        newPlan[day] = { ...newPlan[day] };
-        newPlan[day][mealType] = { ...newPlan[day][mealType], details: undefined };
-        return newPlan;
       });
     }
   }
