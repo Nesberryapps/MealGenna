@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useActionState, useRef } from 'react';
@@ -89,9 +90,24 @@ export function RecipeGeneratorForm() {
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean>();
   const [isPantryOpen, setIsPantryOpen] = useState(false);
+  const [greeting, setGreeting] = useState("What's in your pantry?");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const getGreeting = () => {
+      const currentHour = new Date().getHours();
+      if (currentHour >= 5 && currentHour < 12) {
+        return "Good Morning! What's for breakfast?";
+      } else if (currentHour >= 12 && currentHour < 17) {
+        return "Good Afternoon! What's for lunch?";
+      } else {
+        return "Good Evening! What's for dinner?";
+      }
+    };
+    setGreeting(getGreeting());
+  }, []);
 
 
   useEffect(() => {
@@ -226,7 +242,7 @@ export function RecipeGeneratorForm() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline text-3xl md:text-4xl text-center">
-            What's in your pantry?
+            {greeting}
           </CardTitle>
           <CardDescription className="text-center">
             Scan your ingredients, and we'll whip up some recipe ideas for you.
@@ -425,5 +441,9 @@ export function RecipeGeneratorForm() {
     </div>
   );
 }
+
+    
+
+    
 
     
