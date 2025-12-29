@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { Shuffle, Info, Drumstick, CookingPot, Flame, Download, Loader2, ShoppingCart } from 'lucide-react';
+import { Shuffle, Info, Drumstick, CookingPot, Flame, Download, Loader2, ShoppingCart, CheckSquare } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -22,11 +22,52 @@ import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
 import { handleDownload } from '@/lib/pdf';
 import { getDiscoverMeal } from '../actions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const createShoppingUrl = (ingredients: string[]) => {
+  if (ingredients.length === 0) {
+    return 'https://www.walmart.com/search?q=groceries';
+  }
   const query = ingredients.join(' ');
   return `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
 };
+
+function IngredientsList({ ingredients }: { ingredients: string[] }) {
+    const [selectedIngredients, setSelectedIngredients] = useState<string[]>(ingredients);
+
+    const handleCheckboxChange = (ingredient: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIngredients(prev => [...prev, ingredient]);
+        } else {
+            setSelectedIngredients(prev => prev.filter(item => item !== ingredient));
+        }
+    };
+    
+    return (
+        <div className="space-y-3">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Drumstick /> Ingredients
+            </h3>
+            <div className="space-y-2 pl-2 text-muted-foreground">
+                {ingredients.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <Checkbox
+                            id={`ingredient-${i}`}
+                            defaultChecked={true}
+                            onCheckedChange={(checked) => handleCheckboxChange(item, !!checked)}
+                        />
+                        <Label htmlFor={`ingredient-${i}`} className="font-normal">{item}</Label>
+                    </div>
+                ))}
+            </div>
+            <Button onClick={() => window.open(createShoppingUrl(selectedIngredients), '_blank')} variant="outline" className="w-full">
+                <ShoppingCart className="mr-2" />
+                Shop for {selectedIngredients.length} Ingredients
+            </Button>
+        </div>
+    );
+}
 
 export default function DiscoverPage() {
   const [meal, setMeal] = useState<Recipe & { imageUrl?: string } | null>(null);
@@ -95,21 +136,8 @@ export default function DiscoverPage() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-6 pt-4">
-                    {/* Ingredients */}
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <Drumstick /> Ingredients
-                      </h3>
-                      <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground">
-                        {meal.ingredients.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                      <Button onClick={() => window.open(createShoppingUrl(meal.ingredients), '_blank')} variant="outline" className="w-full">
-                        <ShoppingCart className="mr-2" />
-                        Shop for Ingredients
-                      </Button>
-                    </div>
+                    
+                    <IngredientsList ingredients={meal.ingredients} />
 
                     {/* Instructions */}
                     <div className="space-y-3">

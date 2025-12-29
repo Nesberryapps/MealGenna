@@ -23,6 +23,8 @@ import type { Recipe } from '@/ai/flows/generate-meal-plan';
 import Loading from './loading';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const DAYS_OF_WEEK = [
   'Monday',
@@ -35,10 +37,49 @@ const DAYS_OF_WEEK = [
 ];
 
 const createShoppingUrl = (ingredients: string[]) => {
+  if (ingredients.length === 0) {
+    return 'https://www.walmart.com/search?q=groceries';
+  }
   const query = ingredients.join(' ');
   return `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
 };
 
+
+function IngredientsList({ ingredients }: { ingredients: string[] }) {
+    const [selectedIngredients, setSelectedIngredients] = useState<string[]>(ingredients);
+
+    const handleCheckboxChange = (ingredient: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIngredients(prev => [...prev, ingredient]);
+        } else {
+            setSelectedIngredients(prev => prev.filter(item => item !== ingredient));
+        }
+    };
+    
+    return (
+        <div className="space-y-3">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Drumstick /> Ingredients
+            </h3>
+            <div className="space-y-2 pl-2 text-muted-foreground">
+                {ingredients.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <Checkbox
+                            id={`ingredient-${item}-${i}`}
+                            defaultChecked={true}
+                            onCheckedChange={(checked) => handleCheckboxChange(item, !!checked)}
+                        />
+                        <Label htmlFor={`ingredient-${item}-${i}`} className="font-normal">{item}</Label>
+                    </div>
+                ))}
+            </div>
+            <Button onClick={() => window.open(createShoppingUrl(selectedIngredients), '_blank')} variant="outline" className="w-full">
+                <ShoppingCart className="mr-2" />
+                Shop for {selectedIngredients.length} Ingredients
+            </Button>
+        </div>
+    );
+}
 
 function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string; onAccordionChange: (mealName: string) => void }) {
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -102,21 +143,8 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
               {meal.details && (
                 <>
                   <p className="text-sm text-muted-foreground">{meal.details.description}</p>
-                   {/* Ingredients */}
-                   <div className="space-y-3">
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <Drumstick /> Ingredients
-                      </h3>
-                      <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground">
-                        {meal.details.ingredients.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                       <Button onClick={() => meal.details && window.open(createShoppingUrl(meal.details.ingredients), '_blank')} variant="outline" className="w-full">
-                        <ShoppingCart className="mr-2" />
-                        Shop for Ingredients
-                      </Button>
-                    </div>
+                   
+                   <IngredientsList ingredients={meal.details.ingredients} />
 
                     {/* Instructions */}
                     <div className="space-y-3">

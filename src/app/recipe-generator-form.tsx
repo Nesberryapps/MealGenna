@@ -42,6 +42,9 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 import { handleDownload } from '@/lib/pdf';
+import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 // This is a placeholder for the Capacitor getPlatform function
 // In a real Capacitor app, you would use:
@@ -98,10 +101,107 @@ const showAdAndGenerateRecipes = async (form: HTMLFormElement) => {
 // --- End of AdMob Placeholder ---
 
 const createShoppingUrl = (ingredients: string[]) => {
+  if (ingredients.length === 0) {
+    return 'https://www.walmart.com/search?q=groceries';
+  }
   const query = ingredients.join(' ');
   return `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
 };
 
+function IngredientsList({ ingredients }: { ingredients: string[] }) {
+    const [selectedIngredients, setSelectedIngredients] = useState<string[]>(ingredients);
+
+    const handleCheckboxChange = (ingredient: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIngredients(prev => [...prev, ingredient]);
+        } else {
+            setSelectedIngredients(prev => prev.filter(item => item !== ingredient));
+        }
+    };
+    
+    return (
+        <div className="space-y-3">
+            <h3 className="font-semibold text-lg flex items-center gap-2"><Drumstick /> Ingredients</h3>
+            <div className="space-y-2 pl-2 text-muted-foreground">
+                {ingredients.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <Checkbox
+                            id={`ingredient-${item}-${i}`}
+                            defaultChecked={true}
+                            onCheckedChange={(checked) => handleCheckboxChange(item, !!checked)}
+                        />
+                        <Label htmlFor={`ingredient-${item}-${i}`} className="font-normal">{item}</Label>
+                    </div>
+                ))}
+            </div>
+            <Button onClick={() => window.open(createShoppingUrl(selectedIngredients), '_blank')} variant="outline" className="w-full">
+                <ShoppingCart className="mr-2" />
+                Shop for {selectedIngredients.length} Ingredients
+            </Button>
+        </div>
+    );
+}
+
+
+function RecipeCard({ recipe, index, state }: { recipe: Recipe, index: number, state: RecipeResult }) {
+    return (
+        <Card key={`${state.timestamp}-${index}`} className="overflow-hidden">
+            {recipe.imageUrl ? (
+                <div className="relative aspect-video w-full">
+                    <Image src={recipe.imageUrl} alt={recipe.name} fill className="object-cover" />
+                </div>
+            ) : (
+               <div className="relative aspect-video w-full bg-muted flex items-center justify-center">
+                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+               </div>
+            )}
+             <CardHeader>
+                <CardTitle className="font-headline text-2xl">{recipe.name}</CardTitle>
+                <CardDescription>{recipe.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <AccordionItem value={`item-${index}`} className="border-b-0">
+                    <AccordionTrigger>
+                        <div className="flex items-center gap-2 text-primary">
+                            <Info className="h-5 w-5" />
+                            <span>View Recipe Details</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-6 pt-4">
+                        
+                        <IngredientsList ingredients={recipe.ingredients} />
+
+                        {/* Instructions */}
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-lg flex items-center gap-2"><CookingPot /> Instructions</h3>
+                            <ol className="list-decimal list-inside space-y-2 pl-2">
+                                {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
+                            </ol>
+                            <p className="text-sm text-muted-foreground"><strong>Cook Time:</strong> {recipe.cookTime}</p>
+                        </div>
+
+                        {/* Nutritional Facts */}
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-lg flex items-center gap-2"><Flame /> Nutritional Facts</h3>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                <p><strong>Calories:</strong> {recipe.nutritionalFacts.calories}</p>
+                                <p><strong>Protein:</strong> {recipe.nutritionalFacts.protein}</p>
+                                <p><strong>Carbs:</strong> {recipe.nutritionalFacts.carbs}</p>
+                                <p><strong>Fat:</strong> {recipe.nutritionalFacts.fat}</p>
+                            </div>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={() => handleDownload(recipe)} variant="outline" className="w-full">
+                    <Download className="mr-2" />
+                    Download PDF
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
 
 export function RecipeGeneratorForm() {
   const { toast } = useToast();
@@ -388,7 +488,7 @@ export function RecipeGeneratorForm() {
             </div>
 
             <div className="flex justify-center pt-4">
-               <Button onClick={handleGenerateClick} disabled={isPending} className="w-full md:w-auto">
+               <Button onClick={handleGenerateClick} disabled={isPending || pantryItems.length === 0} className="w-full md:w-auto">
                 {isPending ? (
                   <Loader2 className="animate-spin" />
                 ) : (
@@ -401,7 +501,7 @@ export function RecipeGeneratorForm() {
         </CardContent>
       </Card>
 
-      {isPending && !state.recipes && (
+      {isPending && state.recipes.length === 0 && (
          <div className="space-y-8">
              <h2 className="text-3xl font-bold text-center font-headline">Generating your recipes...</h2>
               <div className="space-y-4">
@@ -428,70 +528,7 @@ export function RecipeGeneratorForm() {
             <h2 className="text-3xl font-bold text-center font-headline">Recipe Ideas</h2>
             <Accordion type="single" collapsible className="w-full space-y-4">
                 {state.recipes.map((recipe, index) => (
-                    <Card key={`${state.timestamp}-${index}`} className="overflow-hidden">
-                        {recipe.imageUrl ? (
-                            <div className="relative aspect-video w-full">
-                                <Image src={recipe.imageUrl} alt={recipe.name} fill className="object-cover" />
-                            </div>
-                        ) : (
-                           <div className="relative aspect-video w-full bg-muted flex items-center justify-center">
-                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                           </div>
-                        )}
-                         <CardHeader>
-                            <CardTitle className="font-headline text-2xl">{recipe.name}</CardTitle>
-                            <CardDescription>{recipe.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <AccordionItem value={`item-${index}`} className="border-b-0">
-                                <AccordionTrigger>
-                                    <div className="flex items-center gap-2 text-primary">
-                                        <Info className="h-5 w-5" />
-                                        <span>View Recipe Details</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="space-y-6 pt-4">
-                                    {/* Ingredients */}
-                                    <div className="space-y-3">
-                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Drumstick /> Ingredients</h3>
-                                        <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground">
-                                            {recipe.ingredients.map((item, i) => <li key={i}>{item}</li>)}
-                                        </ul>
-                                        <Button onClick={() => window.open(createShoppingUrl(recipe.ingredients), '_blank')} variant="outline" className="w-full">
-                                            <ShoppingCart className="mr-2" />
-                                            Shop for Ingredients
-                                        </Button>
-                                    </div>
-
-                                    {/* Instructions */}
-                                    <div className="space-y-3">
-                                        <h3 className="font-semibold text-lg flex items-center gap-2"><CookingPot /> Instructions</h3>
-                                        <ol className="list-decimal list-inside space-y-2 pl-2">
-                                            {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
-                                        </ol>
-                                        <p className="text-sm text-muted-foreground"><strong>Cook Time:</strong> {recipe.cookTime}</p>
-                                    </div>
-
-                                    {/* Nutritional Facts */}
-                                    <div className="space-y-3">
-                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Flame /> Nutritional Facts</h3>
-                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                            <p><strong>Calories:</strong> {recipe.nutritionalFacts.calories}</p>
-                                            <p><strong>Protein:</strong> {recipe.nutritionalFacts.protein}</p>
-                                            <p><strong>Carbs:</strong> {recipe.nutritionalFacts.carbs}</p>
-                                            <p><strong>Fat:</strong> {recipe.nutritionalFacts.fat}</p>
-                                        </div>
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={() => handleDownload(recipe)} variant="outline" className="w-full">
-                                <Download className="mr-2" />
-                                Download PDF
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                    <RecipeCard key={`${state.timestamp}-${index}`} recipe={recipe} index={index} state={state} />
                 ))}
             </Accordion>
         </div>
