@@ -1,7 +1,7 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# 1. Force iOS 15.0 (Required for AdMob)
-platform :ios, '15.0'
+# 1. Force iOS 16.0 (Required for AdMob)
+platform :ios, '16.0'
 use_frameworks! :linkage => :static
 
 def capacitor_pods
@@ -21,8 +21,8 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # Force 15.0 everywhere
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Force 16.0 everywhere
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       config.build_settings['ENABLE_BITCODE'] = 'NO'
     end
   end
