@@ -82,7 +82,7 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
                 <span>View Recipe</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-2">
+            <AccordionContent className="space-y-6 pt-4">
               {isFetchingDetails && !meal.details && (
                   <div className="space-y-4">
                       <Skeleton className="h-4 w-24" />
@@ -93,29 +93,55 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
               {meal.details && (
                 <>
                   <p className="text-sm text-muted-foreground">{meal.details.description}</p>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2 text-base">
-                      <Drumstick className="h-4 w-4" /> Ingredients
-                    </h4>
-                    <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground text-sm">
-                      {meal.details.ingredients.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2 text-base">
-                      <CookingPot className="h-4 w-4" /> Instructions
-                    </h4>
-                    <ol className="list-decimal list-inside space-y-1.5 pl-2 text-sm">
-                      {meal.details.instructions.map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ol>
-                    <p className="text-xs text-muted-foreground pt-1">
-                      <strong>Cook Time:</strong> {meal.details.cookTime}
-                    </p>
-                  </div>
+                   {/* Ingredients */}
+                   <div className="space-y-3">
+                      <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <Drumstick /> Ingredients
+                      </h3>
+                      <ul className="list-disc list-inside space-y-1 pl-2 text-muted-foreground">
+                        {meal.details.ingredients.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <CookingPot /> Instructions
+                      </h3>
+                      <ol className="list-decimal list-inside space-y-2 pl-2">
+                        {meal.details.instructions.map((step, i) => (
+                          <li key={i}>{step}</li>
+                        ))}
+                      </ol>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Cook Time:</strong> {meal.details.cookTime}
+                      </p>
+                    </div>
+
+                    {/* Nutritional Facts */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <Flame /> Nutritional Facts
+                      </h3>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <p>
+                          <strong>Calories:</strong>{' '}
+                          {meal.details.nutritionalFacts.calories}
+                        </p>
+                        <p>
+                          <strong>Protein:</strong>{' '}
+                          {meal.details.nutritionalFacts.protein}
+                        </p>
+                        <p>
+                          <strong>Carbs:</strong> {meal.details.nutritionalFacts.carbs}
+                        </p>
+                        <p>
+                          <strong>Fat:</strong> {meal.details.nutritionalFacts.fat}
+                        </p>
+                      </div>
+                    </div>
                 </>
               )}
             </AccordionContent>
