@@ -22,7 +22,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name:Debug: show admob podspec & plugin version
+      - name: Debug: show admob podspec & plugin version
         run: |
           echo "=== npm listing for @capacitor-community/admob ==="
           npm ls @capacitor-community/admob --depth=0 || true
