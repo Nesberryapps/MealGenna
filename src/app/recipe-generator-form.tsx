@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useActionState, useRef } from 'react';
 import Image from 'next/image';
-import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info, Download } from 'lucide-react';
+import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info, Download, Smartphone } from 'lucide-react';
 import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -34,10 +43,21 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 import { handleDownload } from '@/lib/pdf';
 
+// This is a placeholder for the Capacitor getPlatform function
+// In a real Capacitor app, you would use:
+// import { Capacitor } from '@capacitor/core';
+const getPlatform = () => {
+  // This mock will return 'web' in a browser environment.
+  // When running in Capacitor, Capacitor.getPlatform() will return 'ios' or 'android'.
+  if (typeof window !== 'undefined' && window.navigator && (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches)) {
+    // This is a simple heuristic for PWA, which we'll treat as native-like for now.
+    // A real app would rely on Capacitor's own detection.
+    return 'ios'; 
+  }
+  return 'web';
+};
 
-// --- AdMob Placeholder ---
-// This function is a placeholder for your future AdMob integration.
-// You will replace this with the actual call to the Capacitor AdMob plugin.
+
 const showAdAndGenerateRecipes = async (form: HTMLFormElement) => {
   // --- Step 1: Integrate Capacitor AdMob Plugin ---
   //
@@ -91,11 +111,17 @@ export function RecipeGeneratorForm() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean>();
   const [isPantryOpen, setIsPantryOpen] = useState(false);
   const [greeting, setGreeting] = useState("What's in your pantry?");
+  const [platform, setPlatform] = useState('web');
+  const [showPlatformDialog, setShowPlatformDialog] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
+    // We only run this on the client
+    setPlatform(getPlatform());
+
     const getGreeting = () => {
       const currentHour = new Date().getHours();
       if (currentHour >= 5 && currentHour < 12) {
@@ -185,8 +211,14 @@ export function RecipeGeneratorForm() {
   };
   
   const [isPending, setIsPending] = useState(false);
+  
   const handleGenerateClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    if (platform === 'web') {
+      setShowPlatformDialog(true);
+      return;
+    }
+
     if (formRef.current) {
       setIsPending(true);
       showAdAndGenerateRecipes(formRef.current);
@@ -239,6 +271,24 @@ export function RecipeGeneratorForm() {
 
   return (
     <div className="space-y-8">
+       <AlertDialog open={showPlatformDialog} onOpenChange={setShowPlatformDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Smartphone /> Get the Full Experience!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              AI recipe generation is available exclusively on our mobile app. Download it now to unlock this feature and many more!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowPlatformDialog(false)}>
+              Got it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline text-3xl md:text-4xl text-center">
@@ -441,9 +491,3 @@ export function RecipeGeneratorForm() {
     </div>
   );
 }
-
-    
-
-    
-
-    
