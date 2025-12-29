@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { Logo } from './logo';
+import { UtensilsCrossed } from 'lucide-react';
 
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Button variant="ghost" asChild>
@@ -14,7 +14,7 @@ export function Header() {
     <header className="hidden md:block bg-card border-b sticky top-0 z-40">
       <div className="container mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <Logo className="h-8 w-8" />
+          <UtensilsCrossed className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold tracking-tight text-foreground">
             MealGenna
           </span>
