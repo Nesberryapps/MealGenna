@@ -17,7 +17,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <ChefHat className="h-7 w-7 text-primary" />
           <span className="text-xl font-bold tracking-tight text-foreground">
-            CulinaZen
+            mealgenna
           </span>
         </Link>
         <nav className="flex items-center space-x-2">
