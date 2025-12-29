@@ -148,7 +148,7 @@ function MealCard({ meal, type, onAccordionChange }: { meal: Meal; type: string;
                             {meal.details.nutritionalFacts.protein}
                         </p>
                         <p>
-                            <strong>Carbs:</strong> {meal.details.nutrutionalFacts.carbs}
+                            <strong>Carbs:</strong> {meal.details.nutritionalFacts.carbs}
                         </p>
                         <p>
                             <strong>Fat:</strong> {meal.details.nutritionalFacts.fat}
