@@ -5,7 +5,7 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'mealgenna',
+  title: 'MealGenna',
   description: 'An elegant and intuitive mobile app designed to generate meal ideas and plans.',
 };
 
