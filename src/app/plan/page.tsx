@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { RefreshCw, Info, Drumstick, CookingPot, Flame } from 'lucide-react';
+import { RefreshCw, Info, Drumstick, CookingPot, Flame, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   LUNCH_MEALS,
   type Meal,
 } from '@/lib/data';
+import { handleDownload } from '@/lib/pdf';
 
 const DAYS_OF_WEEK = [
   'Monday',
@@ -57,7 +58,7 @@ function generateMealPlan(): MealPlan {
 
 function MealCard({ meal, type }: { meal: Meal; type: string }) {
   return (
-    <Card className="bg-card rounded-lg overflow-hidden border w-full">
+    <Card className="bg-card rounded-lg overflow-hidden border w-full flex flex-col">
       <div className="relative aspect-video w-full">
         <Image
           src={meal.image.imageUrl}
@@ -73,7 +74,7 @@ function MealCard({ meal, type }: { meal: Meal; type: string }) {
           {meal.name}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value={`item-${meal.id}`} className="border-b-0">
             <AccordionTrigger>
@@ -109,6 +110,12 @@ function MealCard({ meal, type }: { meal: Meal; type: string }) {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+      </CardContent>
+       <CardContent className="pt-0">
+        <Button onClick={() => handleDownload(meal)} variant="outline" className="w-full">
+          <Download className="mr-2" />
+          Download PDF
+        </Button>
       </CardContent>
     </Card>
   );

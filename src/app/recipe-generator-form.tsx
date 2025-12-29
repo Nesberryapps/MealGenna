@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState, useActionState, useRef } from 'react';
-import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
-import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info } from 'lucide-react';
-
+import { Loader2, Sparkles, Camera, X, ChevronsUpDown, Drumstick, CookingPot, Flame, Info, Download } from 'lucide-react';
 import { getRecipes, getIdentifiedItems, type RecipeResult } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +11,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -32,11 +31,42 @@ import {
 } from "@/components/ui/collapsible";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
+import { handleDownload } from '@/lib/pdf';
+
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  const [pending, setPending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const handleSubmit = (event: Event) => {
+      setPending(true);
+    };
+
+    const handleEnd = () => {
+      setPending(false);
+    };
+
+    form.addEventListener('submit', handleSubmit);
+    // Not a standard event, so we'll listen on the button for clicks that finish
+    document.querySelectorAll('form button[type="submit"]').forEach(button => {
+        button.addEventListener('click', handleEnd);
+    });
+
+
+    return () => {
+      form.removeEventListener('submit', handleSubmit);
+      document.querySelectorAll('form button[type="submit"]').forEach(button => {
+        button.removeEventListener('click', handleEnd);
+    });
+    };
+  }, []);
+
   return (
-    <Button type="submit" disabled={pending} className="w-full md:w-auto">
+    <Button ref={formRef as any} type="submit" disabled={pending} className="w-full md:w-auto">
       {pending ? (
         <Loader2 className="animate-spin" />
       ) : (
@@ -329,6 +359,12 @@ export function RecipeGeneratorForm() {
                                 </AccordionContent>
                             </AccordionItem>
                         </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => handleDownload(recipe)} variant="outline" className="w-full">
+                                <Download className="mr-2" />
+                                Download PDF
+                            </Button>
+                        </CardFooter>
                     </Card>
                 ))}
             </Accordion>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Shuffle, Info, Drumstick, CookingPot, Flame } from 'lucide-react';
+import { Shuffle, Info, Drumstick, CookingPot, Flame, Download } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { MEALS, type Meal } from '@/lib/data';
+import { handleDownload } from '@/lib/pdf';
 
 function getRandomMeal(currentMealId?: string): Meal {
   let meal;
@@ -125,10 +126,14 @@ export default function DiscoverPage() {
                 </AccordionItem>
               </Accordion>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex-col sm:flex-row gap-2">
               <Button onClick={suggestMeal} className="w-full">
                 <Shuffle className="mr-2" />
                 Suggest Another
+              </Button>
+              <Button onClick={() => handleDownload(meal)} variant="outline" className="w-full">
+                <Download className="mr-2" />
+                Download PDF
               </Button>
             </CardFooter>
           </Card>
