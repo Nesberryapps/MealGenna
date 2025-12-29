@@ -3,14 +3,13 @@
 import {
   generateRecipesFromPantry,
   GenerateRecipesFromPantryInput,
-  type Recipe,
 } from '@/ai/flows/generate-recipes-from-pantry';
 import {
   identifyPantryItems,
   IdentifyPantryItemsInput,
 } from '@/ai/flows/identify-pantry-items-flow';
 import { generateDiscoverMeal } from '@/ai/flows/generate-discover-meal';
-import { generateMealPlan } from '@/ai/flows/generate-meal-plan';
+import { generateMealPlan, generateRecipeDetails, type DailyMealPlan, type Recipe } from '@/ai/flows/generate-meal-plan';
 import { z } from 'zod';
 
 const recipeRequestSchema = z.object({
@@ -20,7 +19,7 @@ const recipeRequestSchema = z.object({
 });
 
 export type RecipeResult = {
-  recipes: (Recipe & { imageUrl?: string })[];
+  recipes: Recipe[];
   error?: string;
   timestamp?: number;
 };
@@ -91,18 +90,27 @@ export async function getIdentifiedItems(
   }
 }
 
-export async function getDiscoverMeal(): Promise<Recipe & { imageUrl?: string; }> {
+export async function getDiscoverMeal(): Promise<Recipe> {
     const result = await generateDiscoverMeal();
     return result;
 }
 
-export type MealPlan = {
-  [day: string]: {
-    breakfast: Recipe & { imageUrl?: string };
-    lunch: Recipe & { imageUrl?: string };
-    dinner: Recipe & { imageUrl?: string };
-  };
+// Updated MealPlan type to reflect the new structure
+export type Meal = {
+  name: string;
+  details?: Recipe;
 };
+
+export type DayPlan = {
+  breakfast: Meal;
+  lunch: Meal;
+  dinner: Meal;
+};
+
+export type MealPlan = {
+  [day: string]: DayPlan;
+};
+
 
 export async function getMealPlan(): Promise<MealPlan> {
     const result = await generateMealPlan();
@@ -111,11 +119,23 @@ export async function getMealPlan(): Promise<MealPlan> {
     const plan: MealPlan = {};
     result.forEach(dayPlan => {
         plan[dayPlan.day] = {
-            breakfast: dayPlan.meals.find(m => m.type === 'Breakfast')!.recipe,
-            lunch: dayPlan.meals.find(m => m.type === 'Lunch')!.recipe,
-            dinner: dayPlan.meals.find(m => m.type === 'Dinner')!.recipe,
+            breakfast: { name: dayPlan.meals.find(m => m.type === 'Breakfast')!.recipe.name },
+            lunch: { name: dayPlan.meals.find(m => m.type === 'Lunch')!.recipe.name },
+            dinner: { name: dayPlan.meals.find(m => m.type === 'Dinner')!.recipe.name },
         };
     });
 
     return plan;
+}
+
+// New server action to fetch details for a single recipe
+export async function getRecipeDetails(recipeName: string): Promise<Recipe> {
+    try {
+        const result = await generateRecipeDetails(recipeName);
+        return result;
+    } catch (e) {
+        console.error(e);
+        // We throw the error so the client can handle it
+        throw new Error(`Failed to generate recipe details for "${recipeName}".`);
+    }
 }

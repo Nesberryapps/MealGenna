@@ -35,7 +35,6 @@ const GenerateRecipesFromPantryOutputSchema = z.object({
   recipes: z.array(RecipeSchema).describe('An array of generated recipe objects.'),
 });
 
-export type Recipe = z.infer<typeof RecipeSchema>;
 export type GenerateRecipesFromPantryOutput = z.infer<
   typeof GenerateRecipesFromPantryOutputSchema
 >;
@@ -78,7 +77,7 @@ Dietary Preferences: {{{dietaryPreferences}}}
 Cuisine Preferences: {{{cuisinePreferences}}}
 `,
   config: {
-    temperature: 0.9,
+    temperature: 1.0,
   },
 });
 
@@ -90,6 +89,25 @@ const generateRecipesFromPantryFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+        throw new Error('Failed to generate recipes');
+    }
+    
+    // Generate images in parallel with text generation
+    const imagePromises = output.recipes.map(recipe =>
+      ai.generate({
+        model: 'googleai/imagen-4.0-fast-generate-001',
+        prompt: recipe.imagePrompt,
+      })
+    );
+    
+    const imageResults = await Promise.all(imagePromises);
+
+    // Assign generated image URLs to the recipes
+    output.recipes.forEach((recipe, index) => {
+      recipe.imageUrl = imageResults[index].media?.url;
+    });
+
+    return output;
   }
 );
