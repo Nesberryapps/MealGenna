@@ -59,7 +59,7 @@ function SubmitButton() {
 
 export function RecipeGeneratorForm() {
   const { toast } = useToast();
-  const [state, formAction, isPending] = useActionState<RecipeResult, FormData>(
+  const [state, formAction] = useActionState<RecipeResult, FormData>(
     getRecipes,
     { recipes: [] }
   );
@@ -141,7 +141,10 @@ export function RecipeGeneratorForm() {
 
         if (result.error) {
           toast({ variant: 'destructive', title: 'Identification Failed', description: result.error });
-        } else {
+        } else if (result.items.length === 0) {
+          toast({ variant: 'default', title: 'No items found', description: 'Try getting closer or using a different angle.' });
+        }
+        else {
           setPantryItems(prev => [...new Set([...prev, ...result.items])]);
         }
       }
@@ -166,8 +169,11 @@ export function RecipeGeneratorForm() {
           </div>
         )}
         <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-4">
-          <Button onClick={() => setIsScanning(false)} variant="outline" size="lg">Cancel</Button>
-          <Button onClick={handleCapture} size="lg">Capture</Button>
+          <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
+          <Button onClick={handleCapture} size="lg" disabled={isIdentifying}>
+            <Camera className="mr-2" />
+            Capture
+          </Button>
         </div>
         {hasCameraPermission === false && (
           <Alert variant="destructive" className="absolute top-4">
