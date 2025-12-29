@@ -9,6 +9,8 @@ import {
   identifyPantryItems,
   IdentifyPantryItemsInput,
 } from '@/ai/flows/identify-pantry-items-flow';
+import { generateDiscoverMeal } from '@/ai/flows/generate-discover-meal';
+import { generateMealPlan } from '@/ai/flows/generate-meal-plan';
 import { z } from 'zod';
 
 const recipeRequestSchema = z.object({
@@ -87,4 +89,33 @@ export async function getIdentifiedItems(
       error: 'Failed to identify items from the image. Please try again.',
     };
   }
+}
+
+export async function getDiscoverMeal(): Promise<Recipe & { imageUrl?: string; }> {
+    const result = await generateDiscoverMeal();
+    return result;
+}
+
+export type MealPlan = {
+  [day: string]: {
+    breakfast: Recipe & { imageUrl?: string };
+    lunch: Recipe & { imageUrl?: string };
+    dinner: Recipe & { imageUrl?: string };
+  };
+};
+
+export async function getMealPlan(): Promise<MealPlan> {
+    const result = await generateMealPlan();
+    
+    // Convert the array of daily plans into the MealPlan object structure
+    const plan: MealPlan = {};
+    result.forEach(dayPlan => {
+        plan[dayPlan.day] = {
+            breakfast: dayPlan.meals.find(m => m.type === 'Breakfast')!.recipe,
+            lunch: dayPlan.meals.find(m => m.type === 'Lunch')!.recipe,
+            dinner: dayPlan.meals.find(m => m.type === 'Dinner')!.recipe,
+        };
+    });
+
+    return plan;
 }

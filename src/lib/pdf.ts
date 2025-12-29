@@ -1,8 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
-import { type Meal } from './data';
 
-function generatePdf(recipe: Recipe | Meal) {
+function generatePdf(recipe: Recipe) {
     const doc = new jsPDF();
 
     // Add title
@@ -24,6 +23,10 @@ function generatePdf(recipe: Recipe | Meal) {
     recipe.ingredients.forEach(ingredient => {
         doc.text(`• ${ingredient}`, 25, yPosition);
         yPosition += 7;
+        if (yPosition > 280) { // Check if we need a new page
+            doc.addPage();
+            yPosition = 20;
+        }
     });
 
     yPosition += 5;
@@ -73,7 +76,7 @@ function generatePdf(recipe: Recipe | Meal) {
 }
 
 
-export function handleDownload(recipe: Recipe | Meal) {
+export function handleDownload(recipe: Recipe) {
     const doc = generatePdf(recipe);
     const fileName = `${recipe.name.toLowerCase().replace(/\s/g, '-')}.pdf`;
     doc.save(fileName);

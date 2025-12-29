@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { Shuffle, Info, Drumstick, CookingPot, Flame, Download } from 'lucide-react';
+import { Shuffle, Info, Drumstick, CookingPot, Flame, Download, Loader2 } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -18,22 +18,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { MEALS, type Meal } from '@/lib/data';
+import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
 import { handleDownload } from '@/lib/pdf';
-
-function getRandomMeal(currentMealId?: string): Meal {
-  let meal;
-  do {
-    meal = MEALS[Math.floor(Math.random() * MEALS.length)];
-  } while (currentMealId && meal.id === currentMealId);
-  return meal;
-}
+import { getDiscoverMeal } from '../actions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DiscoverPage() {
-  const [meal, setMeal] = useState<Meal | null>(() => getRandomMeal());
+  const [meal, setMeal] = useState<Recipe & { imageUrl?: string } | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const suggestMeal = () => {
-    setMeal(getRandomMeal(meal?.id));
+    startTransition(async () => {
+      const newMeal = await getDiscoverMeal();
+      setMeal(newMeal);
+    });
   };
 
   return (
@@ -46,17 +44,36 @@ export default function DiscoverPage() {
       </div>
 
       <div className="w-full">
+        {isPending && !meal && (
+           <Card className="w-full">
+            <CardHeader>
+              <Skeleton className="h-8 w-1/2" />
+              <Skeleton className="h-5 w-3/4" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-48 w-full aspect-video" />
+            </CardContent>
+            <CardFooter>
+              <Skeleton className="h-10 w-full" />
+            </CardFooter>
+          </Card>
+        )}
         {meal ? (
           <Card className="shadow-lg overflow-hidden">
-            <div className="relative aspect-video w-full">
-              <Image
-                src={meal.image.imageUrl}
-                alt={meal.name}
-                fill
-                className="object-cover"
-                data-ai-hint={meal.image.imageHint}
-              />
-            </div>
+             {meal.imageUrl ? (
+              <div className="relative aspect-video w-full">
+                <Image
+                  src={meal.imageUrl}
+                  alt={meal.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="relative aspect-video w-full bg-muted flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
             <CardHeader>
               <CardTitle className="font-headline text-2xl">
                 {meal.name}
@@ -127,8 +144,8 @@ export default function DiscoverPage() {
               </Accordion>
             </CardContent>
             <CardFooter className="flex-col sm:flex-row gap-2">
-              <Button onClick={suggestMeal} className="w-full">
-                <Shuffle className="mr-2" />
+              <Button onClick={suggestMeal} className="w-full" disabled={isPending}>
+                {isPending ? <Loader2 className="mr-2 animate-spin" /> : <Shuffle className="mr-2" />}
                 Suggest Another
               </Button>
               <Button onClick={() => handleDownload(meal)} variant="outline" className="w-full">
@@ -138,17 +155,19 @@ export default function DiscoverPage() {
             </CardFooter>
           </Card>
         ) : (
-          <div className="text-center p-8 border-2 border-dashed rounded-lg">
-            <p className="text-muted-foreground">
-              Click the button below to get your first meal suggestion.
-            </p>
-          </div>
+          !isPending && (
+            <div className="text-center p-8 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground">
+                Click the button below to get your first meal suggestion.
+              </p>
+            </div>
+          )
         )}
       </div>
 
       {!meal && (
-        <Button onClick={suggestMeal} size="lg">
-          <Shuffle className="mr-2" />
+        <Button onClick={suggestMeal} size="lg" disabled={isPending}>
+           {isPending ? <Loader2 className="mr-2 animate-spin" /> : <Shuffle className="mr-2" />}
           Suggest a Meal
         </Button>
       )}

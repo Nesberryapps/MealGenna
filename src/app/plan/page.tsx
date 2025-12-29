@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { RefreshCw, Info, Drumstick, CookingPot, Flame, Download } from 'lucide-react';
+import { RefreshCw, Info, Drumstick, CookingPot, Flame, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,13 +16,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  BREAKFAST_MEALS,
-  DINNER_MEALS,
-  LUNCH_MEALS,
-  type Meal,
-} from '@/lib/data';
 import { handleDownload } from '@/lib/pdf';
+import { getMealPlan, type MealPlan } from '../actions';
+import type { Recipe } from '@/ai/flows/generate-recipes-from-pantry';
+import Loading from './loading';
 
 const DAYS_OF_WEEK = [
   'Monday',
@@ -35,38 +31,23 @@ const DAYS_OF_WEEK = [
   'Sunday',
 ];
 
-type MealPlan = {
-  [day: string]: {
-    breakfast: Meal;
-    lunch: Meal;
-    dinner: Meal;
-  };
-};
 
-function generateMealPlan(): MealPlan {
-  const plan: MealPlan = {};
-  DAYS_OF_WEEK.forEach(day => {
-    plan[day] = {
-      breakfast:
-        BREAKFAST_MEALS[Math.floor(Math.random() * BREAKFAST_MEALS.length)],
-      lunch: LUNCH_MEALS[Math.floor(Math.random() * LUNCH_MEALS.length)],
-      dinner: DINNER_MEALS[Math.floor(Math.random() * DINNER_MEALS.length)],
-    };
-  });
-  return plan;
-}
-
-function MealCard({ meal, type }: { meal: Meal; type: string }) {
+function MealCard({ meal, type }: { meal: Recipe & { imageUrl?: string }; type: string }) {
   return (
     <Card className="bg-card rounded-lg overflow-hidden border w-full flex flex-col">
-      <div className="relative aspect-video w-full">
-        <Image
-          src={meal.image.imageUrl}
-          alt={meal.name}
-          fill
-          className="object-cover"
-          data-ai-hint={meal.image.imageHint}
-        />
+      <div className="relative aspect-video w-full bg-muted">
+        {meal.imageUrl ? (
+            <Image
+            src={meal.imageUrl}
+            alt={meal.name}
+            fill
+            className="object-cover"
+            />
+        ) : (
+            <div className="w-full h-full flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
+            </div>
+        )}
       </div>
       <CardHeader>
         <p className="font-semibold text-sm text-primary">{type}</p>
@@ -76,7 +57,7 @@ function MealCard({ meal, type }: { meal: Meal; type: string }) {
       </CardHeader>
       <CardContent className="flex-grow">
         <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value={`item-${meal.id}`} className="border-b-0">
+          <AccordionItem value={`item-${meal.name}`} className="border-b-0">
             <AccordionTrigger>
               <div className="flex items-center gap-2 text-primary text-sm">
                 <Info className="h-4 w-4" />
@@ -122,11 +103,27 @@ function MealCard({ meal, type }: { meal: Meal; type: string }) {
 }
 
 export default function PlanPage() {
-  const [mealPlan, setMealPlan] = useState<MealPlan>(() => generateMealPlan());
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const regeneratePlan = useCallback(() => {
-    setMealPlan(generateMealPlan());
-  }, []);
+  const regeneratePlan = () => {
+    startTransition(async () => {
+      const newPlan = await getMealPlan();
+      setMealPlan(newPlan);
+    });
+  };
+
+  // Generate initial plan
+  useState(() => {
+    if (!mealPlan) {
+      regeneratePlan();
+    }
+  });
+
+
+  if (isPending || !mealPlan) {
+    return <Loading />;
+  }
 
   return (
     <div className="space-y-8">
@@ -136,11 +133,11 @@ export default function PlanPage() {
             Your 7-Day Meal Plan
           </h1>
           <p className="text-muted-foreground mt-2">
-            A week of delicious meals, planned just for you.
+            A week of delicious meals, generated just for you by our AI chef.
           </p>
         </div>
-        <Button onClick={regeneratePlan} className="w-full md:w-auto">
-          <RefreshCw className="mr-2" />
+        <Button onClick={regeneratePlan} className="w-full md:w-auto" disabled={isPending}>
+            {isPending ? <Loader2 className="mr-2 animate-spin" /> : <RefreshCw className="mr-2" />}
           Generate New Plan
         </Button>
       </div>

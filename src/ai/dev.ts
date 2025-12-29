@@ -3,3 +3,5 @@ config();
 
 import '@/ai/flows/generate-recipes-from-pantry.ts';
 import '@/ai/flows/identify-pantry-items-flow.ts';
+import '@/ai/flows/generate-discover-meal.ts';
+import '@/ai/flows/generate-meal-plan.ts';
