@@ -34,11 +34,13 @@ export async function generateMealPlan(): Promise<DailyMealPlan[]> {
   
   const imageGenerationPromises = result.flatMap(day => 
     day.meals.map(async (meal) => {
-      const { media } = await ai.generate({
-          model: 'googleai/imagen-4.0-fast-generate-001',
-          prompt: meal.recipe.imagePrompt,
-      });
-      meal.recipe.imageUrl = media?.url;
+      if (meal.recipe.imagePrompt) {
+        const { media } = await ai.generate({
+            model: 'googleai/imagen-4.0-fast-generate-001',
+            prompt: meal.recipe.imagePrompt,
+        });
+        meal.recipe.imageUrl = media?.url;
+      }
     })
   );
 
@@ -47,28 +49,6 @@ export async function generateMealPlan(): Promise<DailyMealPlan[]> {
   return result;
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateDailyMealPlanPrompt',
-  input: { schema: z.object({ day: z.string() }) },
-  output: { schema: SingleDayMealPlanSchema },
-  prompt: `You are an expert meal planner and highly creative chef. Generate a diverse, exciting, and delicious meal plan for a single day: {{{day}}}.
-
-Provide a unique meal for Breakfast, Lunch, and Dinner.
-
-For each meal, provide a full recipe object with the following details:
-- A creative and enticing name.
-- A short, one-sentence description.
-- A simple, descriptive prompt for generating an image of the finished dish.
-- A list of all necessary ingredients.
-- Clear, step-by-step instructions.
-- The estimated total cooking time.
-- A summary of nutritional facts per serving (Calories, Protein, Carbs, Fat).
-`,
-  config: {
-    temperature: 0.9,
-  },
-});
-
 const generateMealPlanFlow = ai.defineFlow(
   {
     name: 'generateMealPlanFlow',
@@ -76,16 +56,33 @@ const generateMealPlanFlow = ai.defineFlow(
   },
   async () => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const mealPlan: DailyMealPlan[] = [];
+    
+    const mealPlanPrompt = ai.definePrompt({
+        name: 'generateFullMealPlanPrompt',
+        output: { schema: MealPlanOutputSchema },
+        prompt: `You are an expert meal planner and highly creative chef. Generate a diverse, exciting, and delicious 7-day meal plan.
+    
+    For each day of the week, provide a unique meal for Breakfast, Lunch, and Dinner.
+    
+    For each meal, provide a full recipe object with the following details:
+    - A creative and enticing name.
+    - A short, one-sentence description.
+    - A simple, descriptive prompt for generating an image of the finished dish.
+    - A list of all necessary ingredients.
+    - Clear, step-by-step instructions.
+    - The estimated total cooking time.
+    - A summary of nutritional facts per serving (Calories, Protein, Carbs, Fat).
+    `,
+        config: {
+          temperature: 0.9,
+        },
+    });
 
-    for (const day of days) {
-        const { output } = await prompt({ day });
-        if (!output) {
-            throw new Error(`Failed to generate a meal plan for ${day}.`);
-        }
-        mealPlan.push({ day, meals: output });
+    const { output } = await mealPlanPrompt();
+    if (!output) {
+      throw new Error('Failed to generate a meal plan.');
     }
-
-    return mealPlan;
+    
+    return output;
   }
 );
