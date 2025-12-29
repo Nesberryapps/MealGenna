@@ -176,7 +176,7 @@ export function RecipeGeneratorForm() {
                 <p className="mt-4 text-lg">Identifying items...</p>
               </div>
             )}
-             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex justify-center items-center gap-4 z-30 w-full px-4">
+             <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex justify-center items-center gap-4 z-30 w-full px-4">
                 <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
                 <Button onClick={handleCapture} size="lg" disabled={isIdentifying} className='h-16 w-16 rounded-full p-0 border-4 border-white/50'>
                     <Camera className='h-8 w-8'/>
