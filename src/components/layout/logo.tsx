@@ -13,7 +13,7 @@ export function Logo({ className }: { className?: string }) {
           <stop offset="100%" style={{ stopColor: 'hsl(var(--accent))' }} />
         </linearGradient>
       </defs>
-      <g transform="translate(5, 5) scale(0.9)">
+      <g transform="translate(0, -5) scale(1)">
         <path
           d="M20,90 C10,90 10,80 10,70 L10,55 C20,50 30,55 35,60 C38,55 40,40 40,20 L45,20 C45,40 42,55 40,60 C45,65 55,65 60,60 C58,55 55,40 55,20 L60,20 C60,40 57,55 65,60 C70,55 80,50 90,55 L90,70 C90,80 90,90 80,90 Z"
           fill="url(#logoGradient)"
