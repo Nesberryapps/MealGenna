@@ -66,8 +66,8 @@ export function RecipeGeneratorForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       pantryItems: '',
-      dietaryPreferences: '',
-      cuisinePreferences: '',
+      dietaryPreferences: 'any',
+      cuisinePreferences: 'any',
     },
   });
 
@@ -137,7 +137,7 @@ export function RecipeGeneratorForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           {DIETARY_PREFERENCES.map(pref => (
                             <SelectItem key={pref.id} value={pref.label}>{pref.label}</SelectItem>
                           ))}
@@ -160,7 +160,7 @@ export function RecipeGeneratorForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           {CUISINE_PREFERENCES.map(pref => (
                             <SelectItem key={pref.id} value={pref.label}>{pref.label}</SelectItem>
                           ))}

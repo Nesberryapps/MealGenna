@@ -37,7 +37,12 @@ export async function getRecipes(
   }
 
   try {
-    const input: GenerateRecipesFromPantryInput = validatedFields.data;
+    const data = validatedFields.data;
+    const input: GenerateRecipesFromPantryInput = {
+      pantryItems: data.pantryItems,
+      dietaryPreferences: data.dietaryPreferences === 'any' ? undefined : data.dietaryPreferences,
+      cuisinePreferences: data.cuisinePreferences === 'any' ? undefined : data.cuisinePreferences,
+    };
     const result = await generateRecipesFromPantry(input);
 
     const recipeArray = result.recipes
