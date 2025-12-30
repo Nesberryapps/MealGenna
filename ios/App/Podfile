@@ -21,7 +21,7 @@ end
 target 'App' do
   capacitor_pods
   # Pin Google Ads to the stable version
-  pod 'Google-Mobile-Ads-SDK', '11.13.0'
+  pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
 
 post_install do |installer|
