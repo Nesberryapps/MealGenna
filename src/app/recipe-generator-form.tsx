@@ -44,61 +44,62 @@ import { CUISINE_PREFERENCES, DIETARY_PREFERENCES } from '@/lib/data';
 import { handleDownload } from '@/lib/pdf';
 import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Capacitor } from '@capacitor/core';
+import { AdMob, AdOptions, RewardAdOptions, RewardAdPluginEvents } from '@capacitor-community/admob';
 
 
-// This is a placeholder for the Capacitor getPlatform function
-// In a real Capacitor app, you would use:
-// import { Capacitor } from '@capacitor/core';
 const getPlatform = () => {
-  // This mock will return 'web' in a browser environment.
-  // When running in Capacitor, Capacitor.getPlatform() will return 'ios' or 'android'.
-  if (typeof window !== 'undefined' && window.navigator && (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches)) {
-    // This is a simple heuristic for PWA, which we'll treat as native-like for now.
-    // A real app would rely on Capacitor's own detection.
-    return 'ios'; 
+  if (Capacitor.isNativePlatform()) {
+    return Capacitor.getPlatform();
   }
   return 'web';
 };
 
 
 const showAdAndGenerateRecipes = async (form: HTMLFormElement) => {
-  // --- Step 1: Integrate Capacitor AdMob Plugin ---
-  //
-  // const showAd = async () => {
-  //   try {
-  //     // Import the AdMob plugin from Capacitor
-  //     // const { AdMob } = await import('@capacitor-community/admob');
-  //
-  //     // Prepare and show the Rewarded Interstitial ad
-  //     // await AdMob.prepareRewardVideoAd({ adId: 'YOUR_ADMOB_REWARDED_AD_ID' });
-  //     // const rewardInfo = await AdMob.showRewardVideoAd();
-  //
-  //     // Check if the user completed the ad view
-  //     // return rewardInfo.rewarded;
-  //     return true; // For testing without the plugin
-  //
-  //   } catch (error) {
-  //     console.error("AdMob Error:", error);
-  //     // If ads fail, you can decide to let the user proceed or not.
-  //     // Returning true here allows recipe generation even if ads fail.
-  //     return true;
-  //   }
-  // };
-
-  // --- Step 2: Show Ad and Generate Recipes ---
+  const { toast } = useToast();
   
-  // const adWatched = await showAd();
-  const adWatched = true; // For now, we'll assume the ad was watched.
+  const showAd = async () => {
+    try {
+        const platform = getPlatform();
+        // Use test IDs for development
+        const adId = platform === 'ios' 
+            ? 'ca-app-pub-3940256099942544/1712485313' // iOS Test Rewarded Ad
+            : 'ca-app-pub-3940256099942544/5224354917'; // Android Test Rewarded Ad
+
+        const options: RewardAdOptions = { adId };
+        await AdMob.prepareRewardVideoAd(options);
+        const rewardInfo = await AdMob.showRewardVideoAd();
+        return rewardInfo.rewarded;
+
+    } catch (error) {
+      console.error("AdMob Error:", error);
+      // If ads fail in development/testing, we can let the user proceed.
+      // In production, you might want to handle this differently,
+      // maybe by showing a toast message.
+      toast({
+          title: 'Ad Service Unavailable',
+          description: 'Could not load ad. Generating recipes anyway.',
+      });
+      return true; // Allows recipe generation even if ads fail.
+    }
+  };
+
+  const adWatched = await showAd();
 
   if (adWatched) {
-    // If the ad was watched, we submit the form to the server action.
+    // If the ad was watched (or if it failed to load), we submit the form.
     form.requestSubmit();
   } else {
-    // Optional: You could show a message if the user doesn't watch the ad.
-    console.log("Ad not watched. Recipes will not be generated.");
+    // This case happens if the user closes the ad before it's finished.
+    toast({
+        variant: 'destructive',
+        title: 'Ad Not Completed',
+        description: 'You must watch the full ad to generate recipes.',
+    });
   }
 };
-// --- End of AdMob Placeholder ---
+
 
 const createShoppingUrl = (ingredients: string[]) => {
   if (ingredients.length === 0) {
@@ -124,7 +125,7 @@ function IngredientsList({ ingredients }: { ingredients: string[] }) {
             <h3 className="font-semibold text-lg flex items-center gap-2"><Drumstick /> Ingredients</h3>
             <div className="space-y-2 pl-2 text-muted-foreground">
                 {ingredients.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3">
+                    <div key={`${item}-${i}`} className="flex items-center gap-3">
                         <Checkbox
                             id={`ingredient-${item}-${i}`}
                             defaultChecked={true}
@@ -160,38 +161,40 @@ function RecipeCard({ recipe, index, state }: { recipe: Recipe, index: number, s
                 <CardDescription>{recipe.description}</CardDescription>
             </CardHeader>
             <CardContent>
-                 <AccordionItem value={`item-${index}`} className="border-b-0">
-                    <AccordionTrigger>
-                        <div className="flex items-center gap-2 text-primary">
-                            <Info className="h-5 w-5" />
-                            <span>View Recipe Details</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-6 pt-4">
-                        
-                        <IngredientsList ingredients={recipe.ingredients} />
-
-                        {/* Instructions */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-lg flex items-center gap-2"><CookingPot /> Instructions</h3>
-                            <ol className="list-decimal list-inside space-y-2 pl-2">
-                                {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
-                            </ol>
-                            <p className="text-sm text-muted-foreground"><strong>Cook Time:</strong> {recipe.cookTime}</p>
-                        </div>
-
-                        {/* Nutritional Facts */}
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-lg flex items-center gap-2"><Flame /> Nutritional Facts</h3>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                <p><strong>Calories:</strong> {recipe.nutritionalFacts.calories}</p>
-                                <p><strong>Protein:</strong> {recipe.nutritionalFacts.protein}</p>
-                                <p><strong>Carbs:</strong> {recipe.nutritionalFacts.carbs}</p>
-                                <p><strong>Fat:</strong> {recipe.nutritionalFacts.fat}</p>
+                 <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value={`item-${index}`} className="border-b-0">
+                        <AccordionTrigger>
+                            <div className="flex items-center gap-2 text-primary">
+                                <Info className="h-5 w-5" />
+                                <span>View Recipe Details</span>
                             </div>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-6 pt-4">
+                            
+                            <IngredientsList ingredients={recipe.ingredients} />
+
+                            {/* Instructions */}
+                            <div className="space-y-3">
+                                <h3 className="font-semibold text-lg flex items-center gap-2"><CookingPot /> Instructions</h3>
+                                <ol className="list-decimal list-inside space-y-2 pl-2">
+                                    {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
+                                </ol>
+                                <p className="text-sm text-muted-foreground"><strong>Cook Time:</strong> {recipe.cookTime}</p>
+                            </div>
+
+                            {/* Nutritional Facts */}
+                            <div className="space-y-3">
+                                <h3 className="font-semibold text-lg flex items-center gap-2"><Flame /> Nutritional Facts</h3>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                    <p><strong>Calories:</strong> {recipe.nutritionalFacts.calories}</p>
+                                    <p><strong>Protein:</strong> {recipe.nutritionalFacts.protein}</p>
+                                    <p><strong>Carbs:</strong> {recipe.nutritionalFacts.carbs}</p>
+                                    <p><strong>Fat:</strong> {recipe.nutritionalFacts.fat}</p>
+                                </div>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                 </Accordion>
             </CardContent>
             <CardFooter>
                 <Button onClick={() => handleDownload(recipe)} variant="outline" className="w-full">
@@ -224,7 +227,6 @@ export function RecipeGeneratorForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    // We only run this on the client
     setPlatform(getPlatform());
 
     const getGreeting = () => {
@@ -238,6 +240,12 @@ export function RecipeGeneratorForm() {
       }
     };
     setGreeting(getGreeting());
+    
+    // Initialize AdMob
+    AdMob.initialize({
+      testingDevices: [], // Add test device IDs if needed
+      initializeForTesting: true,
+    });
   }, []);
 
 
@@ -326,19 +334,21 @@ export function RecipeGeneratorForm() {
 
     if (formRef.current) {
       setIsPending(true);
-      showAdAndGenerateRecipes(formRef.current);
+      showAdAndGenerateRecipes(formRef.current).finally(() => {
+        setIsPending(false);
+      });
     }
   };
-
+  
+  // This effect will watch the state from the server action.
+  // We use this to know when the server-side work is truly done.
+  const isActionPending = useActionState(getRecipes, { recipes: [] })[1];
   useEffect(() => {
-    // When the action is done (we get a timestamp), set pending to false
-    if (state.timestamp) {
-      setIsPending(false);
+    if (!isActionPending) {
+        setIsPending(false);
     }
-     if (state.error) {
-      setIsPending(false);
-    }
-  }, [state.timestamp, state.error]);
+  }, [isActionPending]);
+
 
   if (isScanning) {
     return (
