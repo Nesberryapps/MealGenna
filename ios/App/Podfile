@@ -15,8 +15,7 @@ end
 
 target 'App' do
   capacitor_pods
-  # Pin Google Ads SDK to 11.3.0 (Required by AdMob Plugin v6.2.0)
-  pod 'Google-Mobile-Ads-SDK', '11.3.0'
+ 
 end
 
 post_install do |installer|
