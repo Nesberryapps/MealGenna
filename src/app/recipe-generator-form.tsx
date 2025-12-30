@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Collapsible,
   CollapsibleContent,
@@ -46,6 +45,7 @@ import { type Recipe } from '@/ai/flows/generate-recipes-from-pantry';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Capacitor } from '@capacitor/core';
 import { AdMob, AdOptions, RewardAdOptions, RewardAdPluginEvents } from '@capacitor-community/admob';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 
 const getPlatform = () => {
@@ -214,16 +214,12 @@ export function RecipeGeneratorForm() {
   );
 
   const [pantryItems, setPantryItems] = useState<string[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean>();
   const [isPantryOpen, setIsPantryOpen] = useState(false);
   const [greeting, setGreeting] = useState("What's in your pantry?");
   const [platform, setPlatform] = useState('web');
   const [showPlatformDialog, setShowPlatformDialog] = useState(false);
   
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -259,63 +255,43 @@ export function RecipeGeneratorForm() {
     }
   }, [state, toast]);
 
-  useEffect(() => {
-    if (isScanning) {
-      const getCameraPermission = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          setHasCameraPermission(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          setIsScanning(false);
-          toast({
+  const takePicture = async () => {
+    if (getPlatform() === 'web') {
+        toast({
             variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
-          });
-        }
-      };
-      getCameraPermission();
-
-      return () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-          const stream = videoRef.current.srcObject as MediaStream;
-          stream.getTracks().forEach(track => track.stop());
-        }
-      }
+            title: 'Feature Not Available',
+            description: 'Camera scanning is only available on the mobile app.',
+        });
+        return;
     }
-  }, [isScanning, toast]);
+    try {
+      const image = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+      });
 
-  const handleCapture = async () => {
-    if (videoRef.current && canvasRef.current) {
-      setIsIdentifying(true);
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      if (context) {
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const photoDataUri = canvas.toDataURL('image/jpeg');
-
-        const result = await getIdentifiedItems(photoDataUri);
+      if (image.dataUrl) {
+        setIsIdentifying(true);
+        const result = await getIdentifiedItems(image.dataUrl);
+        setIsIdentifying(false);
 
         if (result.error) {
           toast({ variant: 'destructive', title: 'Identification Failed', description: result.error });
         } else if (result.items.length === 0) {
           toast({ variant: 'default', title: 'No items found', description: 'Try getting closer or using a different angle.' });
-        }
-        else {
+        } else {
           setPantryItems(prev => [...new Set([...prev, ...result.items])]);
           setIsPantryOpen(true);
+          toast({ title: 'Items Added!', description: `We found ${result.items.length} new items in your pantry.` });
         }
       }
-      setIsScanning(false);
+    } catch (error) {
       setIsIdentifying(false);
+      // This can happen if the user cancels or doesn't have permissions.
+      // We don't need to show a toast in most cases, as it's user-initiated.
+      console.log("Camera canceled or permission denied", error);
     }
   };
 
@@ -348,40 +324,6 @@ export function RecipeGeneratorForm() {
         setIsPending(false);
     }
   }, [isActionPending]);
-
-
-  if (isScanning) {
-    return (
-      <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
-        <div className="relative w-full h-full max-w-screen-md mx-auto">
-            <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
-            <canvas ref={canvasRef} className="hidden"></canvas>
-            {isIdentifying && (
-              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-20">
-                <Loader2 className="animate-spin h-10 w-10" />
-                <p className="mt-4 text-lg">Identifying items...</p>
-              </div>
-            )}
-             <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex justify-center items-center gap-4 z-30 w-full px-4">
-                <Button onClick={() => setIsScanning(false)} variant="outline" size="lg" className="bg-white/80 backdrop-blur-sm">Cancel</Button>
-                <Button onClick={handleCapture} size="lg" disabled={isIdentifying} className='h-16 w-16 rounded-full p-0 border-4 border-white/50'>
-                    <Camera className='h-8 w-8'/>
-                </Button>
-                <div className='w-[88px]'></div>
-            </div>
-
-            {hasCameraPermission === false && (
-              <Alert variant="destructive" className="absolute top-4 left-4 right-4 z-20 w-[calc(100%-2rem)]">
-                <AlertTitle>Camera Access Required</AlertTitle>
-                <AlertDescription>
-                  Please allow camera access to use this feature. You may need to change permissions in your browser settings.
-                </AlertDescription>
-              </Alert>
-            )}
-        </div>
-      </div>
-    );
-  }
 
 
   return (
@@ -459,8 +401,12 @@ export function RecipeGeneratorForm() {
             </div>
 
             <div className="flex justify-center">
-              <Button type="button" onClick={() => setIsScanning(true)}>
-                <Camera className="mr-2" />
+              <Button type="button" onClick={takePicture} disabled={isIdentifying}>
+                {isIdentifying ? (
+                    <Loader2 className="mr-2 animate-spin" />
+                ) : (
+                    <Camera className="mr-2" />
+                )}
                 Scan Pantry
               </Button>
             </div>
