@@ -1,34 +1,30 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-# 1. Bump to iOS 15.0 (Mandatory for AdMob)
+# 1. Platform must be 15.0 for AdMob v11+
 platform :ios, '15.0'
 
-# 2. Use Static Linking (Most stable for AdMob)
+# 2. Standard Static Linking (Best for AdMob alone)
 use_frameworks! :linkage => :static
 
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-  
-  # --- YOUR PLUGINS ---
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
   pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
-  pod 'CapacitorFilesystem', :path => '../../node_modules/@capacitor/filesystem'
-  pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
-  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
 end
 
 target 'App' do
   capacitor_pods
-  # Pin Google Ads to the stable version
+  # Pin Google Ads SDK to 11.3.0 (Required by AdMob Plugin v6.2.0)
   pod 'Google-Mobile-Ads-SDK', '11.3.0'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # 3. Force 15.0 everywhere to prevent version mismatch errors
+      # Force iOS 15.0 everywhere
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Disable Bitcode (Crucial for AdMob)
       config.build_settings['ENABLE_BITCODE'] = 'NO'
     end
   end
