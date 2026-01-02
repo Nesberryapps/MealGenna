@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
         hostname: 'source.unsplash.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
 };
