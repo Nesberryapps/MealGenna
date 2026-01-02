@@ -8,14 +8,16 @@ import {
 } from '@/firebase';
 import {
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { Chrome } from 'lucide-react';
+import { Apple, Chrome } from 'lucide-react';
 import { Footer } from '@/components/features/Footer';
+import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const { auth, firestore } = useFirebase();
@@ -49,6 +51,26 @@ export default function LoginPage() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    const provider = new OAuthProvider('apple.com');
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userRef = doc(firestore, 'users', user.uid);
+      await setDoc(userRef, {
+        id: user.uid,
+        name: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        subscriptionTier: 'free',
+      }, { merge: true });
+
+    } catch (error) {
+      console.error('Error during Apple Sign-In:', error);
+    }
+  }
+
   if (isUserLoading || user) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
@@ -64,10 +86,14 @@ export default function LoginPage() {
                 <CardTitle>Welcome to MealGenius</CardTitle>
                 <CardDescription>Sign in to continue to your account.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
                 <Button onClick={handleGoogleSignIn} className="w-full" variant="outline">
                     <Chrome className="mr-2" />
                     Sign In with Google
+                </Button>
+                 <Button onClick={handleAppleSignIn} className="w-full" variant="outline">
+                    <Apple className="mr-2" />
+                    Sign In with Apple
                 </Button>
             </CardContent>
         </Card>

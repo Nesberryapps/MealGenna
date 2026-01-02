@@ -44,8 +44,7 @@
       },
       "required": [
         "id",
-        "email",
-        "name"
+        "email"
       ]
     },
     "Ingredient": {

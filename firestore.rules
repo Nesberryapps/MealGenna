@@ -60,12 +60,17 @@ service cloud.firestore {
     
     /**
      * Validates incoming user data for create operation.
+     * This is flexible to accommodate different auth providers (Google, Apple).
+     * Apple Sign-In may not provide a name, and email can be a private relay address.
      */
     function hasValidUserCreateData(userId) {
         let data = request.resource.data;
+        let token = request.auth.token;
+
         return data.id == userId &&
-               data.email == request.auth.token.email &&
-               data.name == request.auth.token.name &&
+               data.email == token.email &&
+               // Name is optional as Apple Sign-In might not provide it
+               (!('name' in data) || data.name == token.name || data.name == null) &&
                data.subscriptionTier == 'free' &&
                !('trialStartedAt' in data) &&
                !('trialGenerations' in data);
@@ -73,13 +78,14 @@ service cloud.firestore {
     
     /**
      * Validates incoming user data for update operation.
+     * Ensures core immutable fields are not changed.
      */
     function hasValidUserUpdateData() {
         let data = request.resource.data;
         let existingData = resource.data;
         return data.id == existingData.id &&
-               data.email == existingData.email &&
-               data.name == existingData.name;
+               data.email == existingData.email;
+               // Allow name changes
     }
 
 
