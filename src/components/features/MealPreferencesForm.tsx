@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -32,6 +31,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { WandSparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert'];
 const dietaryPreferences = [
@@ -91,140 +91,144 @@ export function MealPreferencesForm({ open, onOpenChange }: MealPreferencesFormP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] p-0 max-h-[90dvh]">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle>Set Your Preferences</DialogTitle>
           <DialogDescription>
             Tell us what you&apos;d like. The more specific you are, the better the
             suggestions!
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="mealType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Meal Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a meal type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {mealTypes.map(type => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="dietaryPreference"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dietary Preference</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a dietary preference" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {dietaryPreferences.map(pref => (
-                        <SelectItem key={pref} value={pref}>
-                          {pref}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="flavorFusion1"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Create a Flavor Fusion</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a flavor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {flavorFusions.map(flavor => (
-                        <SelectItem key={flavor} value={flavor}>
-                          {flavor}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="flavorFusion2"
-              render={({ field }) => (
-                <FormItem>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select another flavor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {flavorFusions.map(flavor => (
-                        <SelectItem key={flavor} value={flavor}>
-                          {flavor}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                   <FormDescription>
-                    Select two for a fusion, or one for a traditional meal.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="customRequests"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Custom Requests</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g., 'no nuts', 'low-carb and high-protein'"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Specify allergies, dislikes, or any other special instructions.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-                <Button type="submit" className="w-full">
-                    <WandSparkles className="mr-2 h-4 w-4" />
-                    Generate
-                </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <ScrollArea className="overflow-y-auto">
+          <div className="p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="mealType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meal Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a meal type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mealTypes.map(type => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dietaryPreference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dietary Preference</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a dietary preference" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {dietaryPreferences.map(pref => (
+                            <SelectItem key={pref} value={pref}>
+                              {pref}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="flavorFusion1"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Create a Flavor Fusion</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a flavor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {flavorFusions.map(flavor => (
+                            <SelectItem key={flavor} value={flavor}>
+                              {flavor}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="flavorFusion2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select another flavor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {flavorFusions.map(flavor => (
+                            <SelectItem key={flavor} value={flavor}>
+                              {flavor}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select two for a fusion, or one for a traditional meal.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="customRequests"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custom Requests</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="e.g., 'no nuts', 'low-carb and high-protein'"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Specify allergies, dislikes, or any other special instructions.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <DialogFooter className="p-6 pt-0">
+                    <Button type="submit" className="w-full">
+                        <WandSparkles className="mr-2 h-4 w-4" />
+                        Generate
+                    </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
