@@ -1,7 +1,6 @@
 
 "use client";
 
-import { Wifi } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ActionCard } from '@/components/features/ActionCard';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -19,9 +18,6 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Logo />
             <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
-          </div>
-          <div className="flex items-center gap-2 text-foreground">
-            <Wifi size={16} />
           </div>
         </div>
       </header>
