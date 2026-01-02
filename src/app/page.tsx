@@ -6,10 +6,12 @@ import { Logo } from '@/components/Logo';
 import { ActionCard } from '@/components/features/ActionCard';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
+import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
   const [subGreeting, setSubGreeting] = useState("Instant Meal Ideas, Zero Hassle.");
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -64,7 +66,7 @@ export default function Home() {
           )}
 
           {quickMealImage && (
-            <Link href="/meal-ideas" passHref>
+             <div onClick={() => setIsPreferencesOpen(true)} className="cursor-pointer">
                <ActionCard
                 title="Meal Ideas"
                 description="Get delicious meal ideas for any occasion."
@@ -73,7 +75,7 @@ export default function Home() {
                 imageAlt={quickMealImage.description}
                 imageHint={quickMealImage.imageHint}
               />
-            </Link>
+            </div>
           )}
 
           {weeklyMealPlanImage && (
@@ -90,6 +92,7 @@ export default function Home() {
           )}
         </div>
       </main>
+      <MealPreferencesForm open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} />
     </div>
   );
 }
