@@ -3,19 +3,19 @@
     {
       "id": "pantry-organization",
       "description": "A well-organized pantry with shelves full of jars, baskets of fresh produce, and clear containers.",
-      "imageUrl": "https://images.unsplash.com/photo-1514237487632-b60bc844a47d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxvcmdhbml6ZWQlMjBwYW50cnl8ZW58MHx8fHwxNzY3MzUwMDAzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "/pantry.jpg",
       "imageHint": "organized pantry"
     },
     {
       "id": "ramen-bowl",
       "description": "A delicious bowl of ramen with a soft-boiled egg, noodles, and other toppings on a wooden table.",
-      "imageUrl": "https://images.unsplash.com/photo-1612927601601-6638404737ce?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxyYW1lbiUyMGJvd2x8ZW58MHx8fHwxNzY3Mjg1MTUwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "/ramen.jpg",
       "imageHint": "ramen bowl"
     },
     {
       "id": "meal-prep-containers",
       "description": "Several glass containers with prepped meals, including chicken, rice, and vegetables, ready for the week.",
-      "imageUrl": "https://images.unsplash.com/photo-1606858374191-c18040e98ad7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtZWFsJTIwcHJlcHxlbnwwfHx8fDE3NjczNTI1ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "/meal-prep.jpg",
       "imageHint": "meal prep"
     }
   ]
