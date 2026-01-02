@@ -85,7 +85,7 @@ service cloud.firestore {
         let existingData = resource.data;
         return data.id == existingData.id &&
                data.email == existingData.email;
-               // Allow name changes
+               // Allow name, subscriptionTier, trialStartedAt, and trialGenerations changes
     }
 
 

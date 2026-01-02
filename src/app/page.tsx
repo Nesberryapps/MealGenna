@@ -4,14 +4,17 @@
 import { useState, useEffect } from 'react';
 import { Logo } from '@/components/Logo';
 import { ActionCard } from '@/components/features/ActionCard';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
+import { doc } from 'firebase/firestore';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 function ProfileButton() {
     const { user, isUserLoading } = useUser();
@@ -25,7 +28,7 @@ function ProfileButton() {
              <Link href="/profile" passHref>
                 <Avatar className="cursor-pointer h-10 w-10">
                     <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                    <AvatarFallback>{user.displayName?.charAt(0) || <User />}</AvatarFallback>
+                    <AvatarFallback>{user.displayName?.charAt(0) || <UserIcon />}</AvatarFallback>
                 </Avatar>
             </Link>
         )
@@ -36,14 +39,44 @@ function ProfileButton() {
             <Link href="/login">Sign In</Link>
         </Button>
     )
-
 }
-
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
   const [subGreeting, setSubGreeting] = useState("Instant Meal Ideas, Zero Hassle.");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const userRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
+
+  const { data: userData } = useDoc<{subscriptionTier: string}>(userRef);
+
+  const handleWeeklyPlanClick = (e: React.MouseEvent) => {
+    if (!user) {
+        e.preventDefault();
+        toast({
+            title: "Please Sign In",
+            description: "You need to be signed in to access the 7-Day Meal Plan.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    if (userData?.subscriptionTier !== 'premium') {
+        e.preventDefault();
+        toast({
+            title: "Premium Feature",
+            description: "The 7-Day Meal Plan is a premium feature. Please subscribe to access it.",
+            variant: "destructive"
+        });
+    }
+  }
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -57,10 +90,6 @@ export default function Home() {
       setGreeting("Late night snack? What are you cooking?");
     }
   }, []);
-
-  const ingredientsImage = PlaceHolderImages.find(p => p.id === 'pantry-organization');
-  const quickMealImage = PlaceHolderImages.find(p => p.id === 'ramen-bowl');
-  const weeklyMealPlanImage = PlaceHolderImages.find(p => p.id === 'meal-prep-containers');
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
@@ -84,45 +113,45 @@ export default function Home() {
         </div>
 
         <div className="space-y-6">
-          {quickMealImage && (
+          
              <div onClick={() => setIsPreferencesOpen(true)} className="cursor-pointer">
                <ActionCard
                 title="Meal Ideas"
                 description="Get delicious meal ideas for any occasion."
                 buttonText="Get Ideas"
-                imageUrl={quickMealImage.imageUrl}
-                imageAlt={quickMealImage.description}
-                imageHint={quickMealImage.imageHint}
+                imageUrl="/ramen.jpg"
+                imageAlt="A delicious bowl of ramen"
+                imageHint="ramen bowl"
               />
             </div>
-          )}
+          
 
-          {ingredientsImage && (
+          
             <Link href="/ingredient-scanner" passHref>
               <ActionCard
                 title="Use My Ingredients"
                 description="Scan your pantry or fridge to get a meal idea from what you have."
                 buttonText="Start Scanning"
                 buttonIcon="Camera"
-                imageUrl={ingredientsImage.imageUrl}
-                imageAlt={ingredientsImage.description}
-                imageHint={ingredientsImage.imageHint}
+                imageUrl="/pantry.jpg"
+                imageAlt="A well-organized pantry"
+                imageHint="organized pantry"
               />
             </Link>
-          )}
+          
 
-          {weeklyMealPlanImage && (
-            <Link href="/weekly-meal-planner" passHref>
+          
+            <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick}>
               <ActionCard
                 title="7-Day Meal Plan"
                 description="Generate a meal plan for the week, tailored to you."
                 buttonText="Plan My Week"
-                imageUrl={weeklyMealPlanImage.imageUrl}
-                imageAlt={weeklyMealPlanImage.description}
-                imageHint={weeklyMealPlanImage.imageHint}
+                imageUrl="/meal-prep.jpg"
+                imageAlt="Several glass containers with prepped meals"
+                imageHint="meal prep"
               />
             </Link>
-          )}
+          
         </div>
       </main>
       <MealPreferencesForm open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} />

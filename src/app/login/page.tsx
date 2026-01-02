@@ -11,13 +11,12 @@ import {
   OAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
 import { Apple, Chrome } from 'lucide-react';
 import { Footer } from '@/components/features/Footer';
-import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const { auth, firestore } = useFirebase();
@@ -30,46 +29,39 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
+  const handleSignIn = async (provider: GoogleAuthProvider | OAuthProvider) => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Create user profile in Firestore if it doesn't exist
+      // Check if user document already exists
       const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
-        id: user.uid,
-        name: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        subscriptionTier: 'free',
-      }, { merge: true });
+      const userDoc = await getDoc(userRef);
 
+      if (!userDoc.exists()) {
+        // New user, create the document
+        await setDoc(userRef, {
+          id: user.uid,
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          subscriptionTier: 'free',
+        });
+      }
+      // If user exists, we don't need to do anything, just let them sign in.
+      
     } catch (error) {
-      console.error('Error during Google Sign-In:', error);
+      console.error('Error during Sign-In:', error);
     }
   };
 
-  const handleAppleSignIn = async () => {
-    const provider = new OAuthProvider('apple.com');
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+  const handleGoogleSignIn = () => {
+    handleSignIn(new GoogleAuthProvider());
+  };
 
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
-        id: user.uid,
-        name: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        subscriptionTier: 'free',
-      }, { merge: true });
-
-    } catch (error) {
-      console.error('Error during Apple Sign-In:', error);
-    }
-  }
+  const handleAppleSignIn = () => {
+    handleSignIn(new OAuthProvider('apple.com'));
+  };
 
   if (isUserLoading || user) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
