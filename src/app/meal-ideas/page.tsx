@@ -12,6 +12,7 @@ import { ArrowLeft, ChefHat, Flame, RefreshCw, Scale } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Footer } from '@/components/features/Footer';
 
 function MealIdeasContent() {
   const searchParams = useSearchParams();
@@ -139,6 +140,7 @@ function MealIdeasContent() {
            </div>
         </Card>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { Logo } from '@/components/Logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Footer } from '@/components/features/Footer';
 
 export default function IngredientScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -207,6 +208,7 @@ export default function IngredientScannerPage() {
             </CardContent>
         </Card>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { ActionCard } from '@/components/features/ActionCard';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
+import { Footer } from '@/components/features/Footer';
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
@@ -93,6 +94,7 @@ export default function Home() {
         </div>
       </main>
       <MealPreferencesForm open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} />
+      <Footer />
     </div>
   );
 }

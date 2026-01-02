@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Footer } from '@/components/features/Footer';
 
 const formSchema = z.object({
   dietaryPreferences: z.string().min(1, 'Please enter at least one preference.'),
@@ -268,6 +269,7 @@ export default function WeeklyMealPlannerPage() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }
