@@ -19,19 +19,27 @@
           "type": "string",
           "description": "User's full name."
         },
-        "dietaryPreferences": {
-          "type": "array",
-          "description": "An array of dietary preferences.",
-          "items": {
-            "type": "string"
-          }
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
         },
-        "allergies": {
-          "type": "array",
-          "description": "An array of food allergies.",
-          "items": {
-            "type": "string"
-          }
+        "subscriptionTier": {
+          "type": "string",
+          "description": "The user's current subscription level.",
+          "enum": [
+            "free",
+            "premium"
+          ]
+        },
+        "trialStartedAt": {
+          "type": "string",
+          "description": "The timestamp when the user's trial period began.",
+          "format": "date-time"
+        },
+        "trialGenerations": {
+          "type": "number",
+          "description": "The number of meal generations the user has used during their trial."
         }
       },
       "required": [
@@ -143,8 +151,8 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "google.com",
+      "apple.com"
     ]
   },
   "firestore": {

@@ -8,6 +8,37 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
+import { useUser } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { User } from 'lucide-react';
+
+function ProfileButton() {
+    const { user, isUserLoading } = useUser();
+
+    if (isUserLoading) {
+        return <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />;
+    }
+
+    if (user) {
+        return (
+             <Link href="/profile" passHref>
+                <Avatar className="cursor-pointer h-10 w-10">
+                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                    <AvatarFallback>{user.displayName?.charAt(0) || <User />}</AvatarFallback>
+                </Avatar>
+            </Link>
+        )
+    }
+
+    return (
+        <Button asChild variant="secondary">
+            <Link href="/login">Sign In</Link>
+        </Button>
+    )
+
+}
+
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
@@ -39,6 +70,7 @@ export default function Home() {
             <Logo />
             <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
           </div>
+          <ProfileButton />
         </div>
       </header>
       <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8">

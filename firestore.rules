@@ -55,25 +55,33 @@ service cloud.firestore {
      * @param userId The user ID to check for ownership.
      */
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+      return isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId));
     }
-
+    
     /**
-     * Validates the integrity of a User document on create.
-     * Ensures the document's internal `id` field matches its path `userId`.
-     * @param userId The user ID from the document path.
+     * Validates incoming user data for create operation.
      */
     function hasValidUserCreateData(userId) {
-      return request.resource.data.id == userId;
+        let data = request.resource.data;
+        return data.id == userId &&
+               data.email == request.auth.token.email &&
+               data.name == request.auth.token.name &&
+               data.subscriptionTier == 'free' &&
+               !('trialStartedAt' in data) &&
+               !('trialGenerations' in data);
     }
-
+    
     /**
-     * Validates the integrity of a User document on update.
-     * Enforces the immutability of the document's internal `id` field.
+     * Validates incoming user data for update operation.
      */
     function hasValidUserUpdateData() {
-      return request.resource.data.id == resource.data.id;
+        let data = request.resource.data;
+        let existingData = resource.data;
+        return data.id == existingData.id &&
+               data.email == existingData.email &&
+               data.name == existingData.name;
     }
+
 
     /**
      * Validates the integrity of a MealPlan document on create.
