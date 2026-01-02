@@ -1,0 +1,158 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for
+ * personal data (profiles, meal plans) while providing public read access to
+ * shared application data (recipes, ingredients). The security model is
+ * designed for performance and simplicity by avoiding cross-document reads.
+ *
+ * Data Structure: User data is strictly segregated within a user-specific
+ * data tree at /users/{userId}. This isolates private information. Global,
+ * shared data like recipes and ingredients are stored in top-level collections
+ * for easy, public querying.
+ *
+ * Key Security Decisions:
+ * - User Isolation: A user can only access documents within their own
+ *   /users/{userId} path. They cannot read, write, or even see the existence
+ *   of another user's data.
+ * - No User Listing: The ability to list all users in the /users collection
+ *   is disabled to protect user privacy.
+ * - Public Data: The /recipes and /ingredients collections are globally
+ *   readable by any client (authenticated or not) to power the application's
+ *   core functionality. Writes to these collections are disabled for clients,
+ *   assuming they are managed by a trusted backend or admin process.
+ * - Denormalization for Authorization: Access to subcollections like
+ *   /mealPlans is granted based on the {userId} in the path, a highly
+ *   performant pattern that requires no extra document reads.
+ * - Structural Segregation: Private meal plans are nested under the user who
+ *   owns them, while public recipes are in a separate top-level collection.
+ *   This is more secure and performant than mixing public and private data
+ *   in a single collection.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for improved readability and reusability.
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing user ownership.
+     * @param userId The user ID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update/delete.
+     * Prevents modifying or deleting a document that does not exist.
+     * @param userId The user ID to check for ownership.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates the integrity of a User document on create.
+     * Ensures the document's internal `id` field matches its path `userId`.
+     * @param userId The user ID from the document path.
+     */
+    function hasValidUserCreateData(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates the integrity of a User document on update.
+     * Enforces the immutability of the document's internal `id` field.
+     */
+    function hasValidUserUpdateData() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates the integrity of a MealPlan document on create.
+     * Ensures the document's internal `userId` field matches its path `userId`.
+     * @param userId The user ID from the document path.
+     */
+    function hasValidMealPlanCreateData(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Validates the integrity of a MealPlan document on update.
+     * Enforces the immutability of the document's internal `userId` field.
+     */
+    function hasValidMealPlanUpdateData() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Controls access to a user's own profile document and their subcollections.
+     * @path /users/{userId}
+     * @allow (create) An authenticated user creating their own user document.
+     * @deny (get) A user trying to read another user's profile.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Explicitly deny listing users for privacy.
+      allow create: if isOwner(userId) && hasValidUserCreateData(userId);
+      allow update: if isExistingOwner(userId) && hasValidUserUpdateData();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Controls access to a user's meal plans.
+       * @path /users/{userId}/mealPlans/{mealPlanId}
+       * @allow (get, list, create, update, delete) A user managing their own meal plans.
+       * @deny (get) A user trying to access another user's meal plans.
+       * @principle Enforces strict data ownership within a user's data tree.
+       */
+      match /mealPlans/{mealPlanId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidMealPlanCreateData(userId);
+        allow update: if isExistingOwner(userId) && hasValidMealPlanUpdateData();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Controls access to the global ingredients collection.
+     * @path /ingredients/{ingredientId}
+     * @allow (get, list) Any user, authenticated or not, reading ingredient data.
+     * @deny (create, update, delete) Any client trying to modify the ingredients list.
+     * @principle Provides public read access but centralizes writes, assuming they are managed by a trusted backend.
+     */
+    match /ingredients/{ingredientId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // Managed by backend/admin only.
+      allow update: if false; // Managed by backend/admin only.
+      allow delete: if false; // Managed by backend/admin only.
+    }
+
+    /**
+     * @description Controls access to the global recipes collection.
+     * @path /recipes/{recipeId}
+     * @allow (get, list) Any user, authenticated or not, reading recipe data.
+     * @deny (create, update, delete) Any client trying to modify the recipes list.
+     * @principle Provides public read access. Writes are disabled as the data model lacks an ownership field for client-side validation.
+     */
+    match /recipes/{recipeId} {
+      allow get: if true;
+      allow list: if true;
+
+      // CRITICAL: Cannot implement owner-only writes. The 'Recipe' entity is missing an 'ownerId' or 'authorId' field.
+      // Client-side writes are disabled until the schema is updated to include an ownership field (e.g., authorId).
+      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+  }
+}
