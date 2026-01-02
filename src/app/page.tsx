@@ -1,26 +1,12 @@
+
 "use client";
 
-import { useState, useEffect } from 'react';
 import { Wifi, BatteryFull } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ActionCard } from '@/components/features/ActionCard';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function Home() {
-  const [time, setTime] = useState('');
-
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      setTime(`${hours}:${minutes}`);
-    };
-    updateClock();
-    const timerId = setInterval(updateClock, 1000);
-    return () => clearInterval(timerId);
-  }, []);
-
   const ingredientsImage = PlaceHolderImages.find(p => p.id === 'pantry-organization');
   const quickMealImage = PlaceHolderImages.find(p => p.id === 'ramen-bowl');
 
@@ -29,7 +15,6 @@ export default function Home() {
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">{time}</span>
             <Logo />
             <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
           </div>
