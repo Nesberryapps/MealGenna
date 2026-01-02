@@ -77,7 +77,8 @@ const generateMealIdeaFlow = ai.defineFlow(
     }
 
     // Using a static placeholder image to avoid billing issues with Imagen API.
-    const imageDataUri = 'https://picsum.photos/seed/food/1280/720';
+    // The seed is based on the meal title to provide a unique image for each meal.
+    const imageDataUri = `https://picsum.photos/seed/${encodeURIComponent(mealDetails.title)}/1280/720`;
 
     return {
       ...mealDetails,
