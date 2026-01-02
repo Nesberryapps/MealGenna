@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Generates a meal idea based on user preferences.
+ * @fileOverview Generates a meal idea based on user preferences, including a generated image.
  *
  * - generateMealIdea - A function that generates a meal idea.
  * - GenerateMealIdeaInput - The input type for the generateMealIdea function.
@@ -25,11 +25,21 @@ const GenerateMealIdeaInputSchema = z.object({
 export type GenerateMealIdeaInput = z.infer<typeof GenerateMealIdeaInputSchema>;
 
 const GenerateMealIdeaOutputSchema = z.object({
-  mealIdea: z
-    .string()
-    .describe('A single meal idea with a title and a short description.'),
+  title: z.string().describe('A creative title for the meal.'),
+  description: z.string().describe('A brief, enticing description of the meal.'),
+  ingredients: z.array(z.string()).describe('A list of ingredients for the meal.'),
+  instructions: z.array(z.string()).describe('The cooking instructions for the meal.'),
+  cookingTime: z.string().describe('The estimated cooking time.'),
+  nutrition: z.object({
+    calories: z.string(),
+    protein: z.string(),
+    fat: z.string(),
+    carbs: z.string(),
+  }).describe('Nutritional information for the meal.'),
+  imageDataUri: z.string().describe('A data URI of a generated image of the meal.'),
 });
 export type GenerateMealIdeaOutput = z.infer<typeof GenerateMealIdeaOutputSchema>;
+
 
 export async function generateMealIdea(
   input: GenerateMealIdeaInput
@@ -37,10 +47,12 @@ export async function generateMealIdea(
   return generateMealIdeaFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateMealIdeaPrompt',
+const mealDetailsPrompt = ai.definePrompt({
+  name: 'generateMealDetailsPrompt',
   input: {schema: GenerateMealIdeaInputSchema},
-  output: {schema: GenerateMealIdeaOutputSchema},
+  output: {
+    schema: GenerateMealIdeaOutputSchema.omit({imageDataUri: true}),
+  },
   prompt: `You are an expert chef. Generate a creative and delicious meal idea based on the user's preferences.
 
 Meal Type: {{{mealType}}}
@@ -48,7 +60,7 @@ Dietary Preference: {{{dietaryPreference}}}
 Flavor Fusion: {{{flavorFusion1}}} and {{{flavorFusion2}}}
 Custom Requests: {{{customRequests}}}
 
-The output should be a single meal idea with a creative title and a brief, enticing description.
+Provide a creative title, a brief description, a list of ingredients, step-by-step cooking instructions, the estimated cooking time, and nutritional facts (calories, protein, fat, carbs).
 `,
 });
 
@@ -59,7 +71,26 @@ const generateMealIdeaFlow = ai.defineFlow(
     outputSchema: GenerateMealIdeaOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const {output: mealDetails} = await mealDetailsPrompt(input);
+    if (!mealDetails) {
+      throw new Error('Failed to generate meal details.');
+    }
+
+    const imageGenPrompt = `A high-quality, delicious-looking photo of ${mealDetails.title}, ready to eat.`;
+
+    const {media} = await ai.generate({
+      model: 'googleai/imagen-4.0-fast-generate-001',
+      prompt: imageGenPrompt,
+      config: {
+        aspectRatio: '16:9',
+      },
+    });
+    
+    const imageDataUri = media.url;
+
+    return {
+      ...mealDetails,
+      imageDataUri,
+    };
   }
 );
