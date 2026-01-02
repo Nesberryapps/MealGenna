@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates quick meal ideas for users who are short on time.
@@ -51,6 +52,8 @@ const prompt = ai.definePrompt({
 
   Please provide a list of meal ideas that can be prepared quickly.
   Return the meal ideas as a list of strings.
+
+  Return your response in valid JSON format.
   `,
 });
 

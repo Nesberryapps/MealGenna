@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Identifies ingredients from an image of food items.
@@ -44,7 +45,9 @@ const prompt = ai.definePrompt({
   
   Analyze the following image and list all the food ingredients you can identify. Be as specific as possible.
   
-  Image: {{media url=imageDataUri}}`,
+  Image: {{media url=imageDataUri}}
+  
+  Return your response in valid JSON format.`,
 });
 
 const identifyIngredientsFlow = ai.defineFlow(

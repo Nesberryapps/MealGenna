@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for generating meal ideas based on a list of ingredients.
@@ -48,6 +49,8 @@ const prompt = ai.definePrompt({
   Please generate a list of meal ideas that can be made using these ingredients.
   The meal ideas should be simple and easy to make.
   Return the meal ideas as a numbered list.
+  
+  Return your response in valid JSON format.
   `,
 });
 

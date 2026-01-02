@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a meal idea based on user preferences, including a generated image.
@@ -78,6 +79,8 @@ Flavor Fusion: {{{flavorFusion1}}} and {{{flavorFusion2}}}
 Custom Requests: {{{customRequests}}}
 
 Provide a creative title, a brief description, a list of ingredients, step-by-step cooking instructions, the estimated cooking time, nutritional facts (calories, protein, fat, carbs), and a 2-3 word search query for a photorealistic image of the meal.
+
+Return your response in valid JSON format.
 `,
 });
 

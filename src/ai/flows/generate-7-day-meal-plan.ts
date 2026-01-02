@@ -57,6 +57,8 @@ Allergies: {{{allergies}}}
 Available Ingredients: {{{ingredients}}}
 
 For each of the 7 days, provide a simple meal suggestion for Breakfast, Lunch, and Dinner. Ensure the plan is safe and suitable.
+
+Return your response in valid JSON format.
 `,
 });
 
