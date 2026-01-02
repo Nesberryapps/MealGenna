@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, createRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,7 +40,12 @@ export default function WeeklyMealPlannerPage() {
   const [loading, setLoading] = useState(false);
   const [accordionState, setAccordionState] = useState<string[]>([]);
   const { toast } = useToast();
-  const mealPlanRef = useRef<HTMLDivElement>(null);
+  
+  // Create an array of refs, one for each day
+  const dayRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);
+  if (mealPlan && dayRefs.current.length !== mealPlan.length) {
+    dayRefs.current = Array(mealPlan.length).fill(null).map((_, i) => dayRefs.current[i] || createRef<HTMLDivElement>());
+  }
 
   const form = useForm<WeeklyMealPlannerFormValues>({
     resolver: zodResolver(formSchema),
@@ -73,58 +78,63 @@ export default function WeeklyMealPlannerPage() {
     }
   }
 
-  const handleDownload = async () => {
-    if (!mealPlanRef.current || !mealPlan) return;
-    
-    const originalAccordionState = accordionState;
-    // Temporarily open all accordions for capture
-    const allItemKeys = mealPlan.map((_, index) => `item-${index + 1}`);
-    setAccordionState(allItemKeys);
-
-    // Allow time for accordions to open before capturing
-    await new Promise(resolve => setTimeout(resolve, 500));
+  const handleDownloadDay = async (dayIndex: number, dayNumber: number) => {
+    const dayContent = dayRefs.current[dayIndex]?.current;
+    if (!dayContent) {
+        toast({
+            variant: "destructive",
+            title: "Download Failed",
+            description: "Could not find the content for this day."
+        });
+        return;
+    }
 
     try {
-        const canvas = await html2canvas(mealPlanRef.current, {
-            scale: 2, // Higher scale for better quality
-            backgroundColor: null, // Use element's background
+        const canvas = await html2canvas(dayContent, {
+            scale: 2,
+            backgroundColor: null, 
+            onclone: (document) => {
+                // Ensure the background is not transparent for the capture
+                const content = document.querySelector('[data-day-content]');
+                if (content) {
+                    (content as HTMLElement).style.backgroundColor = 'hsl(var(--card))';
+                }
+            }
         });
 
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
-        const imgHeight = (pdfWidth - 20) / ratio;
         
-        let heightLeft = imgHeight;
-        let position = 10;
+        let imgWidth = pdfWidth - 20; // with margin
+        let imgHeight = imgWidth / ratio;
         
-        pdf.addImage(imgData, 'PNG', 10, position, pdfWidth - 20, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight + 10; // top margin
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 10, position, pdfWidth - 20, imgHeight);
-          heightLeft -= pdf.internal.pageSize.getHeight();
+        // If image height is larger than page, scale it down
+        if(imgHeight > pdfHeight - 20) {
+            imgHeight = pdfHeight - 20;
+            imgWidth = imgHeight * ratio;
         }
 
-        pdf.save('7-day-meal-plan.pdf');
+        const x = (pdfWidth - imgWidth) / 2;
+        const y = 10;
+
+        pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+        pdf.save(`day-${dayNumber}-meal-plan.pdf`);
 
     } catch (error) {
-        console.error("Failed to generate PDF", error);
+        console.error("Failed to generate PDF for day", error);
         toast({
             variant: "destructive",
             title: "Download Failed",
             description: "Could not create the PDF file. Please try again."
         });
-    } finally {
-        // Restore the original accordion state
-        setAccordionState(originalAccordionState);
     }
   };
+
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
@@ -219,20 +229,16 @@ export default function WeeklyMealPlannerPage() {
           <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Your 7-Day Plan</h2>
-                <Button variant="outline" onClick={handleDownload}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                </Button>
             </div>
-            <div ref={mealPlanRef}>
-                <Accordion type="multiple" value={accordionState} onValueChange={setAccordionState} className="w-full">
-                {mealPlan.map((day, index) => (
-                    <Card key={index} className="mb-2 bg-card">
-                        <AccordionItem value={`item-${index+1}`} className="border-b-0">
-                            <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
-                            Day {day.day}
-                            </AccordionTrigger>
-                            <AccordionContent className="p-4 pt-0">
+             <Accordion type="multiple" value={accordionState} onValueChange={setAccordionState} className="w-full">
+            {mealPlan.map((day, index) => (
+                <Card key={index} className="mb-2 bg-card">
+                    <AccordionItem value={`item-${index+1}`} className="border-b-0">
+                        <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
+                        Day {day.day}
+                        </AccordionTrigger>
+                        <AccordionContent className="p-4 pt-0">
+                          <div ref={dayRefs.current[index]} data-day-content className="p-4 rounded-md">
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="font-semibold text-md">Breakfast</h4>
@@ -249,12 +255,16 @@ export default function WeeklyMealPlannerPage() {
                                     <p className="text-muted-foreground">{day.dinner}</p>
                                 </div>
                             </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Card>
-                ))}
-                </Accordion>
-            </div>
+                          </div>
+                           <Button variant="outline" onClick={() => handleDownloadDay(index, day.day)} className="mt-4 w-full">
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Day {day.day}
+                            </Button>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Card>
+            ))}
+            </Accordion>
           </div>
         )}
       </main>
