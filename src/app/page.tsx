@@ -64,11 +64,11 @@ export default function Home() {
           )}
 
           {quickMealImage && (
-            <Link href="/quick-meal-ideas" passHref>
+            <Link href="/meal-ideas" passHref>
                <ActionCard
-                title="Something Quick"
-                description="Short on time? Get delicious meal ideas."
-                buttonText="Find Quick Meals"
+                title="Meal Ideas"
+                description="Get delicious meal ideas for any occasion."
+                buttonText="Get Ideas"
                 imageUrl={quickMealImage.imageUrl}
                 imageAlt={quickMealImage.description}
                 imageHint={quickMealImage.imageHint}
