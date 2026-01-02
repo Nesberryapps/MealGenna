@@ -135,7 +135,7 @@ export default function IngredientScannerPage() {
             </Button>
           <div className="flex items-center gap-2">
             <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
+            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
           </div>
           <div className="w-8"></div>
         </div>

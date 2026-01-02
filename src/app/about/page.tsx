@@ -19,7 +19,7 @@ export default function AboutPage() {
           </Button>
           <div className="flex items-center gap-2">
             <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
+            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
           </div>
           <div className="w-8"></div>
         </div>
@@ -28,14 +28,14 @@ export default function AboutPage() {
       <main className="flex-grow w-full max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle>About MealGenius</CardTitle>
+            <CardTitle>About MealGenna</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-muted-foreground">
             <p>
-              Welcome to MealGenius, your personal AI-powered meal assistant designed to make your life easier and your meals more delicious. Our mission is to take the stress out of meal planning and inspire creativity in the kitchen, no matter what ingredients you have on hand.
+              Welcome to MealGenna, your personal AI-powered meal assistant designed to make your life easier and your meals more delicious. Our mission is to take the stress out of meal planning and inspire creativity in the kitchen, no matter what ingredients you have on hand.
             </p>
             <p>
-              At MealGenius, we believe that everyone deserves to enjoy home-cooked meals without the hassle of deciding what to make. Whether you're a busy professional, a parent juggling a hectic schedule, or a culinary enthusiast looking for new ideas, our app is here to help.
+              At MealGenna, we believe that everyone deserves to enjoy home-cooked meals without the hassle of deciding what to make. Whether you're a busy professional, a parent juggling a hectic schedule, or a culinary enthusiast looking for new ideas, our app is here to help.
             </p>
             <h3 className="text-lg font-semibold text-foreground pt-4">Our Features</h3>
             <ul className="list-disc list-inside space-y-2">
@@ -44,7 +44,7 @@ export default function AboutPage() {
               <li><strong>7-Day Meal Planner:</strong> Plan your entire week with a customized meal plan that caters to your dietary needs and allergies.</li>
             </ul>
             <p className="pt-4">
-              We are passionate about food and technology, and we're constantly working to improve MealGenius to better serve you. Thank you for joining us on this culinary journey!
+              We are passionate about food and technology, and we're constantly working to improve MealGenna to better serve you. Thank you for joining us on this culinary journey!
             </p>
           </CardContent>
         </Card>

@@ -97,7 +97,7 @@ export default function Home() {
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
+            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
           </div>
           <ProfileButton />
         </div>

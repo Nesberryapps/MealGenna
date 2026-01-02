@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
           </Button>
           <div className="flex items-center gap-2">
             <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
+            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
           </div>
           <div className="w-8"></div>
         </div>
@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
           <CardContent className="space-y-4 text-muted-foreground">
             <p><strong>Last Updated: [Date]</strong></p>
             
-            <p>Your privacy is important to us. It is MealGenius's policy to respect your privacy regarding any information we may collect from you across our website, and other sites we own and operate.</p>
+            <p>Your privacy is important to us. It is MealGenna's policy to respect your privacy regarding any information we may collect from you across our website, and other sites we own and operate.</p>
 
             <h3 className="text-lg font-semibold text-foreground pt-4">1. Information We Collect</h3>
             <p>We only ask for personal information when we truly need it to provide a service to you. We collect it by fair and lawful means, with your knowledge and consent. We also let you know why we’re collecting it and how it will be used.</p>

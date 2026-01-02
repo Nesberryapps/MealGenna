@@ -11,7 +11,7 @@ import {
   OAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
@@ -46,6 +46,8 @@ export default function LoginPage() {
           email: user.email,
           photoURL: user.photoURL,
           subscriptionTier: 'free',
+          trialGenerations: 0,
+          trialStartedAt: serverTimestamp(),
         });
       }
       // If user exists, we don't need to do anything, just let them sign in.
@@ -75,7 +77,7 @@ export default function LoginPage() {
         </div>
         <Card>
             <CardHeader className="text-center">
-                <CardTitle>Welcome to MealGenius</CardTitle>
+                <CardTitle>Welcome to MealGenna</CardTitle>
                 <CardDescription>Sign in to continue to your account.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

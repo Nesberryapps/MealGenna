@@ -20,7 +20,7 @@ export function Footer() {
         </Link>
       </div>
       <p className="text-center text-xs text-muted-foreground/50 mt-4">
-        &copy; {new Date().getFullYear()} MealGenius. All rights reserved.
+        &copy; {new Date().getFullYear()} MealGenna. All rights reserved.
       </p>
     </footer>
   );
