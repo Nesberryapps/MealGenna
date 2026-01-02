@@ -76,17 +76,8 @@ const generateMealIdeaFlow = ai.defineFlow(
       throw new Error('Failed to generate meal details.');
     }
 
-    const imageGenPrompt = `A high-quality, delicious-looking photo of ${mealDetails.title}, ready to eat.`;
-
-    const {media} = await ai.generate({
-      model: 'googleai/imagen-4.0-fast-generate-001',
-      prompt: imageGenPrompt,
-      config: {
-        aspectRatio: '16:9',
-      },
-    });
-    
-    const imageDataUri = media.url;
+    // Using a static placeholder image to avoid billing issues with Imagen API.
+    const imageDataUri = 'https://picsum.photos/seed/food/1280/720';
 
     return {
       ...mealDetails,
