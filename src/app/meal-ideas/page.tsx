@@ -93,7 +93,7 @@ function MealIdeasContent() {
           {mealIdea && !loading && (
             <div>
               <div className="relative h-64 w-full">
-                <Image src={mealIdea.imageDataUri} alt={mealIdea.title} layout="fill" objectFit="cover" unoptimized/>
+                <Image src={mealIdea.imageDataUri} alt={mealIdea.title} layout="fill" className="object-cover" unoptimized/>
               </div>
               <CardHeader>
                 <CardTitle className="text-2xl font-bold">{mealIdea.title}</CardTitle>
