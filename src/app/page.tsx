@@ -1,14 +1,16 @@
 
 "use client";
 
-import { Wifi, BatteryFull } from 'lucide-react';
+import { Wifi } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ActionCard } from '@/components/features/ActionCard';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Link from 'next/link';
 
 export default function Home() {
   const ingredientsImage = PlaceHolderImages.find(p => p.id === 'pantry-organization');
   const quickMealImage = PlaceHolderImages.find(p => p.id === 'ramen-bowl');
+  const weeklyMealPlanImage = PlaceHolderImages.find(p => p.id === 'meal-prep-containers');
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
@@ -16,21 +18,17 @@ export default function Home() {
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
+            <h1 className="text-xl font-bold text-foreground">MealGenius</h1>
           </div>
           <div className="flex items-center gap-2 text-foreground">
             <Wifi size={16} />
-            <div className="flex items-center gap-1">
-              <BatteryFull size={16} />
-              <span className="text-xs font-semibold">97</span>
-            </div>
           </div>
         </div>
       </header>
       <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8">
         <div className="text-left my-8 md:my-12">
           <h2 className="text-4xl md:text-5xl font-black font-headline mb-2">
-            Good morning! What's for breakfast?
+            Good morning! What's on the menu?
           </h2>
           <p className="text-lg text-muted-foreground">
             Instant Meal Ideas, Zero Hassle.
@@ -39,26 +37,43 @@ export default function Home() {
 
         <div className="space-y-6">
           {ingredientsImage && (
-            <ActionCard
-              title="Use My Ingredients"
-              description="Scan your pantry or fridge to get a meal idea from what you have."
-              buttonText="Start Scanning"
-              buttonIcon="Camera"
-              imageUrl={ingredientsImage.imageUrl}
-              imageAlt={ingredientsImage.description}
-              imageHint={ingredientsImage.imageHint}
-            />
+            <Link href="/ingredient-scanner" passHref>
+              <ActionCard
+                title="Use My Ingredients"
+                description="Scan your pantry or fridge to get a meal idea from what you have."
+                buttonText="Start Scanning"
+                buttonIcon="Camera"
+                imageUrl={ingredientsImage.imageUrl}
+                imageAlt={ingredientsImage.description}
+                imageHint={ingredientsImage.imageHint}
+              />
+            </Link>
           )}
 
           {quickMealImage && (
-             <ActionCard
-              title="Something Quick"
-              description="Short on time? Get delicious meal ideas."
-              buttonText="Find Quick Meals"
-              imageUrl={quickMealImage.imageUrl}
-              imageAlt={quickMealImage.description}
-              imageHint={quickMealImage.imageHint}
-            />
+            <Link href="/quick-meal-ideas" passHref>
+               <ActionCard
+                title="Something Quick"
+                description="Short on time? Get delicious meal ideas."
+                buttonText="Find Quick Meals"
+                imageUrl={quickMealImage.imageUrl}
+                imageAlt={quickMealImage.description}
+                imageHint={quickMealImage.imageHint}
+              />
+            </Link>
+          )}
+
+          {weeklyMealPlanImage && (
+            <Link href="/weekly-meal-planner" passHref>
+              <ActionCard
+                title="7-Day Meal Plan"
+                description="Generate a meal plan for the week, tailored to you."
+                buttonText="Plan My Week"
+                imageUrl={weeklyMealPlanImage.imageUrl}
+                imageAlt={weeklyMealPlanImage.description}
+                imageHint={weeklyMealPlanImage.imageHint}
+              />
+            </Link>
           )}
         </div>
       </main>
