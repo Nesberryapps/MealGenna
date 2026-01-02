@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a 7-day meal plan based on user dietary preferences and allergies.
@@ -16,6 +17,7 @@ const Generate7DayMealPlanInputSchema = z.object({
     .describe('The dietary preferences of the user (e.g., vegetarian, vegan, gluten-free).'),
   allergies: z
     .string()
+    .optional()
     .describe('The allergies of the user (e.g., peanuts, dairy, shellfish).'),
   ingredients: z
     .string()
@@ -24,9 +26,18 @@ const Generate7DayMealPlanInputSchema = z.object({
 });
 export type Generate7DayMealPlanInput = z.infer<typeof Generate7DayMealPlanInputSchema>;
 
-const Generate7DayMealPlanOutputSchema = z.object({
-  mealPlan: z.string().describe('A 7-day meal plan, including breakfast, lunch, and dinner for each day, considering dietary preferences and allergies.'),
+
+const DayMealPlanSchema = z.object({
+    day: z.number().describe("The day number of the week (1-7)."),
+    breakfast: z.string().describe("The meal for breakfast."),
+    lunch: z.string().describe("The meal for lunch."),
+    dinner: z.string().describe("The meal for dinner."),
 });
+
+const Generate7DayMealPlanOutputSchema = z.object({
+  mealPlan: z.array(DayMealPlanSchema).describe("A 7-day meal plan, including breakfast, lunch, and dinner for each day."),
+});
+
 export type Generate7DayMealPlanOutput = z.infer<typeof Generate7DayMealPlanOutputSchema>;
 
 export async function generate7DayMealPlan(
@@ -39,7 +50,14 @@ const generate7DayMealPlanPrompt = ai.definePrompt({
   name: 'generate7DayMealPlanPrompt',
   input: {schema: Generate7DayMealPlanInputSchema},
   output: {schema: Generate7DayMealPlanOutputSchema},
-  prompt: `Generate a 7-day meal plan for a user with the following dietary preferences: {{{dietaryPreferences}}}, allergies: {{{allergies}}}, and available ingredients: {{{ingredients}}}. The meal plan should include breakfast, lunch, and dinner for each day. Ensure that the meal plan is safe and suitable for the user's needs.`,
+  prompt: `You are a nutritionist. Generate a 7-day meal plan based on the user's needs.
+
+Dietary Preferences: {{{dietaryPreferences}}}
+Allergies: {{{allergies}}}
+Available Ingredients: {{{ingredients}}}
+
+For each of the 7 days, provide a simple meal suggestion for Breakfast, Lunch, and Dinner. Ensure the plan is safe and suitable.
+`,
 });
 
 const generate7DayMealPlanFlow = ai.defineFlow(
