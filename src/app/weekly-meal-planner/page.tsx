@@ -38,6 +38,7 @@ type WeeklyMealPlannerFormValues = z.infer<typeof formSchema>;
 export default function WeeklyMealPlannerPage() {
   const [mealPlan, setMealPlan] = useState<Generate7DayMealPlanOutput['mealPlan'] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [accordionState, setAccordionState] = useState<string[]>([]);
   const { toast } = useToast();
   const mealPlanRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +57,10 @@ export default function WeeklyMealPlannerPage() {
     try {
       const result = await generate7DayMealPlan(values);
       setMealPlan(result.mealPlan);
+      // Set the accordion to initially open the first day
+      if (result.mealPlan && result.mealPlan.length > 0) {
+        setAccordionState(['item-1']);
+      }
     } catch (error) {
       console.error('Error generating meal plan:', error);
       toast({
@@ -69,38 +74,56 @@ export default function WeeklyMealPlannerPage() {
   }
 
   const handleDownload = async () => {
-    if (!mealPlanRef.current) return;
+    if (!mealPlanRef.current || !mealPlan) return;
     
+    const originalAccordionState = accordionState;
     // Temporarily open all accordions for capture
-    const accordions = mealPlanRef.current.querySelectorAll<HTMLButtonElement>('[data-state="closed"]');
-    accordions.forEach(acc => acc.click());
+    const allItemKeys = mealPlan.map((_, index) => `item-${index + 1}`);
+    setAccordionState(allItemKeys);
 
     // Allow time for accordions to open before capturing
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const canvas = await html2canvas(mealPlanRef.current, {
-        scale: 2, // Higher scale for better quality
-        backgroundColor: null, // Use element's background
-    });
+    try {
+        const canvas = await html2canvas(mealPlanRef.current, {
+            scale: 2, // Higher scale for better quality
+            backgroundColor: null, // Use element's background
+        });
 
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const ratio = canvasWidth / canvasHeight;
-    const width = pdfWidth - 20; // with margin
-    const height = width / ratio;
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        const imgHeight = (pdfWidth - 20) / ratio;
+        
+        let heightLeft = imgHeight;
+        let position = 10;
+        
+        pdf.addImage(imgData, 'PNG', 10, position, pdfWidth - 20, imgHeight);
+        heightLeft -= pdf.internal.pageSize.getHeight();
 
-    let position = 10;
-    pdf.addImage(imgData, 'PNG', 10, position, width, height);
-    
-    // Close the accordions again
-    const openAccordions = mealPlanRef.current.querySelectorAll<HTMLButtonElement>('[data-state="open"]');
-    openAccordions.forEach(acc => acc.click());
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight + 10; // top margin
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 10, position, pdfWidth - 20, imgHeight);
+          heightLeft -= pdf.internal.pageSize.getHeight();
+        }
 
-    pdf.save('7-day-meal-plan.pdf');
+        pdf.save('7-day-meal-plan.pdf');
+
+    } catch (error) {
+        console.error("Failed to generate PDF", error);
+        toast({
+            variant: "destructive",
+            title: "Download Failed",
+            description: "Could not create the PDF file. Please try again."
+        });
+    } finally {
+        // Restore the original accordion state
+        setAccordionState(originalAccordionState);
+    }
   };
 
   return (
@@ -202,7 +225,7 @@ export default function WeeklyMealPlannerPage() {
                 </Button>
             </div>
             <div ref={mealPlanRef}>
-                <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+                <Accordion type="multiple" value={accordionState} onValueChange={setAccordionState} className="w-full">
                 {mealPlan.map((day, index) => (
                     <Card key={index} className="mb-2 bg-card">
                         <AccordionItem value={`item-${index+1}`} className="border-b-0">
