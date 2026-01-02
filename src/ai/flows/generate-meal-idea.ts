@@ -39,24 +39,17 @@ const GenerateMealIdeaOutputSchema = z.object({
       carbs: z.string(),
     })
     .describe('Nutritional information for the meal.'),
-  imageSearchQuery: z
-    .string()
-    .describe(
-      'A 2-3 word search query for a photorealistic image of the meal.'
-    ),
 });
 
 // The final output type that the client will receive.
 export type GenerateMealIdeaOutput = z.infer<typeof MealDetailsWithImageSchema>;
 
 // An intermediate schema that includes the image search query.
-const MealDetailsWithImageQuerySchema = GenerateMealIdeaOutputSchema;
+const MealDetailsSchema = GenerateMealIdeaOutputSchema;
 
 // The final schema for the flow output, which includes the final image URL.
-const MealDetailsWithImageSchema = MealDetailsWithImageQuerySchema.omit({
-  imageSearchQuery: true,
-}).extend({
-  imageDataUri: z.string().describe('A URL for an image of the meal.'),
+const MealDetailsWithImageSchema = MealDetailsSchema.extend({
+  imageDataUri: z.string().describe('A data URI for a generated image of the meal.'),
 });
 
 export async function generateMealIdea(
@@ -69,7 +62,7 @@ const mealDetailsPrompt = ai.definePrompt({
   name: 'generateMealDetailsPrompt',
   input: {schema: GenerateMealIdeaInputSchema},
   output: {
-    schema: MealDetailsWithImageQuerySchema,
+    schema: MealDetailsSchema,
   },
   prompt: `You are an expert chef. Generate a creative and delicious meal idea based on the user's preferences.
 
@@ -78,9 +71,9 @@ Dietary Preference: {{{dietaryPreference}}}
 Flavor Fusion: {{{flavorFusion1}}} and {{{flavorFusion2}}}
 Custom Requests: {{{customRequests}}}
 
-Provide a creative title, a brief description, a list of ingredients, step-by-step cooking instructions, the estimated cooking time, nutritional facts (calories, protein, fat, carbs), and a 2-3 word search query for a photorealistic image of the meal.
+Provide a creative title, a brief description, a list of ingredients, step-by-step cooking instructions, the estimated cooking time, and nutritional facts (calories, protein, fat, carbs).
 
-Return your response in valid JSON format.
+Return your response as a valid JSON object that conforms to the output schema.
 `,
 });
 
@@ -96,17 +89,20 @@ const generateMealIdeaFlow = ai.defineFlow(
       throw new Error('Failed to generate meal details.');
     }
 
-    // Generate a relevant image URL from Unsplash using the AI-generated query.
-    const imageUrl = `https://source.unsplash.com/1280x720/?${encodeURIComponent(
-      mealDetails.imageSearchQuery
-    )}`;
+    const imageGenPrompt = `A photorealistic image of a meal titled "${mealDetails.title}". Description: ${mealDetails.description}.`;
 
-    // Note: We are not returning imageSearchQuery to the client.
-    const {imageSearchQuery, ...rest} = mealDetails;
-
+    const {media} = await ai.generate({
+      model: 'googleai/imagen-4.0-fast-generate-001',
+      prompt: imageGenPrompt,
+    });
+    const imageDataUri = media.url;
+    if (!imageDataUri) {
+      throw new Error('Failed to generate an image for the meal.');
+    }
+    
     return {
-      ...rest,
-      imageDataUri: imageUrl,
+      ...mealDetails,
+      imageDataUri,
     };
   }
 );
