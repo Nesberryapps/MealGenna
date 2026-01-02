@@ -52,6 +52,19 @@ export default function Home() {
         </div>
 
         <div className="space-y-6">
+          {quickMealImage && (
+             <div onClick={() => setIsPreferencesOpen(true)} className="cursor-pointer">
+               <ActionCard
+                title="Meal Ideas"
+                description="Get delicious meal ideas for any occasion."
+                buttonText="Get Ideas"
+                imageUrl={quickMealImage.imageUrl}
+                imageAlt={quickMealImage.description}
+                imageHint={quickMealImage.imageHint}
+              />
+            </div>
+          )}
+
           {ingredientsImage && (
             <Link href="/ingredient-scanner" passHref>
               <ActionCard
@@ -64,19 +77,6 @@ export default function Home() {
                 imageHint={ingredientsImage.imageHint}
               />
             </Link>
-          )}
-
-          {quickMealImage && (
-             <div onClick={() => setIsPreferencesOpen(true)} className="cursor-pointer">
-               <ActionCard
-                title="Meal Ideas"
-                description="Get delicious meal ideas for any occasion."
-                buttonText="Get Ideas"
-                imageUrl={quickMealImage.imageUrl}
-                imageAlt={quickMealImage.description}
-                imageHint={quickMealImage.imageHint}
-              />
-            </div>
           )}
 
           {weeklyMealPlanImage && (
