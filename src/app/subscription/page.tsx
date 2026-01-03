@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
@@ -6,12 +7,13 @@ import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle, Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ExternalLink, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Footer } from '@/components/features/Footer';
 import { Logo } from '@/components/Logo';
+import { Separator } from '@/components/ui/separator';
 
 type UserData = {
   subscriptionTier: 'free' | 'premium';
@@ -67,7 +69,7 @@ export default function SubscriptionPage() {
         <header className="py-4 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md mx-auto flex items-center justify-between">
                 <Button variant="ghost" size="icon" asChild>
-                    <Link href="/profile">
+                    <Link href="/">
                         <ArrowLeft />
                     </Link>
                 </Button>
@@ -107,42 +109,63 @@ export default function SubscriptionPage() {
               )}
             </Card>
 
-            <Card className="bg-gradient-to-br from-primary/20 to-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="text-primary" />
-                  Upgrade to Premium
-                </CardTitle>
-                <CardDescription>Unlock the full power of MealGenna for just $5.99/month.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2 text-muted-foreground">
-                    <li className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                        <span>Unlimited meal generations.</span>
-                    </li>
-                     <li className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                        <span>Access to the 7-Day Meal Planner.</span>
-                    </li>
-                     <li className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                        <span>Download recipes as PDFs.</span>
-                    </li>
-                     <li className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                        <span>Priority support.</span>
-                    </li>
-                </ul>
-              </CardContent>
-              <CardFooter>
-                 <Button className="w-full" disabled>
-                  <Star className="mr-2" />
-                   Subscribe Now
-                   {/* This button will be enabled in the next step */}
-                </Button>
-              </CardFooter>
-            </Card>
+            {!isPremium && (
+                <Card className="bg-gradient-to-br from-primary/20 to-card">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                    <Star className="text-primary" />
+                    Upgrade to Premium
+                    </CardTitle>
+                    <CardDescription>Unlock the full power of MealGenna for just $5.99/month.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <ul className="space-y-2 text-muted-foreground">
+                        <li className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                            <span>Unlimited meal generations.</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                            <span>Access to the 7-Day Meal Planner.</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                            <span>Download recipes as PDFs.</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-primary" />
+                            <span>Priority support.</span>
+                        </li>
+                    </ul>
+                </CardContent>
+                <CardFooter>
+                    <Button className="w-full">
+                    <Star className="mr-2" />
+                    Subscribe Now
+                    </Button>
+                </CardFooter>
+                </Card>
+            )}
+
+            {isPremium && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Manage Subscription</CardTitle>
+                        <CardDescription>
+                            You can manage or cancel your subscription at any time through the App Store.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full">
+                            <a href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="mr-2"/>
+                                Manage on App Store
+                            </a>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+
           </div>
         )}
       </main>

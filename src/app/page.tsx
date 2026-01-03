@@ -7,17 +7,39 @@ import { ActionCard } from '@/components/features/ActionCard';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, CreditCard } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useRouter } from 'next/navigation';
+
 
 function ProfileButton() {
     const { user, isUserLoading } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
+
+     const handleSignOut = async () => {
+        if (!auth) return;
+        try {
+        await auth.signOut();
+        router.push('/login');
+        } catch (error) {
+        console.error('Error signing out:', error);
+        }
+    };
 
     if (isUserLoading) {
         return <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />;
@@ -25,12 +47,28 @@ function ProfileButton() {
 
     if (user) {
         return (
-             <Link href="/profile" passHref>
-                <Avatar className="cursor-pointer h-10 w-10">
-                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                    <AvatarFallback>{user.displayName?.charAt(0) || <UserIcon />}</AvatarFallback>
-                </Avatar>
-            </Link>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                     <Avatar className="cursor-pointer h-10 w-10">
+                        <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                        <AvatarFallback>{user.displayName?.charAt(0) || <UserIcon />}</AvatarFallback>
+                    </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link href="/profile"><UserIcon className="mr-2" /> Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/subscription"><CreditCard className="mr-2" /> Subscription</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                       <LogOut className="mr-2" /> Sign Out
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         )
     }
 
