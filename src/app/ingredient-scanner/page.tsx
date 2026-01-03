@@ -6,13 +6,21 @@ import { useToast } from '@/hooks/use-toast';
 import { identifyIngredientsFromImage } from '@/ai/flows/identify-ingredients-from-image';
 import { generateMealIdeasFromIngredients } from '@/ai/flows/generate-meal-ideas-from-ingredients';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Camera, Loader2, Sparkles, WandSparkles } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Footer } from '@/components/features/Footer';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+
+type UserData = {
+    subscriptionTier: 'free' | 'premium';
+    trialGenerations?: number;
+    trialStartedAt?: { toDate: () => Date };
+}
 
 export default function IngredientScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -23,6 +31,8 @@ export default function IngredientScannerPage() {
   const [identifiedIngredients, setIdentifiedIngredients] = useState<string[]>([]);
   const [mealIdeas, setMealIdeas] = useState<string[]>([]);
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -66,6 +76,16 @@ export default function IngredientScannerPage() {
   const handleScan = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     
+    if (isUserLoading) return;
+    if (!user || !firestore) {
+        toast({
+            title: "Authentication Required",
+            description: "You must be signed in to scan ingredients.",
+            variant: "destructive"
+        });
+        return;
+    }
+
     setIsScanning(true);
     setIdentifiedIngredients([]);
     setMealIdeas([]);
@@ -107,10 +127,54 @@ export default function IngredientScannerPage() {
   };
   
   const handleGenerateMeals = async (ingredients: string[]) => {
+    if (!user || !firestore) return;
     setIsGenerating(true);
+
+    const userRef = doc(firestore, 'users', user.uid);
+    
     try {
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+            throw new Error("User profile not found.");
+        }
+        
+        const userData = userDoc.data() as UserData;
+        const isPremium = userData.subscriptionTier === 'premium';
+        const trialGenerations = userData.trialGenerations || 0;
+        const trialStartedAt = userData.trialStartedAt?.toDate();
+        const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
+
+        if (!isPremium && trialGenerations >= 3) {
+             toast({
+                title: "Trial Limit Reached",
+                description: "Please upgrade to a premium subscription to continue generating meal ideas.",
+                variant: "destructive",
+            });
+            setIsGenerating(false);
+            return;
+        }
+
+        if (!isPremium && trialGenerations > 0 && isTrialExpired) {
+            toast({
+                title: "Trial Period Expired",
+                description: "Your 24-hour trial period has expired. Please upgrade.",
+                variant: "destructive",
+            });
+            setIsGenerating(false);
+            return;
+        }
+
         const { mealIdeas } = await generateMealIdeasFromIngredients({ ingredients });
         setMealIdeas(mealIdeas);
+
+        if (!isPremium) {
+            const updates: any = { trialGenerations: increment(1) };
+            if (trialGenerations === 0) {
+                updates.trialStartedAt = serverTimestamp();
+            }
+            await updateDoc(userRef, updates);
+        }
+
     } catch (error) {
         console.error('Error generating meal ideas:', error);
         toast({
@@ -160,7 +224,7 @@ export default function IngredientScannerPage() {
                             </Alert>
                          </div>
                     )}
-                     {isScanning && (
+                     {isScanning && !isGenerating && (
                         <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center space-y-2">
                             <Loader2 className="h-8 w-8 animate-spin" />
                             <p>Scanning for ingredients...</p>
@@ -168,8 +232,8 @@ export default function IngredientScannerPage() {
                     )}
                 </div>
 
-                <Button onClick={handleScan} disabled={isScanning || hasCameraPermission !== true} className="w-full">
-                    {isScanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading} className="w-full">
+                    {isScanning || isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
                     Scan Ingredients
                 </Button>
 
@@ -192,8 +256,9 @@ export default function IngredientScannerPage() {
                            <Sparkles className="h-5 w-5 text-primary" /> Meal Ideas
                         </h3>
                         {isGenerating ? (
-                             <div className="flex items-center justify-center py-4">
+                             <div className="flex flex-col items-center justify-center py-4 space-y-2">
                                 <Loader2 className="h-6 w-6 animate-spin" />
+                                <p className="text-sm text-muted-foreground">Generating ideas...</p>
                              </div>
                         ) : (
                             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
