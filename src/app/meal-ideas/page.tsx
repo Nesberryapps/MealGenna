@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
-import { ArrowLeft, ChefHat, Download, Flame, RefreshCw, Scale, Star } from 'lucide-react';
+import { ArrowLeft, ChefHat, Download, Flame, RefreshCw, Scale, ShoppingCart, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,11 +19,47 @@ import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
     trialGenerations?: number;
     trialStartedAt?: { toDate: () => Date };
+}
+
+function IngredientShoppingLink({ ingredient }: { ingredient: string }) {
+    const stores = [
+        { name: "Walmart", url: "https://www.walmart.com/search?q=" },
+        { name: "Instacart", url: "https://www.instacart.com/store/search/" },
+        { name: "Amazon Fresh", url: "https://www.amazon.com/s?k=" },
+    ];
+
+    const handleStoreSelect = (storeUrl: string) => {
+        window.open(`${storeUrl}${encodeURIComponent(ingredient)}`, '_blank');
+    };
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                    <ShoppingCart className="h-4 w-4" />
+                    <span className="sr-only">Shop for {ingredient}</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                 {stores.map(store => (
+                    <DropdownMenuItem key={store.name} onClick={() => handleStoreSelect(store.url)}>
+                        Shop at {store.name}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
 }
 
 function MealIdeasContent() {
@@ -240,8 +276,15 @@ function MealIdeasContent() {
 
                     <div>
                       <h3 className="text-lg font-semibold flex items-center gap-2"><ChefHat className="h-5 w-5 text-primary" /> Ingredients</h3>
-                      <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
-                        {mealIdea.ingredients.map((item, index) => <li key={index}>{item}</li>)}
+                      <ul className="mt-2 space-y-1 text-muted-foreground">
+                        {mealIdea.ingredients.map((item, index) => (
+                           <li key={index} className="flex items-center justify-between">
+                                <span>{item}</span>
+                                {userData?.subscriptionTier === 'premium' && (
+                                    <IngredientShoppingLink ingredient={item} />
+                                )}
+                            </li>
+                        ))}
                       </ul>
                     </div>
 
@@ -304,3 +347,5 @@ export default function MealIdeasPage() {
         </Suspense>
     )
 }
+
+    
