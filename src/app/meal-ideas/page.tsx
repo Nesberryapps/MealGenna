@@ -32,7 +32,7 @@ function MealIdeasContent() {
     setError(null);
     setMealIdea(null);
     
-    if (!user) {
+    if (!user || !firestore) {
       setError("Please sign in to generate meal ideas.");
       setLoading(false);
       toast({
@@ -42,6 +42,46 @@ function MealIdeasContent() {
       });
       return;
     }
+
+    // --- Trial Logic ---
+    const userRef = doc(firestore, 'users', user.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+        setError("User profile not found. Please sign in again.");
+        setLoading(false);
+        return;
+    }
+
+    const userData = userDoc.data();
+    const isPremium = userData.subscriptionTier === 'premium';
+    const trialGenerations = userData.trialGenerations || 0;
+    const trialStartedAt = userData.trialStartedAt?.toDate();
+    const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
+
+    if (!isPremium && trialGenerations >= 3) {
+        setError("You have used all your free generations.");
+        setLoading(false);
+        toast({
+            title: "Trial Limit Reached",
+            description: "Please upgrade to a premium subscription to continue generating meal ideas.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    if (!isPremium && trialGenerations > 0 && isTrialExpired) {
+        setError("Your 24-hour trial period has expired.");
+        setLoading(false);
+        toast({
+            title: "Trial Period Expired",
+            description: "Please upgrade to a premium subscription to continue generating meal ideas.",
+            variant: "destructive",
+        });
+        return;
+    }
+    // --- End Trial Logic ---
+
 
     const params: GenerateMealIdeaInput = {
       mealType: searchParams.get('mealType') || 'Breakfast',
@@ -54,6 +94,22 @@ function MealIdeasContent() {
     try {
       const result = await generateMealIdea(params);
       setMealIdea(result);
+
+      // Increment trial usage if not premium
+      if (!isPremium) {
+          if(trialGenerations === 0) {
+            // First generation, set the start time
+            await updateDoc(userRef, {
+                trialGenerations: increment(1),
+                trialStartedAt: serverTimestamp()
+            });
+          } else {
+             await updateDoc(userRef, {
+                trialGenerations: increment(1)
+            });
+          }
+      }
+
     } catch (e) {
       setError('Failed to generate meal idea. Please try again.');
       console.error(e);
@@ -108,7 +164,7 @@ function MealIdeasContent() {
       <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
         <Card className="w-full overflow-hidden">
           {loading && renderSkeleton()}
-          {error && <p className="text-destructive p-6">{error}</p>}
+          {error && <div className="p-6 text-center text-destructive">{error}</div>}
           {mealIdea && !loading && (
             <div>
               <div className="relative h-64 w-full">
@@ -171,3 +227,5 @@ export default function MealIdeasPage() {
         </Suspense>
     )
 }
+
+    
