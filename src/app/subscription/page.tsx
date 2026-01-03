@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -139,7 +139,10 @@ export default function SubscriptionPage() {
                             <Info className="h-4 w-4" />
                             <AlertTitle>Trial Active</AlertTitle>
                             <AlertDescription>
-                                Your 24-hour free trial is active. You have <span className="font-bold">{trialTimeLeft}</span> remaining.
+                                {trialTimeLeft === 'Expired'
+                                ? 'Your 24-hour free trial has expired.'
+                                : `Your 24-hour free trial is active. You have ${trialTimeLeft} remaining.`
+                                }
                             </AlertDescription>
                         </Alert>
                     ) : (
@@ -206,7 +209,7 @@ export default function SubscriptionPage() {
                 <CardContent className="grid gap-4">
                     {isPremium && (
                         <>
-                        <Button asChild className="w-full">
+                        <Button asChild className="w-full" variant="outline">
                             <a href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="mr-2"/>
                                 Manage on App Store
