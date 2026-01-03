@@ -40,7 +40,7 @@
         },
         "trialGenerations": {
           "type": "number",
-          "description": "The number of meal generations the user has used. Used to determine if the trial has started."
+          "description": "The number of meal generations the user has used. A value greater than 0 indicates the trial has started."
         }
       },
       "required": [

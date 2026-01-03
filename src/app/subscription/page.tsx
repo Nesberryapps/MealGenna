@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -15,7 +16,6 @@ import { Footer } from '@/components/features/Footer';
 import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { formatDistanceToNow } from 'date-fns';
 
 
 type UserData = {
@@ -24,12 +24,11 @@ type UserData = {
   trialStartedAt?: { toDate: () => Date };
 };
 
-const PREMIUM_PRODUCT_ID = 'premium_monthly'; 
-
 export default function SubscriptionPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
   const [trialTimeLeft, setTrialTimeLeft] = useState<string>('');
 
   const userRef = useMemoFirebase(() => {
@@ -73,7 +72,7 @@ export default function SubscriptionPage() {
 
   const isLoading = isUserLoading || isUserDataLoading;
   const isPremium = userData?.subscriptionTier === 'premium';
-  const trialStarted = !!userData?.trialStartedAt;
+  const trialStarted = userData && (userData.trialGenerations || 0) > 0;
 
   const renderLoading = () => (
      <div className="space-y-4">
@@ -206,12 +205,20 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     {isPremium && (
+                        <>
                         <Button asChild className="w-full">
                             <a href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="mr-2"/>
                                 Manage on App Store
                             </a>
                         </Button>
+                        <Button asChild className="w-full" variant="outline">
+                             <a href="https://play.google.com/store/account/subscriptions" target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="mr-2"/>
+                                Manage on Google Play
+                            </a>
+                        </Button>
+                        </>
                     )}
                      <Button onClick={handleRestore} variant="outline" className="w-full">
                         Restore Purchases
