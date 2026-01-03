@@ -1,0 +1,43 @@
+/*
+    This file is used to load properties from the `variables.gradle` file
+    and expose them to the Android project.
+ */
+def appProjectRoot = project.projectDir
+
+// Create a map of Capacitor framework properties that can be used by other modules
+// For example, in another module you can get the path to the node_modules directory
+// by using: project.ext.has('capacitor') ? project.ext.get('capacitor').nodeModulesDir : ''
+ext.capacitor = [
+  mainDir: appProjectRoot,
+  webDir: new File(appProjectRoot, "../out"),
+  appDir: new File(appProjectRoot, "app"),
+]
+
+if (ext.has("capacitor")) {
+  // Read variables from the variables.gradle file
+  def variablesFile = new File(appProjectRoot, "variables.gradle")
+  if (variablesFile.exists()) {
+    apply from: variablesFile
+  }
+
+  // Read variables from the capacitor.config.json file
+  def capacitorConfigFile = new File(project.projectDir.parentFile, "capacitor.config.json")
+  if (!capacitorConfigFile.exists()) {
+    capacitorConfigFile = new File(project.projectDir.parentFile, "capacitor.config.ts")
+  }
+  if (capacitorConfigFile.exists()) {
+      def object = new groovy.json.JsonSlurper().parse(capacitorConfigFile)
+      def appId = ext.has('appId') ? ext.get('appId') : object.appId
+      def appName = ext.has('appName') ? ext.get('appName') : object.appName
+      def server = ext.has('server') ? ext.get('server') : object.server
+      def android = ext.has('android') ? ext.get('android') : object.android
+      ext.set("appId", appId)
+      ext.set("appName", appName)
+      ext.set("server", server)
+      ext.set("android", android)
+  }
+
+  def useLegacyBridge = ext.has('useLegacyBridge') ? ext.get('useLegacyBridge') : false;
+
+  ext.capacitor.useLegacyBridge = useLegacyBridge
+}
