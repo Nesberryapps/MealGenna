@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Footer } from '@/components/features/Footer';
 import { Logo } from '@/components/Logo';
-import { CdvPurchase } from '@capgo/capacitor-inapp-purchase';
+// import { CdvPurchase } from '@capgo/capacitor-inapp-purchase';
 import { useToast } from '@/hooks/use-toast';
 
 type UserData = {
@@ -37,64 +37,66 @@ export default function SubscriptionPage() {
 
   const { data: userData, isLoading: isUserDataLoading, refetch: refetchUser } = useDoc<UserData>(userRef);
 
-  useEffect(() => {
-    CdvPurchase.initialize().catch(err => {
-        console.error("Error initializing billing:", err);
-        toast({
-            title: "Billing Error",
-            description: "Could not connect to the app store.",
-            variant: "destructive"
-        });
-    });
-  }, [toast]);
+  // useEffect(() => {
+  //   CdvPurchase.initialize().catch(err => {
+  //       console.error("Error initializing billing:", err);
+  //       toast({
+  //           title: "Billing Error",
+  //           description: "Could not connect to the app store.",
+  //           variant: "destructive"
+  //       });
+  //   });
+  // }, [toast]);
 
 
   const handleSubscribe = async () => {
-    if (!firestore || !user) {
-        toast({ title: "Please sign in to subscribe.", variant: "destructive" });
-        return;
-    }
+    toast({ title: "Coming Soon!", description: "The ability to subscribe is not yet implemented." });
+    // if (!firestore || !user) {
+    //     toast({ title: "Please sign in to subscribe.", variant: "destructive" });
+    //     return;
+    // }
 
-    try {
-        const product = CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.APPLE_APPSTORE) 
-                        || CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.GOOGLE_PLAY);
+    // try {
+    //     const product = CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.APPLE_APPSTORE) 
+    //                     || CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.GOOGLE_PLAY);
 
-        if (!product) {
-            toast({ title: "Subscription not available", description: "The product is not available for purchase at this time.", variant: "destructive"});
-            return;
-        }
+    //     if (!product) {
+    //         toast({ title: "Subscription not available", description: "The product is not available for purchase at this time.", variant: "destructive"});
+    //         return;
+    //     }
 
-        const offer = product.getOffer();
-        if (!offer) {
-            toast({ title: "Subscription offer not available", description: "No valid offer found for this product.", variant: "destructive"});
-            return;
-        }
+    //     const offer = product.getOffer();
+    //     if (!offer) {
+    //         toast({ title: "Subscription offer not available", description: "No valid offer found for this product.", variant: "destructive"});
+    //         return;
+    //     }
 
-        const result = await offer.order();
-        if (result.isSuccess && result.purchase.isVerified) {
-            await updateDoc(doc(firestore, 'users', user.uid), {
-                subscriptionTier: 'premium'
-            });
-            toast({ title: "Success!", description: "You are now a premium subscriber." });
-            refetchUser();
-        } else {
-             toast({ title: "Purchase Failed", description: "Your purchase could not be completed.", variant: "destructive"});
-        }
+    //     const result = await offer.order();
+    //     if (result.isSuccess && result.purchase.isVerified) {
+    //         await updateDoc(doc(firestore, 'users', user.uid), {
+    //             subscriptionTier: 'premium'
+    //         });
+    //         toast({ title: "Success!", description: "You are now a premium subscriber." });
+    //         refetchUser();
+    //     } else {
+    //          toast({ title: "Purchase Failed", description: "Your purchase could not be completed.", variant: "destructive"});
+    //     }
 
-    } catch (err: any) {
-        console.error("Subscription Error:", err);
-        toast({ title: "An Error Occurred", description: err.message || 'Could not process subscription.', variant: "destructive"});
-    }
+    // } catch (err: any) {
+    //     console.error("Subscription Error:", err);
+    //     toast({ title: "An Error Occurred", description: err.message || 'Could not process subscription.', variant: "destructive"});
+    // }
   };
 
   const handleRestore = async () => {
-     try {
-        await CdvPurchase.store.restore();
-        toast({ title: 'Purchases Restored', description: 'Your previous purchases have been restored.' });
-     } catch (err) {
-        console.error("Restore Error:", err);
-        toast({ title: 'Restore Failed', description: 'Could not restore purchases. Please try again.', variant: 'destructive'});
-     }
+    toast({ title: "Coming Soon!", description: "The ability to restore purchases is not yet implemented." });
+    //  try {
+    //     await CdvPurchase.store.restore();
+    //     toast({ title: 'Purchases Restored', description: 'Your previous purchases have been restored.' });
+    //  } catch (err) {
+    //     console.error("Restore Error:", err);
+    //     toast({ title: 'Restore Failed', description: 'Could not restore purchases. Please try again.', variant: 'destructive'});
+    //  }
   }
 
 
