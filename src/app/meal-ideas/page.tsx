@@ -13,17 +13,35 @@ import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Footer } from '@/components/features/Footer';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
 
 function MealIdeasContent() {
   const searchParams = useSearchParams();
   const [mealIdea, setMealIdea] = useState<GenerateMealIdeaOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   const getMealIdea = async () => {
     setLoading(true);
     setError(null);
     setMealIdea(null);
+    
+    if (!user) {
+      setError("Please sign in to generate meal ideas.");
+      setLoading(false);
+      toast({
+        title: "Authentication Required",
+        description: "You need to be signed in to generate meal ideas.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const params: GenerateMealIdeaInput = {
       mealType: searchParams.get('mealType') || 'Breakfast',
@@ -47,7 +65,7 @@ function MealIdeasContent() {
   useEffect(() => {
     getMealIdea();
      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, user]);
   
   const renderSkeleton = () => (
     <div className="w-full">
