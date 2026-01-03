@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { identifyIngredientsFromImage } from '@/ai/flows/identify-ingredients-from-image';
 import { generateMealIdeasFromIngredients } from '@/ai/flows/generate-meal-ideas-from-ingredients';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Camera, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Sparkles, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ export default function IngredientScannerPage() {
   const [identifiedIngredients, setIdentifiedIngredients] = useState<string[]>([]);
   const [mealIdeas, setMealIdeas] = useState<string[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
@@ -83,6 +85,7 @@ export default function IngredientScannerPage() {
             description: "You must be signed in to scan ingredients.",
             variant: "destructive"
         });
+        router.push('/login');
         return;
     }
 
@@ -103,9 +106,9 @@ export default function IngredientScannerPage() {
 
     try {
       const { ingredients } = await identifyIngredientsFromImage({ imageDataUri });
-      setIdentifiedIngredients(ingredients);
       
       if (ingredients.length > 0) {
+        setIdentifiedIngredients(ingredients);
         await handleGenerateMeals(ingredients);
       } else {
         toast({
@@ -147,8 +150,9 @@ export default function IngredientScannerPage() {
         if (!isPremium && trialGenerations >= 3) {
              toast({
                 title: "Trial Limit Reached",
-                description: "Please upgrade to a premium subscription to continue generating meal ideas.",
+                description: "Please upgrade to continue generating meal ideas.",
                 variant: "destructive",
+                action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });
             setIsGenerating(false);
             return;
@@ -159,6 +163,7 @@ export default function IngredientScannerPage() {
                 title: "Trial Period Expired",
                 description: "Your 24-hour trial period has expired. Please upgrade.",
                 variant: "destructive",
+                action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });
             setIsGenerating(false);
             return;
@@ -224,7 +229,7 @@ export default function IngredientScannerPage() {
                             </Alert>
                          </div>
                     )}
-                     {isScanning && !isGenerating && (
+                     {(isScanning && !isGenerating) && (
                         <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center space-y-2">
                             <Loader2 className="h-8 w-8 animate-spin" />
                             <p>Scanning for ingredients...</p>

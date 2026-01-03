@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/features/Footer';
 import Link from 'next/link';
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
@@ -23,6 +23,7 @@ export default function ProfilePage() {
   }, [user, isUserLoading, router]);
 
   const handleSignOut = async () => {
+    if (!auth) return;
     try {
       await auth.signOut();
       router.push('/login');
@@ -43,6 +44,7 @@ export default function ProfilePage() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                 </CardContent>
@@ -79,6 +81,12 @@ export default function ProfilePage() {
             </div>
           </CardHeader>
           <CardContent className='space-y-4'>
+             <Button asChild variant="default" className="w-full">
+                 <Link href="/subscription">
+                    <Star className="mr-2"/>
+                    Manage Subscription
+                 </Link>
+            </Button>
             <Button onClick={handleSignOut} variant="destructive" className="w-full">
               <LogOut className="mr-2"/>
               Sign Out

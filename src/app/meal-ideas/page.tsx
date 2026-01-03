@@ -1,14 +1,14 @@
 'use client';
 
 import { Suspense, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { generateMealIdea, GenerateMealIdeaInput, GenerateMealIdeaOutput } from '@/ai/flows/generate-meal-idea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
-import { ArrowLeft, ChefHat, Download, Flame, RefreshCw, Scale } from 'lucide-react';
+import { ArrowLeft, ChefHat, Download, Flame, RefreshCw, Scale, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,6 +27,7 @@ type UserData = {
 
 function MealIdeasContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [mealIdea, setMealIdea] = useState<GenerateMealIdeaOutput | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,6 +109,7 @@ function MealIdeasContent() {
         description: "You need to be signed in to generate meal ideas.",
         variant: "destructive"
       });
+      router.push('/login');
       return;
     }
 
@@ -135,6 +137,7 @@ function MealIdeasContent() {
                 title: "Trial Limit Reached",
                 description: "Please upgrade to a premium subscription to continue generating meal ideas.",
                 variant: "destructive",
+                 action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });
             return;
         }
@@ -146,6 +149,7 @@ function MealIdeasContent() {
                 title: "Trial Period Expired",
                 description: "Please upgrade to a premium subscription to continue generating meal ideas.",
                 variant: "destructive",
+                action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });
             return;
         }
@@ -167,6 +171,8 @@ function MealIdeasContent() {
                 updates.trialStartedAt = serverTimestamp();
             }
             await updateDoc(userRef, updates);
+             const newDoc = await getDoc(userRef);
+             if(newDoc.exists()) setUserData(newDoc.data() as UserData);
         }
     } catch (e) {
       setError('Failed to generate meal idea. Please try again.');
@@ -268,19 +274,29 @@ function MealIdeasContent() {
                 </div>
             )}
           </div>
+          {!loading && !error && mealIdea && (
+            <div className="p-6 pt-0 space-y-4">
+              {userData?.subscriptionTier === 'premium' && (
+                  <Button onClick={handleDownload} variant="outline" className="w-full">
+                      <Download className="mr-2 h-4 w-4"/>
+                      Download PDF
+                  </Button>
+              )}
+              <Button onClick={getMealIdea} disabled={loading || isUserLoading} className="w-full">
+                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Generate Another
+              </Button>
+            </div>
+          )}
 
-          <div className="p-6 pt-0">
-             {userData?.subscriptionTier === 'premium' && mealIdea && !loading && (
-                 <Button onClick={handleDownload} variant="outline" className="w-full mb-4">
-                    <Download className="mr-2 h-4 w-4"/>
-                    Download PDF
+          {error && (
+             <div className="p-6 pt-0 space-y-4">
+                <Button onClick={() => router.push('/subscription')} className="w-full">
+                    <Star className="mr-2 h-4 w-4" />
+                    Upgrade to Premium
                 </Button>
-            )}
-             <Button onClick={getMealIdea} disabled={loading || isUserLoading} className="w-full">
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Generate Another
-            </Button>
-           </div>
+            </div>
+          )}
         </Card>
       </main>
       <Footer />
