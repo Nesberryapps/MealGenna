@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,7 +8,7 @@ import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle, ExternalLink, Star, Info } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Star, Info } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Footer } from '@/components/features/Footer';
@@ -37,6 +36,12 @@ export default function SubscriptionPage() {
   }, [firestore, user?.uid]);
 
   const { data: userData, isLoading: isUserDataLoading } = useDoc<UserData>(userRef);
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (userData?.subscriptionTier === 'free' && userData.trialStartedAt) {
@@ -201,7 +206,7 @@ export default function SubscriptionPage() {
                     <CardTitle>Manage Subscription</CardTitle>
                     <CardDescription>
                         {isPremium 
-                            ? "You can manage or cancel your subscription through your device's app store."
+                            ? "You can manage or cancel your subscription through your device's app store settings."
                             : "Restore your previous purchases if you've reinstalled the app."
                         }
                     </CardDescription>
