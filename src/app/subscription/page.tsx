@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,7 +9,7 @@ import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle, Star, Info } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Star, Info, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Footer } from '@/components/features/Footer';
@@ -43,6 +44,7 @@ export default function SubscriptionPage() {
     }
   }, [user, isUserLoading, router]);
 
+
   useEffect(() => {
     if (userData?.subscriptionTier === 'free' && userData.trialStartedAt) {
       const trialEndTime = userData.trialStartedAt.toDate().getTime() + 24 * 60 * 60 * 1000;
@@ -68,11 +70,17 @@ export default function SubscriptionPage() {
 
 
   const handleSubscribe = async () => {
-    toast({ title: "Coming Soon!", description: "The ability to subscribe is not yet implemented." });
+     toast({
+        title: "Coming Soon!",
+        description: "The payment system is not yet active. Please check back later.",
+    });
   };
 
   const handleRestore = async () => {
-    toast({ title: "Coming Soon!", description: "The ability to restore purchases is not yet implemented." });
+     toast({
+        title: "Coming Soon!",
+        description: "The payment system is not yet active. Please check back later.",
+    });
   }
 
   const isLoading = isUserLoading || isUserDataLoading;
@@ -193,8 +201,8 @@ export default function SubscriptionPage() {
                     </ul>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" onClick={handleSubscribe}>
-                        <Star className="mr-2" />
+                    <Button className="w-full" onClick={handleSubscribe} disabled={isLoading}>
+                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2" />}
                         Subscribe Now
                     </Button>
                 </CardFooter>
@@ -212,7 +220,7 @@ export default function SubscriptionPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                     <Button onClick={handleRestore} variant="outline" className="w-full">
+                     <Button onClick={handleRestore} variant="outline" className="w-full" disabled={isLoading}>
                         Restore Purchases
                     </Button>
                 </CardContent>
