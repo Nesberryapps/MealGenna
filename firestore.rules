@@ -73,7 +73,7 @@ service cloud.firestore {
                (!('name' in data) || data.name == token.name || data.name == null) &&
                data.subscriptionTier == 'free' &&
                !('trialStartedAt' in data) &&
-               !('trialGenerations' in data);
+               data.trialGenerations == 0;
     }
     
     /**
