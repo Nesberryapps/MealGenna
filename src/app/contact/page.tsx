@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,24 @@ import { Footer } from '@/components/features/Footer';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export default function ContactPage() {
+  const { toast } = useToast();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    toast({
+      title: 'Coming Soon!',
+      description: 'The contact form is not yet active. Please check back later.',
+    });
+  };
+
+
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
       <header className="py-4 px-4 sm:px-6 lg:px-8">
@@ -37,18 +54,18 @@ export default function ContactPage() {
              <p className="text-muted-foreground">
                 Have a question, feedback, or just want to say hello? Fill out the form below and we'll get back to you as soon as possible.
             </p>
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" type="text" placeholder="Your Name" />
+                    <Input id="name" type="text" placeholder="Your Name" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                  <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="Your Email Address" />
+                    <Input id="email" type="email" placeholder="Your Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                  <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="message">Message</Label>
-                    <Textarea id="message" placeholder="Your message..." />
+                    <Textarea id="message" placeholder="Your message..." value={message} onChange={(e) => setMessage(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full">Send Message</Button>
             </form>
