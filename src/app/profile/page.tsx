@@ -30,7 +30,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && localStorage.getItem('mealgenna-notifications-enabled') === 'true') {
         setNotificationsEnabled(true);
       }
     }
