@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Logo } from '@/components/Logo';
 import { Apple, Chrome } from 'lucide-react';
 import { Footer } from '@/components/features/Footer';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const { auth, firestore } = useFirebase();
@@ -30,6 +31,7 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   const handleSignIn = async (provider: GoogleAuthProvider | OAuthProvider) => {
+    if (!auth || !firestore) return;
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
@@ -47,7 +49,6 @@ export default function LoginPage() {
           photoURL: user.photoURL,
           subscriptionTier: 'free',
           trialGenerations: 0,
-          trialStartedAt: serverTimestamp(),
         });
       }
       // If user exists, we don't need to do anything, just let them sign in.
@@ -73,7 +74,9 @@ export default function LoginPage() {
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
         <div className="flex justify-center mb-8">
-            <Logo />
+            <Link href="/">
+              <Logo />
+            </Link>
         </div>
         <Card>
             <CardHeader className="text-center">
