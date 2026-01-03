@@ -207,22 +207,6 @@ export default function SubscriptionPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                    {isPremium && (
-                        <>
-                        <Button asChild className="w-full" variant="outline">
-                            <a href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="mr-2"/>
-                                Manage on App Store
-                            </a>
-                        </Button>
-                        <Button asChild className="w-full" variant="outline">
-                             <a href="https://play.google.com/store/account/subscriptions" target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="mr-2"/>
-                                Manage on Google Play
-                            </a>
-                        </Button>
-                        </>
-                    )}
                      <Button onClick={handleRestore} variant="outline" className="w-full">
                         Restore Purchases
                     </Button>
