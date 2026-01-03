@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -145,23 +146,14 @@ export default function IngredientScannerPage() {
         const isPremium = userData.subscriptionTier === 'premium';
         const trialGenerations = userData.trialGenerations || 0;
         const trialStartedAt = userData.trialStartedAt?.toDate();
+        
+        // Check if the 24-hour trial period has expired
         const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
-
-        if (!isPremium && trialGenerations >= 3) {
-             toast({
-                title: "Trial Limit Reached",
-                description: "Please upgrade to continue generating meal ideas.",
-                variant: "destructive",
-                action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
-            });
-            setIsGenerating(false);
-            return;
-        }
 
         if (!isPremium && trialGenerations > 0 && isTrialExpired) {
             toast({
                 title: "Trial Period Expired",
-                description: "Your 24-hour trial period has expired. Please upgrade.",
+                description: "Your 24-hour trial has ended. Please upgrade to continue generating meal ideas.",
                 variant: "destructive",
                 action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });
@@ -175,6 +167,7 @@ export default function IngredientScannerPage() {
         if (!isPremium) {
             const updates: any = { trialGenerations: increment(1) };
             if (trialGenerations === 0) {
+                // Start the trial on the first generation
                 updates.trialStartedAt = serverTimestamp();
             }
             await updateDoc(userRef, updates);

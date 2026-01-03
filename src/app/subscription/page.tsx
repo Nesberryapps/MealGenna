@@ -1,21 +1,22 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle, ExternalLink, Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ExternalLink, Star, Info } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 import { Footer } from '@/components/features/Footer';
 import { Logo } from '@/components/Logo';
-// import { CdvPurchase } from '@capgo/capacitor-inapp-purchase';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { formatDistanceToNow } from 'date-fns';
+
 
 type UserData = {
   subscriptionTier: 'free' | 'premium';
@@ -23,89 +24,57 @@ type UserData = {
   trialStartedAt?: { toDate: () => Date };
 };
 
-const PREMIUM_PRODUCT_ID = 'premium_monthly'; // IMPORTANT: Replace with your actual product ID
+const PREMIUM_PRODUCT_ID = 'premium_monthly'; 
 
 export default function SubscriptionPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [trialTimeLeft, setTrialTimeLeft] = useState<string>('');
 
   const userRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: userData, isLoading: isUserDataLoading, refetch: refetchUser } = useDoc<UserData>(userRef);
+  const { data: userData, isLoading: isUserDataLoading } = useDoc<UserData>(userRef);
 
-  // useEffect(() => {
-  //   CdvPurchase.initialize().catch(err => {
-  //       console.error("Error initializing billing:", err);
-  //       toast({
-  //           title: "Billing Error",
-  //           description: "Could not connect to the app store.",
-  //           variant: "destructive"
-  //       });
-  //   });
-  // }, [toast]);
+  useEffect(() => {
+    if (userData?.subscriptionTier === 'free' && userData.trialStartedAt) {
+      const trialEndTime = userData.trialStartedAt.toDate().getTime() + 24 * 60 * 60 * 1000;
+      
+      const updateTimer = () => {
+        const now = new Date().getTime();
+        const timeLeft = trialEndTime - now;
+
+        if (timeLeft <= 0) {
+          setTrialTimeLeft('Expired');
+        } else {
+          const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+          setTrialTimeLeft(`${hours}h ${minutes}m left`);
+        }
+      };
+
+      updateTimer();
+      const interval = setInterval(updateTimer, 60000); // Update every minute
+      return () => clearInterval(interval);
+    }
+  }, [userData]);
 
 
   const handleSubscribe = async () => {
     toast({ title: "Coming Soon!", description: "The ability to subscribe is not yet implemented." });
-    // if (!firestore || !user) {
-    //     toast({ title: "Please sign in to subscribe.", variant: "destructive" });
-    //     return;
-    // }
-
-    // try {
-    //     const product = CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.APPLE_APPSTORE) 
-    //                     || CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.GOOGLE_PLAY);
-
-    //     if (!product) {
-    //         toast({ title: "Subscription not available", description: "The product is not available for purchase at this time.", variant: "destructive"});
-    //         return;
-    //     }
-
-    //     const offer = product.getOffer();
-    //     if (!offer) {
-    //         toast({ title: "Subscription offer not available", description: "No valid offer found for this product.", variant: "destructive"});
-    //         return;
-    //     }
-
-    //     const result = await offer.order();
-    //     if (result.isSuccess && result.purchase.isVerified) {
-    //         await updateDoc(doc(firestore, 'users', user.uid), {
-    //             subscriptionTier: 'premium'
-    //         });
-    //         toast({ title: "Success!", description: "You are now a premium subscriber." });
-    //         refetchUser();
-    //     } else {
-    //          toast({ title: "Purchase Failed", description: "Your purchase could not be completed.", variant: "destructive"});
-    //     }
-
-    // } catch (err: any) {
-    //     console.error("Subscription Error:", err);
-    //     toast({ title: "An Error Occurred", description: err.message || 'Could not process subscription.', variant: "destructive"});
-    // }
   };
 
   const handleRestore = async () => {
     toast({ title: "Coming Soon!", description: "The ability to restore purchases is not yet implemented." });
-    //  try {
-    //     await CdvPurchase.store.restore();
-    //     toast({ title: 'Purchases Restored', description: 'Your previous purchases have been restored.' });
-    //  } catch (err) {
-    //     console.error("Restore Error:", err);
-    //     toast({ title: 'Restore Failed', description: 'Could not restore purchases. Please try again.', variant: 'destructive'});
-    //  }
   }
 
-
   const isLoading = isUserLoading || isUserDataLoading;
-  const trialGenerations = userData?.trialGenerations || 0;
-  const maxTrialGenerations = 3;
-  const progress = (trialGenerations / maxTrialGenerations) * 100;
   const isPremium = userData?.subscriptionTier === 'premium';
-  
+  const trialStarted = !!userData?.trialStartedAt;
+
   const renderLoading = () => (
      <div className="space-y-4">
         <Card>
@@ -166,13 +135,23 @@ export default function SubscriptionPage() {
               </CardHeader>
               {!isPremium && (
                 <CardContent>
-                   <div>
-                        <div className="flex justify-between items-center mb-1">
-                            <p className="text-sm text-muted-foreground">Trial Generations Used</p>
-                            <p className="text-sm font-medium">{trialGenerations} / {maxTrialGenerations}</p>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                    </div>
+                   {trialStarted ? (
+                        <Alert>
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>Trial Active</AlertTitle>
+                            <AlertDescription>
+                                Your 24-hour free trial is active. You have <span className="font-bold">{trialTimeLeft}</span> remaining.
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <Alert variant="default">
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>Start Your Trial</AlertTitle>
+                            <AlertDescription>
+                                Your 24-hour free trial will begin with your first meal generation.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                 </CardContent>
               )}
             </Card>

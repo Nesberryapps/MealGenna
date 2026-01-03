@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useRef } from 'react';
@@ -128,19 +129,9 @@ function MealIdeasContent() {
         const isPremium = currentData.subscriptionTier === 'premium';
         const trialGenerations = currentData.trialGenerations || 0;
         const trialStartedAt = currentData.trialStartedAt?.toDate();
-        const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
 
-        if (!isPremium && trialGenerations >= 3) {
-            setError("You have used all your free generations.");
-            setLoading(false);
-            toast({
-                title: "Trial Limit Reached",
-                description: "Please upgrade to a premium subscription to continue generating meal ideas.",
-                variant: "destructive",
-                 action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
-            });
-            return;
-        }
+        // Check if the 24-hour trial period has expired
+        const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
 
         if (!isPremium && trialGenerations > 0 && isTrialExpired) {
             setError("Your 24-hour trial period has expired.");
@@ -168,6 +159,7 @@ function MealIdeasContent() {
         if (!isPremium) {
             const updates: any = { trialGenerations: increment(1) };
             if (trialGenerations === 0) {
+                 // Start the trial on the first generation
                 updates.trialStartedAt = serverTimestamp();
             }
             await updateDoc(userRef, updates);

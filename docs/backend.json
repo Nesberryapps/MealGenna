@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -34,12 +35,12 @@
         },
         "trialStartedAt": {
           "type": "string",
-          "description": "The timestamp when the user's trial period began.",
+          "description": "The timestamp when the user's 24-hour trial period began.",
           "format": "date-time"
         },
         "trialGenerations": {
           "type": "number",
-          "description": "The number of meal generations the user has used during their trial."
+          "description": "The number of meal generations the user has used. Used to determine if the trial has started."
         }
       },
       "required": [
