@@ -201,7 +201,7 @@ export default function SubscriptionPage() {
                     <CardTitle>Manage Subscription</CardTitle>
                     <CardDescription>
                         {isPremium 
-                            ? "You can manage or cancel your subscription through the App Store or Google Play."
+                            ? "You can manage or cancel your subscription through your device's app store."
                             : "Restore your previous purchases if you've reinstalled the app."
                         }
                     </CardDescription>
