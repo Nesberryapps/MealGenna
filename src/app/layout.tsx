@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
+import { NotificationsManager } from '@/components/features/NotificationsManager';
 
 export const metadata: Metadata = {
   title: 'MealGenna',
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           {children}
+          <NotificationsManager />
         </FirebaseClientProvider>
         <Toaster />
       </body>
