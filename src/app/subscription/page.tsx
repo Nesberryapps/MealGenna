@@ -1,9 +1,10 @@
 
 'use client';
 
+import { useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Footer } from '@/components/features/Footer';
 import { Logo } from '@/components/Logo';
-import { Separator } from '@/components/ui/separator';
+import { CdvPurchase } from '@capgo/capacitor-inapp-purchase';
+import { useToast } from '@/hooks/use-toast';
 
 type UserData = {
   subscriptionTier: 'free' | 'premium';
@@ -21,16 +23,80 @@ type UserData = {
   trialStartedAt?: { toDate: () => Date };
 };
 
+const PREMIUM_PRODUCT_ID = 'premium_monthly'; // IMPORTANT: Replace with your actual product ID
+
 export default function SubscriptionPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const userRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: userData, isLoading: isUserDataLoading } = useDoc<UserData>(userRef);
+  const { data: userData, isLoading: isUserDataLoading, refetch: refetchUser } = useDoc<UserData>(userRef);
+
+  useEffect(() => {
+    CdvPurchase.initialize().catch(err => {
+        console.error("Error initializing billing:", err);
+        toast({
+            title: "Billing Error",
+            description: "Could not connect to the app store.",
+            variant: "destructive"
+        });
+    });
+  }, [toast]);
+
+
+  const handleSubscribe = async () => {
+    if (!firestore || !user) {
+        toast({ title: "Please sign in to subscribe.", variant: "destructive" });
+        return;
+    }
+
+    try {
+        const product = CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.APPLE_APPSTORE) 
+                        || CdvPurchase.store.get(PREMIUM_PRODUCT_ID, CdvPurchase.Platform.GOOGLE_PLAY);
+
+        if (!product) {
+            toast({ title: "Subscription not available", description: "The product is not available for purchase at this time.", variant: "destructive"});
+            return;
+        }
+
+        const offer = product.getOffer();
+        if (!offer) {
+            toast({ title: "Subscription offer not available", description: "No valid offer found for this product.", variant: "destructive"});
+            return;
+        }
+
+        const result = await offer.order();
+        if (result.isSuccess && result.purchase.isVerified) {
+            await updateDoc(doc(firestore, 'users', user.uid), {
+                subscriptionTier: 'premium'
+            });
+            toast({ title: "Success!", description: "You are now a premium subscriber." });
+            refetchUser();
+        } else {
+             toast({ title: "Purchase Failed", description: "Your purchase could not be completed.", variant: "destructive"});
+        }
+
+    } catch (err: any) {
+        console.error("Subscription Error:", err);
+        toast({ title: "An Error Occurred", description: err.message || 'Could not process subscription.', variant: "destructive"});
+    }
+  };
+
+  const handleRestore = async () => {
+     try {
+        await CdvPurchase.store.restore();
+        toast({ title: 'Purchases Restored', description: 'Your previous purchases have been restored.' });
+     } catch (err) {
+        console.error("Restore Error:", err);
+        toast({ title: 'Restore Failed', description: 'Could not restore purchases. Please try again.', variant: 'destructive'});
+     }
+  }
+
 
   const isLoading = isUserLoading || isUserDataLoading;
   const trialGenerations = userData?.trialGenerations || 0;
@@ -139,32 +205,38 @@ export default function SubscriptionPage() {
                     </ul>
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full">
-                    <Star className="mr-2" />
-                    Subscribe Now
+                    <Button className="w-full" onClick={handleSubscribe}>
+                        <Star className="mr-2" />
+                        Subscribe Now
                     </Button>
                 </CardFooter>
                 </Card>
             )}
 
-            {isPremium && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Manage Subscription</CardTitle>
-                        <CardDescription>
-                            You can manage or cancel your subscription at any time through the App Store.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Subscription</CardTitle>
+                    <CardDescription>
+                        {isPremium 
+                            ? "You can manage or cancel your subscription through the App Store or Google Play."
+                            : "Restore your previous purchases if you've reinstalled the app."
+                        }
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    {isPremium && (
                         <Button asChild className="w-full">
                             <a href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="mr-2"/>
                                 Manage on App Store
                             </a>
                         </Button>
-                    </CardContent>
-                </Card>
-            )}
+                    )}
+                     <Button onClick={handleRestore} variant="outline" className="w-full">
+                        Restore Purchases
+                    </Button>
+                </CardContent>
+            </Card>
 
           </div>
         )}
