@@ -1,5 +1,4 @@
-include ':app'
-include ':capacitor-android'
-project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
+// Githib actions can't access submodule so we need to include them as part of the project
 include ':capacitor-cordova-android-plugins'
-project(':capacitor-cordova-android-plugins').projectDir = new File('../node_modules/@capacitor/cordova-android-plugins/src/main')
+project(':capacitor-cordova-android-plugins').projectDir = new File('../node_modules/@capacitor/cordova-android-plugins/android')
+include ':app'
