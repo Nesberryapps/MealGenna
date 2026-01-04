@@ -27,8 +27,32 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
-      - name: Build iOS app
+      - name: Install CocoaPods
         run: |
           cd ios
           pod install
-          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release clean build
+
+      - name: Decode and Install Certificates
+        run: |
+          echo "${{ secrets.P12_BASE64 }}" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "${{ secrets.P12_PASSWORD }}" -A
+          security list-keychains -s build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      - name: Build iOS app
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath $PWD/build/App.xcarchive \
+            CODE_SIGN_IDENTITY=$(security find-identity -v -p codesigning build.keychain | head -n 1 | awk -F'"' '{print $2}') \
+            PROVISIONING_PROFILE_SPECIFIER=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision))
+
+      - name: Upload iOS App Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-app-archive
+          path: ios/App/build/App.xcarchive
