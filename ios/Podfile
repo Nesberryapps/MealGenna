@@ -1,13 +1,12 @@
+# DO NOT MODIFY. MANAGED BY CAPACITOR.
+# This file is used to install the native dependencies for your iOS project.
+
 platform :ios, '13.0'
 use_frameworks!
 
-# DO NOT MODIFY.
-# This target is created by Studio and must be used to ensure the correct native dependencies are installed.
 target 'App' do
-  # Comment the next line if you don't want to use dynamic frameworks
-  # Add the following to your Podfile to explicitly state which frameworks you want to include
+  # Do not modify. Capacitor will add/remove native dependencies here.
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-  pod 'PurchasesHybridCommon'
-  pod 'RevenueCat'
+  pod 'RevenueCat/Purchases-Capacitor', :path => '../../node_modules/@revenuecat/purchases-capacitor'
 end

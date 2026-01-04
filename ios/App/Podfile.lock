@@ -1,0 +1,36 @@
+PODS:
+  - Capacitor (5.7.4)
+  - CapacitorCore (5.7.4)
+  - CapacitorPurchases (4.4.1):
+    - CapacitorCore
+    - PurchasesHybridCommon
+  - CordovaPlugins (5.7.4):
+    - CapacitorCore
+  - PurchasesHybridCommon (9.4.0)
+
+DEPENDENCIES:
+  - Capacitor
+  - CapacitorPurchases
+  - CordovaPlugins
+  - IonicCapacitor (5.7.4)
+
+SPEC REPOS:
+  trunk:
+    - Capacitor
+    - CapacitorCore
+    - CapacitorPurchases
+    - CordovaPlugins
+    - IonicCapacitor
+    - PurchasesHybridCommon
+
+SPEC CHECKSUMS:
+  Capacitor: c27f54c15370d744f4347c617b998797f7d1421f
+  CapacitorCore: 7e73507c6f1a8c8821997d9e4a305e7e1f46f39e
+  CapacitorPurchases: f8e94a500b1a136fa99e904b73b53c7a9b0c034b
+  CordovaPlugins: a7575122f36cd1649033e083c9d2f0be3d65b750
+  IonicCapacitor: e2c9433604f3cb4cc693e5066a32d1667b5ac6c8
+  PurchasesHybridCommon: 9be078b5e28a554a9d7010486259021484196194
+
+PODFILE CHECKSUM: a2a316eb10f63901b5a5965b3528b86d1b22e171
+
+COCOAPODS: 1.15.2
