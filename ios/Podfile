@@ -1,15 +1,13 @@
 platform :ios, '13.0'
 use_frameworks!
 
-# workaround for cocoapods-xcode-xcfilelist plugin and capacitor
-install! 'cocoapods', :disable_input_output_paths => true
-
-def capacitor_pods
+# DO NOT MODIFY.
+# This target is created by Studio and must be used to ensure the correct native dependencies are installed.
+target 'App' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  # Add the following to your Podfile to explicitly state which frameworks you want to include
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-end
-
-target 'App' do
-  capacitor_pods
-  # Add your Pods here
+  pod 'PurchasesHybridCommon'
+  pod 'RevenueCat'
 end
