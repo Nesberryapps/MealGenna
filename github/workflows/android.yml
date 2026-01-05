@@ -50,7 +50,7 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Build Android Debug
-        run: cd android && ./gradlew assembleDebug
+        run: cd android && unset GRADLE_HOME && bash ./gradlew assembleDebug
         env:
           GRADLE_OPTS_SPACE_OK: true
         
