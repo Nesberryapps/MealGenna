@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 function ProfileButton() {
@@ -43,7 +44,7 @@ function ProfileButton() {
     };
 
     if (isUserLoading) {
-        return <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />;
+        return <Skeleton className="h-10 w-10 rounded-full" />;
     }
 
     if (user) {
@@ -85,7 +86,7 @@ export default function Home() {
   const [subGreeting, setSubGreeting] = useState("Instant Meal Ideas, Zero Hassle.");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -104,6 +105,7 @@ export default function Home() {
             description: "You need to be signed in to access the 7-Day Meal Plan.",
             variant: "destructive"
         });
+        router.push('/login'); // Redirect to login if not signed in
         return;
     }
 
@@ -178,19 +180,20 @@ export default function Home() {
               />
             </Link>
           
-
-          
-            <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick}>
-              <ActionCard
-                title="7-Day Meal Plan"
-                description="Generate a meal plan for the week, tailored to you."
-                buttonText="Plan My Week"
-                imageUrl="/meal-prep.jpg"
-                imageAlt="Several glass containers with prepped meals"
-                imageHint="meal prep"
-              />
-            </Link>
-          
+            {isUserLoading ? (
+              <Skeleton className="h-[288px] w-full rounded-xl" />
+            ) : (
+               <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick}>
+                <ActionCard
+                  title="7-Day Meal Plan"
+                  description="Generate a meal plan for the week, tailored to you."
+                  buttonText="Plan My Week"
+                  imageUrl="/meal-prep.jpg"
+                  imageAlt="Several glass containers with prepped meals"
+                  imageHint="meal prep"
+                />
+              </Link>
+            )}
         </div>
       </main>
       <MealPreferencesForm open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} />

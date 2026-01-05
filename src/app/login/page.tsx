@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useFirebase,
@@ -24,12 +24,17 @@ export default function LoginPage() {
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !isUserLoading && user) {
       router.push('/profile');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isClient]);
 
   const handleSignIn = async (provider: GoogleAuthProvider | OAuthProvider) => {
     if (!auth || !firestore) return;
@@ -67,7 +72,7 @@ export default function LoginPage() {
     handleSignIn(new OAuthProvider('apple.com'));
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || !isClient || user) {
     return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
   }
 
