@@ -8,6 +8,8 @@ ext {
     materialVersion = '1.10.0'
     coordinatorLayoutVersion = '1.2.0'
     activityVersion = '1.8.0'
+    espressoVersion = '3.5.1'
+    fragmentVersion = '1.6.2'
     androidxActivityVersion = '1.8.0'
     androidxAppCompatVersion = '1.6.1'
     androidxCoordinatorLayoutVersion = '1.2.0'
