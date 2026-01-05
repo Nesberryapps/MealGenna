@@ -1,3 +1,4 @@
+
 pluginManagement {
     repositories {
         google()
@@ -5,6 +6,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -13,5 +15,8 @@ dependencyResolutionManagement {
     }
 }
 
+rootProject.name = "android"
 include ':app'
 include ':capacitor-cordova-android-plugins'
+include ':capacitor-android'
+project(':capacitor-android').projectDir = new File('../../node_modules/@capacitor/android/capacitor')
