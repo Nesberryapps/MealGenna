@@ -1,14 +1,11 @@
-// GENERATED FILE - DO NOT EDIT
-include ":app"
-include ':capacitor-android'
-project(':capacitor-android').projectDir = new File('../../node_modules/@capacitor/android')
 
-include ':capacitor-cordova-android-plugins'
-project(':capacitor-cordova-android-plugins').projectDir = new File('capacitor-cordova-android-plugins')
-
-include ':revenuecat-purchases-capacitor'
-project(':revenuecat-purchases-capacitor').projectDir = new File('../../node_modules/@revenuecat/purchases-capacitor/android')
-
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
@@ -17,3 +14,10 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+rootProject.name = "android"
+include ':app'
+include ':capacitor-android'
+project(':capacitor-android').projectDir = new File(rootProject.projectDir, '../../node_modules/@capacitor/android')
+include ':revenuecat-purchases-capacitor'
+project(':revenuecat-purchases-capacitor').projectDir = new File(rootProject.projectDir, '../../node_modules/@revenuecat/purchases-capacitor/android')
