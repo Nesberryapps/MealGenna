@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -14,17 +15,7 @@
 	<string>studio-8280698092-68a45</string>
 	<key>STORAGE_BUCKET</key>
 	<string>studio-8280698092-68a45.appspot.com</string>
-	<key>IS_ADS_ENABLED</key>
-	<false/>
-	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
-	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
-	<key>IS_GCM_ENABLED</key>
-	<true/>
-	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:266513828882:ios:d071850125867160351ccb</string>
+	<string>1:266513828882:ios:b508f7f0e74f177b351ccb</string>
 </dict>
 </plist>
