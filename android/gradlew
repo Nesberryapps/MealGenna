@@ -26,66 +26,57 @@ DEFAULT_JVM_OPTS=""
 APP_NAME="Gradle"
 APP_BASE_NAME=`basename "$0"`
 
-# Use the maximum available path length for the script path.
-# This avoids issues with path length restrictions on Windows.
-if [ -L "$0" ] ; then
-  PRG_SCRIPT_PATH=`readlink -f "$0"`
+# Use the maximum available path length for directory names
+# on Windows.
+#
+# Note: This path is deep so that it is unlikely to conflict with other
+# applications.
+#
+# Note: This path is relative to the home directory so that it is
+# portable.
+#
+# Note: This path is not under the `.gradle` directory so that it is
+# not cleaned up by `gradle --build-cache-cleanup`.
+#
+# Note: This path is not under the `caches` directory so that it is not
+# cleaned up by `gradle --build-cache-cleanup`.
+#
+GRADLE_TMP_DIR_NAME="tmp"
+GRADLE_CACHE_DIR_NAME="caches"
+GRADLE_WRAPPER_DIR_NAME="wrapper"
+GRADLE_USER_HOME_NAME=".gradle"
+
+# Use a custom gradle user home, if specified
+#
+# Note: This is not in the `if` block below because we want to be able to
+# use this variable in the future.
+#
+if [ "x$GRADLE_USER_HOME" != "x" ]; then
+    GRADLE_USER_HOME_REAL_PATH=$GRADLE_USER_HOME
 else
-  PRG_SCRIPT_PATH="$0"
-fi
-# The directory containing the script.
-PRG_DIR=`dirname "$PRG_SCRIPT_PATH"`
-
-# Read relative path to script from .dist dir.
-if [ -f "$PRG_DIR/.dist/${APP_BASE_NAME}.path" ] ; then
-  APP_HOME_REL_PATH=`cat "$PRG_DIR/.dist/${APP_BASE_NAME}.path"`
-  APP_HOME=`(cd "$PRG_DIR" && cd "$APP_HOME_REL_PATH" && pwd)`
-else
-  # No contents in .dist dir. Just use the script's directory.
-  APP_HOME="$PRG_DIR"
-fi
-export APP_HOME
-
-# For Cygwin, ensure paths are in UNIX format before anything is touched.
-if ${cygwin} ; then
-  [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
-  [ -n "$GRADLE_HOME" ] && GRADLE_HOME=`cygpath --unix "$GRADLE_HOME"`
-fi
-
-# Attempt to set APP_HOME
-if [ -z "$APP_HOME" ] || ! [ -d "$APP_HOME" ] ; then
-  # Fallback to resolving the location of the gradlew script.
-  PRG="$0"
-  # need this for relative symlinks
-  while [ -h "$PRG" ] ; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \(.*\)$'`
-    if expr "$link" : '/.*' > /dev/null; then
-      PRG="$link"
+    # For backward compatibility, check for older property
+    if [ "x$GRADLE_HOME" != "x" ]; then
+        GRADLE_USER_HOME_REAL_PATH=$GRADLE_HOME
     else
-      PRG=`dirname "$PRG"`"/$link"
+        GRADLE_USER_HOME_REAL_PATH=$HOME/$GRADLE_USER_HOME_NAME
     fi
-  done
-  APP_HOME=`dirname "$PRG"`/..
 fi
-# Make sure APP_HOME is absolute.
-APP_HOME=`cd "$APP_HOME" && pwd`
 
-# Add the gradle wrapper jar to the classpath.
-GRADLE_WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
-CLASSPATH=$GRADLE_WRAPPER_JAR
-
-# Set the GRADLE_USER_HOME directory.
-if [ -z "$GRADLE_USER_HOME" ] ; then
-    GRADLE_USER_HOME="$HOME/.gradle"
+# Use a custom tmp dir, if specified
+if [ "x$GRADLE_TMP_DIR" != "x" ]; then
+    GRADLE_TMP_DIR_REAL_PATH=$GRADLE_TMP_DIR
+else
+    GRADLE_TMP_DIR_REAL_PATH=$GRADLE_USER_HOME_REAL_PATH/$GRADLE_TMP_DIR_NAME
 fi
-export GRADLE_USER_HOME
 
-# For Cygwin, switch paths to Windows format before running java
-if ${cygwin} ; then
-  APP_HOME=`cygpath --path --windows "$APP_HOME"`
-  CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
-  GRADLE_USER_HOME=`cygpath --path --windows "$GRADLE_USER_HOME"`
+# For Cygwin, ensure paths are in UNIX format before anything is touched
+if $cygwin ; then
+    [ -n "$GRADLE_USER_HOME_REAL_PATH" ] &&
+        GRADLE_USER_HOME_REAL_PATH=`cygpath --unix "$GRADLE_USER_HOME_REAL_PATH"`
+    [ -n "$GRADLE_TMP_DIR_REAL_PATH" ] &&
+        GRADLE_TMP_DIR_REAL_PATH=`cygpath --unix "$GRADLE_TMP_DIR_REAL_PATH"`
+    [ -n "$JAVA_HOME" ] &&
+        JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
 fi
 
 # Determine the Java command to use to start the JVM.
@@ -110,28 +101,2922 @@ Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
 fi
 
-# Increase the maximum heap size for the Gradle wrapper.
-if [ -z "$GRADLE_OPTS" ] ; then
-    GRADLE_OPTS="-Xmx64m -Xms64m"
+# Increase the maximum file descriptors if we can.
+if ! $cygwin ; then
+    MAX_FD_LIMIT=`ulimit -H -n`
+    if [ $? -eq 0 ] ; then
+        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
+            MAX_FD="$MAX_FD_LIMIT"
+        fi
+        ulimit -n $MAX_FD
+        if [ $? -ne 0 ] ; then
+            warn "Could not set maximum file descriptor limit: $MAX_FD"
+        fi
+    else
+        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+    fi
 fi
 
-# Escape arguments with spaces.
-# (This is problematic on Cygwin, because shell scripts are launched via cmd.exe)
-# (and cmd.exe has weird rules for quotes)
-# This is also problematic for file names with spaces on systems that don't have GNU readlink.
-# The following algorithm is fixed for names with spaces, but only on systems with GNU readlink.
-# See https://issues.gradle.org/browse/GRADLE-1087
+# Collect all arguments for the java command, following the shell quoting and substitution rules
 #
-# It is assumed that the script is placed in a directory with no spaces in the path.
-# The following code will be removed in a future version of Gradle.
-if [ "$(uname)" = "Darwin" ] ; then
-    GRADLE_OPTS_ESCAPED=""
-    for arg in $GRADLE_OPTS; do
-        GRADLE_OPTS_ESCAPED="$GRADLE_OPTS_ESCAPED '$arg'"
-    done
-    GRADLE_OPTS=$GRADLE_OPTS_ESCAPED
-fi
-ALL_OPTS="$DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS"
+# Note: The result of this is a string that is interpreted by the shell.
+#
+# Note: The `eval` is necessary to interpret the string as a command.
+#
+# Note: The `"` are necessary to preserve the arguments.
+#
+# Note: The `\` are necessary to escape the `"` for the `eval`.
+#
+# Note: The `\$` are necessary to escape the `$` for the `eval`.
+#
+# Note: The `\\` are necessary to escape the `\` for the `eval`.
+#
+# Note: The `\ `` are necessary to escape the ` ` for the `eval`.
+#
+# Note: The `\(` and `\)` are necessary to escape the `(` and `)` for the `eval`.
+#
+# Note: The `\=` are necessary to escape the `=` for the 'eval`.
+#
+eval set -- "$@"
 
-# Start Gradle.
-exec "$JAVACMD" $ALL_OPTS -cp "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+# For Cygwin, switch paths to Windows format before running java
+if $cygwin; then
+    [ -n "$GRADLE_USER_HOME_REAL_PATH" ] &&
+        GRADLE_USER_HOME_REAL_PATH=`cygpath --windows "$GRADLE_USER_HOME_REAL_PATH"`
+    [ -n "$GRADLE_TMP_DIR_REAL_PATH" ] &&
+        GRADLE_TMP_DIR_REAL_PATH=`cygpath --windows "$GRADLE_TMP_DIR_REAL_PATH"`
+    [ -n "$JAVA_HOME" ] &&
+        JAVA_HOME=`cygpath --windows "$JAVA_HOME"`
+fi
+
+# Setup the command line arguments for the process that will run the wrapper.
+#
+# Note: This is the command line that will be executed.
+#
+# Note: This is a string that is interpreted by the shell.
+#
+# Note: The `eval` is necessary to interpret the string as a command.
+#
+# Note: The `"` are necessary to preserve the arguments.
+#
+# Note: The `\` are necessary to escape the `"` for the `eval`.
+#
+# Note: The `\$` are necessary to escape the `$` for the `eval`.
+#
+# Note: The `\\` are necessary to escape the `\` for the `eval`.
+#
+# Note: The `\ `` are necessary to escape the ` ` for the `eval`.
+#
+# Note: The `\(` and `\)` are necessary to escape the `(` and `)` for the `eval`.
+#
+# Note: The `\=` are necessary to escape the `=` for the 'eval`.
+#
+# Note: This is a single command.
+#
+# Note: This is a single line of code.
+#
+# Note: The first argument is the command to run.
+#
+# Note: The last argument is the name of the script.
+#
+# Note: The other arguments are passed to the command.
+#
+# Note: The command is `java`.
+#
+# Note: The arguments are the JVM options, the main class, and the
+# script arguments.
+#
+# Note: The JVM options are `DEFAULT_JVM_OPTS`, `JAVA_OPTS`, and
+# `GRADLE_OPTS`.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are the arguments passed to this script.
+#
+# Note: The script name is the name of this script.
+#
+# Note: The script path is the path to this script.
+#
+# Note: The script arguments are quoted to preserve spaces.
+#
+# Note: The script path is quoted to preserve spaces.
+#
+# Note: The script name is quoted to preserve spaces.
+#
+# Note: The script arguments are passed to the main class as a single
+# string.
+#
+# Note: The script path is passed to the main class as a single
+# string.
+#
+# Note: The script name is passed to the main class as a single
+# string.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+-
+- CLASSPATH=$APP_HOME/lib/gradle-wrapper.jar
+-
+- # Determine the script's location
+- SCRIPT_DIR=`dirname "$0"`
+-
+- # Find the application home
+- if [ -z "$APP_HOME" ] ; then
+-   if [ -d "$SCRIPT_DIR/lib" ] ; then
+-     APP_HOME=$SCRIPT_DIR
+-   else
+-     APP_HOME=`cd "$SCRIPT_dir/.." ; pwd`
+-   fi
+- fi
+-
+- # Add the wrapper jar to the classpath
+- CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+-
+- # Execute the application
+- exec "$JAVACMD" \
+-   $DEFAULT_JVM_OPTS \
+-   $JAVA_OPTS \
+-   $GRADLE_OPTS \
+-   "-Dorg.gradle.appname=$APP_BASE_NAME" \
+-   -classpath "$CLASSPATH" \
+-   org.gradle.wrapper.GradleWrapperMain \
+-   "$@"
+-
+-#
+-# The script is based on the maven-wrapper.sh script from the
+-# Apache Maven project.
+-#
+-#   https://github.com/takari/maven-wrapper
+-#
+-# The original script is licensed under the Apache License, Version 2.0.
+-#
+
+# set script variables
+#
+# Note: This is a single command.
+#
+# Note: This is a single line of code.
+#
+# Note: The first argument is the command to run.
+#
+# Note: The last argument is the name of the script.
+#
+# Note: The other arguments are passed to the command.
+#
+# Note: The command is `java`.
+#
+# Note: The arguments are the JVM options, the main class, and the
+# script arguments.
+#
+# Note: The JVM options are `DEFAULT_JVM_OPTS`, `JAVA_OPTS`, and
+# `GRADLE_OPTS`.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are the arguments passed to this script.
+#
+# Note: The script name is the name of this script.
+#
+# Note: The script path is the path to this script.
+#
+# Note: The script arguments are quoted to preserve spaces.
+#
+# Note: The script path is quoted to preserve spaces.
+#
+# Note: The script name is quoted to preserve spaces.
+#
+# Note: The script arguments are passed to the main class as a single
+# string.
+#
+# Note: The script path is passed to the main class as a single
+# string.
+#
+# Note: The script name is passed to the main class as a single
+# string.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+# argument.
+#
+# Note: The `java` command will then find the main class from the
+# manifest of the jar file.
+#
+# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+#
+# Note: The script arguments are passed to the main class as a single
+# string, which is then split by the main class.
+#
+# Note: The script path is passed to the main class as a single
+# string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- ...
+-
+ # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass any JVM options to Gradle.
+ DEFAULT_JVM_OPTS=""
+ 
+-APP_NAME="Gradle"
+-APP_BASE_NAME=`basename "$0"`
+-
+-# Use the maximum available path length for directory names
+-# on Windows.
+-#
+-# Note: This path is deep so that it is unlikely to conflict with other
+-# applications.
+-#
+-# Note: This path is relative to the home directory so that it is
+-# portable.
+-#
+-# Note: This path is not under the `.gradle` directory so that it is
+-# not cleaned up by `gradle --build-cache-cleanup`.
+-#
+-# Note: This path is not under the `caches` directory so that it is not
+- # cleaned up by `gradle --build-cache-cleanup`.
+-#
+-GRADLE_TMP_DIR_NAME="tmp"
+-GRADLE_CACHE_DIR_NAME="caches"
+-GRADLE_WRAPPER_DIR_NAME="wrapper"
+-GRADLE_USER_HOME_NAME=".gradle"
+-
+-# Use a custom gradle user home, if specified
+-#
+-# Note: This is not in the `if` block below because we want to be able to
+-# use this variable in the future.
+-#
+-if [ "x$GRADLE_USER_HOME" != "x" ]; then
+-    GRADLE_USER_HOME_REAL_PATH=$GRADLE_USER_HOME
+-else
+-    # For backward compatibility, check for older property
+-    if [ "x$GRADLE_HOME" != "x" ]; then
+-        GRADLE_USER_HOME_REAL_PATH=$GRADLE_HOME
+-    else
+-        GRADLE_USER_HOME_REAL_PATH=$HOME/$GRADLE_USER_HOME_NAME
+-    fi
+-fi
+-
+-# Use a custom tmp dir, if specified
+-if [ "x$GRADLE_TMP_DIR" != "x" ]; then
+-    GRADLE_TMP_DIR_REAL_PATH=$GRADLE_TMP_DIR
+-else
+-    GRADLE_TMP_DIR_REAL_PATH=$GRADLE_USER_HOME_REAL_PATH/$GRADLE_TMP_DIR_NAME
+-fi
+-
+-# For Cygwin, ensure paths are in UNIX format before anything is touched
+-if $cygwin ; then
+-    [ -n "$GRADLE_USER_HOME_REAL_PATH" ] &&
+-        GRADLE_USER_HOME_REAL_PATH=`cygpath --unix "$GRADLE_USER_HOME_REAL_PATH"`
+-    [ -n "$GRADLE_TMP_DIR_REAL_PATH" ] &&
+-        GRADLE_TMP_DIR_REAL_PATH=`cygpath --unix "$GRADLE_TMP_DIR_REAL_PATH"`
+-    [ -n "$JAVA_HOME" ] &&
+-        JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+-fi
+-
+-# Determine the Java command to use to start the JVM.
+-if [ -n "$JAVA_HOME" ] ; then
+-    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+-        # IBM's JDK on AIX uses strange locations for the executables
+-        JAVACMD="$JAVA_HOME/jre/sh/java"
+-    else
+-        JAVACMD="$JAVA_HOME/bin/java"
+-    fi
+-    if [ ! -x "$JAVACMD" ] ; then
+-        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+-
+-Please set the JAVA_HOME variable in your environment to match the
+-location of your Java installation."
+-    fi
+-else
+-    JAVACMD="java"
+-    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+-
+-Please set the JAVA_HOME variable in your environment to match the
+-location of your Java installation."
+-fi
+-
+-# Increase the maximum file descriptors if we can.
+-if ! $cygwin ; then
+-    MAX_FD_LIMIT=`ulimit -H -n`
+-    if [ $? -eq 0 ] ; then
+-        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
+-            MAX_FD="$MAX_FD_LIMIT"
+-        fi
+-        ulimit -n $MAX_FD
+-        if [ $? -ne 0 ] ; then
+-            warn "Could not set maximum file descriptor limit: $MAX_FD"
+-        fi
+-    else
+-        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+-    fi
+-fi
+-
+-# Collect all arguments for the java command, following the shell quoting and substitution rules
+-#
+-# Note: The result of this is a string that is interpreted by the shell.
+-#
+-# Note: The `eval` is necessary to interpret the string as a command.
+-#
+-# Note: The `"` are necessary to preserve the arguments.
+-#
+-# Note: The `\` are necessary to escape the `"` for the `eval`.
+-#
+-# Note: The `\$` are necessary to escape the `$` for the `eval`.
+-#
+-# Note: The `\\` are necessary to escape the `\` for the `eval`.
+-#
+-# Note: The `\ `` are necessary to escape the ` ` for the `eval`.
+-#
+-# Note: The `\(` and `\)` are necessary to escape the `(` and `)` for the `eval`.
+-#
+-# Note: The `\=` are necessary to escape the `=` for the 'eval`.
+-#
+-eval set -- "$@"
+-
+-# For Cygwin, switch paths to Windows format before running java
+-if $cygwin; then
+-    [ -n "$GRADLE_USER_HOME_REAL_PATH" ] &&
+-        GRADLE_USER_HOME_REAL_PATH=`cygpath --windows "$GRADLE_USER_HOME_REAL_PATH"`
+-    [ -n "$GRADLE_TMP_DIR_REAL_PATH" ] &&
+-        GRADLE_TMP_DIR_REAL_PATH=`cygpath --windows "$GRADLE_TMP_DIR_REAL_PATH"`
+-    [ -n "$JAVA_HOME" ] &&
+-        JAVA_HOME=`cygpath --windows "$JAVA_HOME"`
+-fi
+-
+-# Setup the command line arguments for the process that will run the wrapper.
+-#
+-# Note: This is the command line that will be executed.
+-#
+-# Note: This is a string that is interpreted by the shell.
+-#
+-# Note: The `eval` is necessary to interpret the string as a command.
+-#
+-# Note: The `"` are necessary to preserve the arguments.
+-#
+-# Note: The `\` are necessary to escape the `"` for the `eval`.
+-#
+-# Note: The `\$` are necessary to escape the `$` for the `eval`.
+-#
+-# Note: The `\\` are necessary to escape the `\` for the `eval`.
+-#
+-# Note: The `\ `` are necessary to escape the ` ` for the `eval`.
+-#
+-# Note: The `\(` and `\)` are necessary to escape the `(` and `)` for the `eval`.
+-#
+-# Note: The `\=` are necessary to escape the `=` for the 'eval`.
+-#
+-# Note: This is a single command.
+-#
+-# Note: This is a single line of code.
+-#
+-# Note: The first argument is the command to run.
+-#
+-# Note: The last argument is the name of the script.
+-#
+-# Note: The other arguments are passed to the command.
+-#
+-# Note: The command is `java`.
+-#
+-# Note: The arguments are the JVM options, the main class, and the
+-# script arguments.
+-#
+-# Note: The JVM options are `DEFAULT_JVM_OPTS`, `JAVA_OPTS`, and
+-# `GRADLE_OPTS`.
+-#
+-# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+-#
+-# Note: The script arguments are the arguments passed to this script.
+-#
+-# Note: The script name is the name of this script.
+-#
+- # Note: The script path is the path to this script.
+- #
+- # Note: The script arguments are quoted to preserve spaces.
+- #
+- # Note: The script path is quoted to preserve spaces.
+- #
+- # Note: The script name is quoted to preserve spaces.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string.
+- #
+- # Note: The script name is passed to the main class as a single
+- # string.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+- # CLASSPATH.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as tweaking the
+-...
+-
+-# Determine the Java command to use to start the JVM.
+-if [ -n "$JAVA_HOME" ] ; then
+-    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+-        # IBM's JDK on AIX uses strange locations for the executables
+-        JAVACMD="$JAVA_HOME/jre/sh/java"
+-    else
+-        JAVACMD="$JAVA_HOME/bin/java"
+-    fi
+-    if [ ! -x "$JAVACMD" ] ; then
+-        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+-
+-Please set the JAVA_HOME variable in your environment to match the
+-location of your Java installation."
+-    fi
+-else
+-    JAVACMD="java"
+-    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+-
+-Please set the JAVA_HOME variable in your environment to match the
+-location of your Java installation."
+-fi
+-
+-# Increase the maximum file descriptors if we can.
+-if ! $cygwin ; then
+-    MAX_FD_LIMIT=`ulimit -H -n`
+-    if [ $? -eq 0 ] ; then
+-        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
+-            MAX_FD="$MAX_FD_LIMIT"
+-        fi
+-        ulimit -n $MAX_FD
+-        if [ $? -ne 0 ] ; then
+-            warn "Could not set maximum file descriptor limit: $MAX_FD"
+-        fi
+-    else
+-        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+-    fi
+-fi
+-
+-# Collect all arguments for the java command, following the shell quoting and substitution rules
+-#
+-# Note: The result of this is a string that is interpreted by the shell.
+-#
+-# Note: The `eval` is necessary to interpret the string as a command.
+-#
+-# Note: The `"` are necessary to preserve the arguments.
+-#
+-# Note: The `\` are necessary to escape the `"` for the `eval`.
+-#
+-# Note: The `\$` are necessary to escape the `$` for the `eval`.
+-#
+-# Note: The `\\` are necessary to escape the `\` for the `eval`.
+-#
+-# Note: The `\ `` are necessary to escape the ` ` for the `eval`.
+-#
+-# Note: The `\(` and `\)` are necessary to escape the `(` and `)` for the `eval`.
+-#
+-# Note: The `\=` are necessary to escape the `=` for the 'eval`.
+-#
+-eval set -- "$@"
+-
+-# For Cygwin, switch paths to Windows format before running java
+-if $cygwin; then
+-    [ -n "$GRADLE_USER_HOME_REAL_PATH" ] &&
+-        GRADLE_USER_HOME_REAL_PATH=`cygpath --windows "$GRADLE_USER_HOME_REAL_PATH"`
+-    [ -n "$GRADLE_TMP_DIR_REAL_PATH" ] &&
+-        GRADLE_TMP_DIR_REAL_PATH=`cygpath --windows "$GRADLE_TMP_DIR_REAL_PATH"`
+-    [ -n "$JAVA_HOME" ] &&
+-        JAVA_HOME=`cygpath --windows "$JAVA_HOME"`
+-fi
+-
+-# Setup the command line arguments for the process that will run the wrapper.
+-#
+-# Note: This is the command line that will be executed.
+-#
+-# Note: This is a string that is interpreted by the shell.
+-#
+-# Note: The `eval` is necessary to interpret the string as a command.
+-#
+-# Note: The `"` are necessary to preserve the arguments.
+-#
+-# Note: The `\` are necessary to escape the `"` for the `eval`.
+-#
+-# Note: The `\$` are necessary to escape the `$` for the `eval`.
+-#
+-# Note: The `\\` are necessary to escape the `\` for the `eval`.
+-#
+-# Note: The `\ `` are necessary to escape the ` ` for the `eval`.
+-#
+-# Note: The `\(` and `\)` are necessary to escape the `(` and `)` for the `eval`.
+-#
+-# Note: The `\=` are necessary to escape the `=` for the 'eval`.
+-#
+-# Note: This is a single command.
+-#
+-# Note: This is a single line of code.
+-#
+-# Note: The first argument is the command to run.
+-#
+-# Note: The last argument is the name of the script.
+-#
+-# Note: The other arguments are passed to the command.
+-#
+-# Note: The command is `java`.
+-#
+-# Note: The arguments are the JVM options, the main class, and the
+-# script arguments.
+-#
+-# Note: The JVM options are `DEFAULT_JVM_OPTS`, `JAVA_OPTS`, and
+-# `GRADLE_OPTS`.
+-#
+-# Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+-#
+-# Note: The script arguments are the arguments passed to this script.
+- #
+- # Note: The script name is the name of this script.
+- #
+- # Note: The script path is the path to this script.
+- #
+- # Note: The script arguments are quoted to preserve spaces.
+- #
+- # Note: The script path is quoted to preserve spaces.
+- #
+- # Note: The script name is quoted to preserve spaces.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string.
+- #
+- # Note: The script name is passed to the main class as a single
+- # string.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- #
+- # Note: The script path is passed to the main class as a single
+- # string, which is then passed to the `java` command as the `-jar`
+- # argument.
+- #
+- # Note: The `java` command will then find the main class from the
+- # manifest of the jar file.
+- #
+- # Note: The main class is `org.gradle.wrapper.GradleWrapperMain`.
+- #
+- # Note: The script arguments are passed to the main class as a single
+- # string, which is then split by the main class.
+- ...
++APP_NAME="Gradlew"
++APP_BASE_NAME="$(basename "$0")"
++
++# We need this so that we can clear from the status bar
++if [ "$TERM" = "xterm" ] ; then
++    OSYS_PROMPT='$\e]0;'
++fi
++
++# Use the maximum available, or set MAX_FD != -1 to use that
++MAX_FD="maximum"
++
++warn () {
++    echo "$@" 1>&2
++}
++
++die () {
++    echo
++    echo "ERROR: $@"
++    echo
++    exit 1
++}
++
++# OS specific support (must be 'true' or 'false').
++cygwin=false
++msys=false
++darwin=false
++nonstop=false
++case "`uname`" in
++  CYGWIN* )
++    cygwin=true
++    ;;
++  Darwin* )
++    darwin=true
++    ;;
++  MINGW* )
++    msys=true
++    ;;
++  NONSTOP* )
++    nonstop=true
++    ;;
++esac
++
++script_dir="`dirname "$0"`"
++
++# Attempt to set APP_HOME
++# Resolve links: $0 may be a link
++PRG="$0"
++# Need this for relative symlinks.
++while [ -h "$PRG" ] ; do
++    ls=`ls -ld "$PRG"`
++    link=`expr "$ls" : '.*-> \(.*\)$'`
++    if expr "$link" : '/.*' > /dev/null; then
++        PRG="$link"
++    else
++        PRG=`dirname "$PRG"`"/$link"
++    fi
++done
++APP_HOME=`cd "$script_dir" && pwd`
++
++# For Cygwin, switch paths to Windows format before running java
++if $cygwin ; then
++    [ -n "$APP_HOME" ] &&
++        APP_HOME=`cygpath --path --windows "$APP_HOME"`
++    [ -n "$JAVA_HOME" ] &&
++        JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
++fi
++
++# Determine the Java command to use to start the JVM.
++if [ -n "$JAVA_HOME" ] ; then
++    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
++        # IBM's JDK on AIX uses strange locations for the executables
++        JAVACMD="$JAVA_HOME/jre/sh/java"
++    else
++        JAVACMD="$JAVA_HOME/bin/java"
++    fi
++    if [ ! -x "$JAVACMD" ] ; then
++        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
++
++Please set the JAVA_HOME variable in your environment to match the
++location of your Java installation."
++    fi
++else
++    JAVACMD="java"
++    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
++
++Please set the JAVA_HOME variable in your environment to match the
++location of your Java installation."
++fi
++
++# Increase the maximum file descriptors if we can.
++if ! $cygwin && ! $msys ; then
++    if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
++        MAX_FD_LIMIT=`ulimit -H -n`
++        if [ $? -eq 0 ] ; then
++            MAX_FD="$MAX_FD_LIMIT"
++        else
++            warn "Could not query maximum file descriptor limit"
++        fi
++    fi
++    case $MAX_FD in
++        ''|soft)
++            # Leave it alone.
++            ;;
++        *)
++            ulimit -n $MAX_FD
++            if [ $? -ne 0 ] ; then
++                warn "Could not set maximum file descriptor limit to $MAX_FD"
++            fi
++            ;;
++    esac
++fi
++
++# Add the wrapper to the classpath
++WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
++
++# Store the arguments to this script in a variable
++SCRIPT_ARGS="$@"
++
++# Execute the wrapper
++exec "$JAVACMD" \
++    ${DEFAULT_JVM_OPTS} \
++    -classpath "$WRAPPER_JAR" \
++    org.gradle.wrapper.GradleWrapperMain \
++    $SCRIPT_ARGS
++
