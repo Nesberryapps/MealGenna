@@ -17,11 +17,11 @@
 # limitations under the License.
 #
 
-# #############################################################################
+# ##########################################################################
 #
 #  Gradle startup script for UN*X
 #
-# #############################################################################
+# ##########################################################################
 
 # Attempt to set APP_HOME
 # Resolve links: $0 may be a link
@@ -44,136 +44,206 @@ cd "$SAVED" >/dev/null
 APP_NAME="Gradle"
 APP_BASE_NAME=`basename "$0"`
 
-# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass any JVM options to this script.
 DEFAULT_JVM_OPTS=""
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD="maximum"
 
-# OS specific support.
+# For Darwin, add options to specify how the application appears in the dock
+if [ "`uname`" = "Darwin" ]; then
+    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
+fi
+
+# OS specific support.  $var _must_ be set to either true or false.
 cygwin=false
+msys=false
 darwin=false
-mingw=false
+nonstop=false
 case "`uname`" in
-  CYGWIN*)
+  CYGWIN* )
     cygwin=true
     ;;
-  Darwin*)
+  Darwin* )
     darwin=true
     ;;
-  MINGW*)
-    mingw=true
+  MINGW* )
+    msys=true
+    ;;
+  NONSTOP* )
+    nonstop=true
     ;;
 esac
 
-# For Cygwin, ensure paths are in UNIX format before anything is touched.
-if $cygwin ; then
-  [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+# Attempt to find JAVA_HOME
+if [ -z "$JAVA_HOME" ] ; then
+    # Some systems exporting JAVA_HOME might not have been set up correctly
+    if [ -d "/usr/java/default" ] ; then
+        JAVA_HOME=/usr/java/default
+    elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ] ; then
+        JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    elif [ -d "/usr/lib/jvm/java-8-openjdk-amd64" ] ; then
+        JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    elif [ -d "/usr/lib/jvm/java-7-openjdk-amd64" ] ; then
+        JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+    elif [ -d "/usr/lib/jvm/java-6-openjdk-amd64" ] ; then
+        JAVA_HOME=/usr/lib/jvm/java-6-openjdk-amd64
+    elif [ -d "/usr/lib/jvm/java-1.8.0" ] ; then
+        JAVA_HOME=/usr/lib/jvm/java-1.8.0
+    elif [ -d "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home" ] ; then
+        JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+    fi
 fi
 
-# Attempt to find java
-if [ -n "$JAVA_HOME" ] ; then
-    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
-        # IBM's JDK on AIX uses strange locations for the executables
-        JAVACMD="$JAVA_HOME/jre/sh/java"
-    else
-        JAVACMD="$JAVA_HOME/bin/java"
-    fi
-    if [ ! -x "$JAVACMD" ] ; then
-        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
-
-Please set the JAVA_HOME variable in your environment to match the
-location of your Java installation."
+if [ -z "$JAVA_HOME" ] ; then
+    # Fallback to searching for java in the path
+    JAVA_EXEC=`which java 2>/dev/null`
+    if [ -z "$JAVA_EXEC" ] ; then
+        echo "We couldn't find a working Java instance. Please set the JAVA_HOME environment variable."
+        exit 1
     fi
 else
-    JAVACMD="java"
-    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
-
-Please set the JAVA_HOME variable in your environment to match the
-location of your Java installation."
+    JAVA_EXEC="$JAVA_HOME/bin/java"
 fi
 
-# Increase the maximum number of open files
-if ! $cygwin ; then
-    if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
-        # Use the maximum available, or set MAX_FD != -1 to use that value.
-        MAX_FD="`ulimit -H -n`"
-    fi
-    if [ "$MAX_FD" != "unlimited" ] ; then
-        ulimit -n "$MAX_FD"
+if [ ! -x "$JAVA_EXEC" ] ; then
+  echo "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH." 1>&2
+  echo "" 1>&2
+  echo "Please set the JAVA_HOME variable in your environment to match the" 1>&2
+  echo "location of your Java installation." 1>&2
+  exit 1
+fi
+
+# Alter the app base name if this is a symlink
+if [ "$APP_BASE_NAME" != "gradle" ] ; then
+    # Add a warning (once) that this script is deprecated
+    if [ -z "$GRADLE_SYMLINK_MESSAGE" ] ; then
+        echo "The '$APP_BASE_NAME' script is deprecated and will be removed in a future version of Gradle."
+        echo "Please use the 'gradle' script instead."
+        export GRADLE_SYMLINK_MESSAGE='true'
     fi
 fi
+
+# Add the '-XX:MaxPermSize' argument for Java versions < 8
+if [ -z "$GRADLE_OPTS" ] ; then
+    # Extract the major and minor version numbers from the 'java -version' command
+    # e.g. '1.8' from 'java version "1.8.0_91"'
+    JAVA_VERSION=`"$JAVA_EXEC" -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d . -f 1-2`
+    if [ "$JAVA_VERSION" != "1.8" ] && [ "$JAVA_VERSION" != "1.9" ] && [ "$JAVA_VERSION" != "9" ] && [ "$JAVA_VERSION" != "10" ] && [ "$JAVA_VERSION" != "11" ] ; then
+        # For Java < 8, add the '-XX:MaxPermSize' argument
+        # For Java 8, this argument is ignored
+        # For Java > 8, this argument is not recognized
+        if `echo "$JAVA_VERSION" | grep -q "1\."[1-7]`; then
+            GRADLE_OPTS='-XX:MaxPermSize=256m'
+        fi
+    fi
+fi
+
+# Set the GRADLE_HOME
+GRADLE_HOME="$APP_HOME/gradle"
+
+# Read the wrapper properties
+WRAPPER_PROPS="$APP_HOME/gradle/wrapper/gradle-wrapper.properties"
+if [ -f "$WRAPPER_PROPS" ]; then
+    while IFS='=' read -r key value
+    do
+        case $key in
+            distributionUrl)
+                distributionUrl=$value
+                ;;
+        esac
+    done < "$WRAPPER_PROPS"
+fi
+
+# Construct the JAR file name
+if [ -n "$distributionUrl" ]; then
+    # Extract the file name from the URL
+    jarName=`basename "$distributionUrl"`
+    # Construct the JAR file path
+    GRADLE_WRAPPER_JAR="$APP_HOME/gradle/wrapper/$jarName"
+else
+    # Fallback to a default
+    GRADLE_WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+fi
+
+# No me!
+if [ "$APP_BASE_NAME" = "gradle" ] && [ -f "$GRADLE_WRAPPER_JAR" ]; then
+    # This script is the wrapper
+    # The real gradle script is in the distribution
+    # Let's use it
+    GRADLE_MAIN_CLASS=org.gradle.wrapper.GradleWrapperMain
+else
+    # This is a distribution
+    GRADLE_MAIN_CLASS=org\
+.gradle.launcher.GradleMain
+fi
+
+# Collect all arguments for the java command, following recommended practice
+if [ -n "$JAVA_OPTS" ]; then
+    echo "Warning: JAVA_OPTS is not a built-in JVM flag. If you are using it to pass arguments to the JVM, please use GRADLE_OPTS instead."
+fi
+
+# Add GRADLE_OPTS to the beginning of the arguments list
+GRADLE_ARGS="$GRADLE_OPTS"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin ; then
-    APP_HOME=`cygpath --path --windows "$APP_HOME"`
-    CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
-fi
-
-# Split up the JVM options only if spaces are available.
-# Otherwise treat them as a single option.
-if echo "$DEFAULT_JVM_OPTS" | grep " " > /dev/null ; then
-    # With spaces, IFS is necessary to force word-splitting.
-    IFS=" "
-    eval "set -- $DEFAULT_JVM_OPTS"
-    DEFAULT_JVM_OPTS=("$@")
-    IFS=
-else
-    # No spaces, so we should stay with a single element.
-    DEFAULT_JVM_OPTS=("$DEFAULT_JVM_OPTS")
-fi
-
-# Combine all JVM options
-# Gradle bug? We need to quote the parameters, see https://github.com/gradle/gradle/issues/21913
-ALL_JVM_OPTS=()
-for opt in "${DEFAULT_JVM_OPTS[@]}"; do
-    if [ -n "$opt" ]; then
-        ALL_JVM_OPTS+=("$opt")
-    fi
-done
-if echo "$JAVA_OPTS" | grep " " > /dev/null ; then
-    IFS=" "
-    eval "set -- $JAVA_OPTS"
-    JAVA_OPTS_ARRAY=("$@")
-    IFS=
-    for opt in "${JAVA_OPTS_ARRAY[@]}"; do
-        if [ -n "$opt" ]; then
-            ALL_JVM_OPTS+=("$opt")
+    APP_HOME=`cygpath --path --mixed "$APP_HOME"`
+    CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
+    JAVACMD="$JAVA_EXEC"
+    # We build the pattern for arguments to be converted to Windows paths
+    PATTERN="^-D|^--|^s*$"
+    for arg do
+        if [[ "$arg" =~ $PATTERN ]]; then
+            GRADLE_ARGS="$GRADLE_ARGS \"`cygpath --path --mixed "$arg"`\""
+        else
+            GRADLE_ARGS="$GRADLE_ARGS \"$arg\""
         fi
     done
 else
-    if [ -n "$JAVA_OPTS" ]; then
-        ALL_JVM_OPTS+=("$JAVA_OPTS")
-    fi
-fi
-if echo "$GRADLE_OPTS" | grep " " > /dev/null ; then
-    IFS=" "
-    eval "set -- $GRADLE_OPTS"
-    GRADLE_OPTS_ARRAY=("$@")
-    IFS=
-    for opt in "${GRADLE_OPTS_ARRAY[@]}"; do
-        if [ -n "$opt" ]; then
-            ALL_JVM_OPTS+=("$opt")
-        fi
+    JAVACMD="$JAVA_EXEC"
+    for arg do
+        GRADLE_ARGS="$GRADLE_ARGS \"$arg\""
     done
-else
-    if [ -n "$GRADLE_OPTS" ]; then
-        ALL_JVM_OPTS+=("$GRADLE_OPTS")
-    fi
-fi
-# When using Java 9 or later, some JVM options are no longer supported and will issue a warning.
-# We can suppress these warnings by adding "--add-opens" settings.
-# The options here are those used by Gradle 7.x and 8.x.
-JAVA_VERSION=$("$JAVACMD" -version 2>&1 | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1)
-if [ "$JAVA_VERSION" -ge 9 ]; then
-  ALL_JVM_OPTS+=(
-    "--add-opens=java.base/java.lang=ALL-UNNAMED"
-    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
-    "--add-opens=java.base/java.util=ALL-UNNAMED"
-    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
-    "--add-opens=java.prefs/java.util.prefs=ALL-UNNAMED"
-    "--add-opens=java.base/java.net=ALL-UNNAMED"
-  )
 fi
 
-exec "$JAVACMD" "${ALL_JVM_OPTS[@]}" -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
+# Determine the JAR to run
+if [ -f "$GRADLE_WRAPPER_JAR" ]; then
+    # Use the wrapper JAR
+    CLASSPATH="$GRADLE_WRAPPER_JAR"
+else
+    # Use the distribution JARs
+    if [ -z "$GRADLE_HOME" ]; then
+        echo "Error: GRADLE_HOME is not set."
+        exit 1
+    fi
+    CLASSPATH="$GRADLE_HOME/lib/*.jar"
+fi
+
+# Split up the JVM options only if spaces are available
+if [ -z "$JAVA_OPTS" ] ; then
+    JAVA_OPTS=
+fi
+if [ -z "$DEFAULT_JVM_OPTS" ] ; then
+    DEFAULT_JVM_OPTS=
+fi
+
+# Add the GRADLE_OPTS to the list of arguments
+if [ -n "$GRADLE_OPTS" ] ; then
+    # Add quotes around each argument
+    GRADLE_OPTS=`echo "$GRADLE_OPTS" | sed -e 's/ \+/\" \"/g' -e 's/^/\"/' -e 's/$/\"/'`
+    # Escape the quotes for the eval
+    GRADLE_OPTS=`echo "$GRADLE_OPTS" | sed 's/\"/\\\"/g'`
+fi
+
+# Set the working directory
+if [ -z "$APP_HOME" ]; then
+    echo "Error: APP_HOME is not set."
+ar
+    exit 1
+fi
+cd "$APP_HOME"
+
+# Execute Gradle
+eval exec \"$JAVACMD\" $DEFAULT_JVM_OPTS $JAVA_OPTS "$GRADLE_OPTS" -classpath \"$CLASSPATH\" $GRADLE_MAIN_CLASS "$@"
+
