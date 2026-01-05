@@ -1,5 +1,5 @@
 include ':app'
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File(settingsDir, '../node_modules/@capacitor/android/capacitor')
-include ':@revenuecat_purchases-capacitor'
-project(':@revenuecat_purchases-capacitor').projectDir = new File(settingsDir, '../node_modules/@revenuecat/purchases-capacitor/android')
+include ':@revenuecat-purchases-capacitor'
+project(':@revenuecat-purchases-capacitor').projectDir = new File(settingsDir, '../node_modules/@revenuecat/purchases-capacitor/android')
