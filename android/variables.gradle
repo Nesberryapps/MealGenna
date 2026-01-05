@@ -4,6 +4,10 @@ ext {
     targetSdkVersion = 34
     appcompatVersion = '1.6.1'
     appCompatVersion = '1.6.1'
+    coreVersion = '1.12.0'
+    materialVersion = '1.10.0'
+    coordinatorLayoutVersion = '1.2.0'
+    activityVersion = '1.8.0'
     androidxActivityVersion = '1.8.0'
     androidxAppCompatVersion = '1.6.1'
     androidxCoordinatorLayoutVersion = '1.2.0'
