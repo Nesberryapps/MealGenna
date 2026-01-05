@@ -52,7 +52,7 @@ jobs:
           KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.filePath }}
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-app-release
           path: android/app/build/outputs/apk/release/app-release.apk

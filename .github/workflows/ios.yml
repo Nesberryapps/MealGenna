@@ -53,7 +53,7 @@ jobs:
             PROVISIONING_PROFILE_SPECIFIER=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision))
 
       - name: Upload iOS App Archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-app-archive
           path: ios/App/build/App.xcarchive
