@@ -1,0 +1,59 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    // Overriding compileOptions for all subprojects
+    project.ext {
+        minSdkVersion = 22
+        compileSdkVersion = 34
+        targetSdkVersion = 34
+        androidxActivityVersion = '1.8.2'
+        androidxAppCompatVersion = '1.6.1'
+        androidxCoordinatorLayoutVersion = '1.2.0'
+        androidxCoreVersion = '1.12.0'
+        androidxFragmentVersion = '1.6.2'
+        junitVersion = '4.13.2'
+        androidxJunitVersion = '1.1.5'
+        androidxEspressoCoreVersion = '3.5.1'
+        cordovaAndroidVersion = '10.1.1'
+    }
+
+    // Set compile options for all Java and Kotlin projects
+    if (project.hasProperty('android')) {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs.addAll([
+            '-Xmx2048m',
+            '-Xms512m',
+        ])
+    }
+}
+
+buildscript {
+    ext {
+        // ... (existing ext content)
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.1'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
