@@ -1,9 +1,8 @@
-
 {
   "project_info": {
     "project_number": "266513828882",
     "project_id": "studio-8280698092-68a45",
-    "storage_bucket": "studio-8280698092-68a45.appspot.com"
+    "storage_bucket": "studio-8280698092-68a45.firebasestorage.app"
   },
   "client": [
     {
@@ -21,7 +20,7 @@
       ],
       "api_key": [
         {
-          "current_key": "${GOOGLE_SERVICES_API_KEY}"
+          "current_key": "AIzaSyCqEfiDgKvk6XtIH87krXvHSktMwP1oMOM"
         }
       ],
       "services": {
