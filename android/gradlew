@@ -16,66 +16,79 @@
 # limitations under the License.
 #
 
-#*****************************************************************************
 #
-#   Gradle start up script for UN*X
+# @author...
 #
-#*****************************************************************************
 
-# Attempt to set APP_HOME
-# Resolve links: $0 may be a link
-PRG="$0"
-# Need this for relative symlinks.
-while [ -h "$PRG" ] ; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \(.*\)$'`
-    if expr "$link" : '/.*' > /dev/null; then
-        PRG="$link"
-    else
-        PRG=`dirname "$PRG"`"/$link"
-    fi
-done
-
-SAVED="`pwd`"
-cd "`dirname \"$PRG\"`/" >/dev/null
-APP_HOME="`pwd -P`"
-cd "$SAVED" >/dev/null
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass any JVM options to Gradle.
+DEFAULT_JVM_OPTS=""
 
 APP_NAME="Gradle"
 APP_BASE_NAME=`basename "$0"`
 
-# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS=""
+# Use the maximum available path length for the script path.
+# This avoids issues with path length restrictions on Windows.
+if [ -L "$0" ] ; then
+  PRG_SCRIPT_PATH=`readlink -f "$0"`
+else
+  PRG_SCRIPT_PATH="$0"
+fi
+# The directory containing the script.
+PRG_DIR=`dirname "$PRG_SCRIPT_PATH"`
 
-# Use the maximum available, or set MAX_FD != -1 to use that value.
-MAX_FD="maximum"
+# Read relative path to script from .dist dir.
+if [ -f "$PRG_DIR/.dist/${APP_BASE_NAME}.path" ] ; then
+  APP_HOME_REL_PATH=`cat "$PRG_DIR/.dist/${APP_BASE_NAME}.path"`
+  APP_HOME=`(cd "$PRG_DIR" && cd "$APP_HOME_REL_PATH" && pwd)`
+else
+  # No contents in .dist dir. Just use the script's directory.
+  APP_HOME="$PRG_DIR"
+fi
+export APP_HOME
 
-# For Darwin, add options to specify how the application appears in the dock
-if [ "`uname`" = "Darwin" ]; then
-    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
+# For Cygwin, ensure paths are in UNIX format before anything is touched.
+if ${cygwin} ; then
+  [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+  [ -n "$GRADLE_HOME" ] && GRADLE_HOME=`cygpath --unix "$GRADLE_HOME"`
 fi
 
-# OS specific support.  $var _must_ be set to either true or false.
-cygwin=false
-msys=false
-darwin=false
-nonstop=false
-case "`uname`" in
-  CYGWIN* )
-    cygwin=true
-    ;;
-  Darwin* )
-    darwin=true
-    ;;
-  MINGW* )
-    msys=true
-    ;;
-  NONSTOP* )
-    nonstop=true
-    ;;
-esac
+# Attempt to set APP_HOME
+if [ -z "$APP_HOME" ] || ! [ -d "$APP_HOME" ] ; then
+  # Fallback to resolving the location of the gradlew script.
+  PRG="$0"
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+      PRG="$link"
+    else
+      PRG=`dirname "$PRG"`"/$link"
+    fi
+  done
+  APP_HOME=`dirname "$PRG"`/..
+fi
+# Make sure APP_HOME is absolute.
+APP_HOME=`cd "$APP_HOME" && pwd`
 
-# Attempt to find JAVA
+# Add the gradle wrapper jar to the classpath.
+GRADLE_WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+CLASSPATH=$GRADLE_WRAPPER_JAR
+
+# Set the GRADLE_USER_HOME directory.
+if [ -z "$GRADLE_USER_HOME" ] ; then
+    GRADLE_USER_HOME="$HOME/.gradle"
+fi
+export GRADLE_USER_HOME
+
+# For Cygwin, switch paths to Windows format before running java
+if ${cygwin} ; then
+  APP_HOME=`cygpath --path --windows "$APP_HOME"`
+  CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
+  GRADLE_USER_HOME=`cygpath --path --windows "$GRADLE_USER_HOME"`
+fi
+
+# Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
         # IBM's JDK on AIX uses strange locations for the executables
@@ -91,89 +104,34 @@ location of your Java installation."
     fi
 else
     JAVACMD="java"
-    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and 'java' is not found in your PATH.
+    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
 
 Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
 fi
 
-# Increase the maximum number of open files
-if [ "$cygwin" = "false" -a "$darwin" = "false" -a "$nonstop" = "false" ] ; then
-    MAX_FD_LIMIT=`ulimit -H -n`
-    if [ $? -eq 0 ] ; then
-        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
-            # Use the system limit
-            MAX_FD="$MAX_FD_LIMIT"
-        fi
-        ulimit -n $MAX_FD
-        if [ $? -ne 0 ] ; then
-            warn "Could not set maximum file descriptor limit: $MAX_FD"
-        fi
-    else
-        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
-    fi
+# Increase the maximum heap size for the Gradle wrapper.
+if [ -z "$GRADLE_OPTS" ] ; then
+    GRADLE_OPTS="-Xmx64m -Xms64m"
 fi
 
-# For cygwin, switch paths to Windows format before running java
-if $cygwin ; then
-    APP_HOME=`cygpath --path --windows "$APP_HOME"`
-    CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
-    JAVACMD=`cygpath --unix "$JAVACMD"`
-fi
-
-# For msys, switch paths to Windows format before running java
-if $msys ; then
-    APP_HOME=`(cd "$APP_HOME" && pwd -W)`
-    CLASSPATH=`(cd "$CLASSPATH" && pwd -W)`
-    #JAVACMD=`(cd "$JAVACMD" && pwd -W)`
-fi
-
-# Find the wrapper JAR
-WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
-
-# Split up the JVM options passed in by the user.
-# (This is models after logic in IntelliJ IDEA's launcher script)
-if [ -n "$JAVA_OPTS" ]; then
-    JVM_OPTS_ARRAY=()
-    for JAVA_OPT in $JAVA_OPTS; do
-        JVM_OPTS_ARRAY[${#JVM_OPTS_ARRAY[*]}]="$JAVA_OPT"
+# Escape arguments with spaces.
+# (This is problematic on Cygwin, because shell scripts are launched via cmd.exe)
+# (and cmd.exe has weird rules for quotes)
+# This is also problematic for file names with spaces on systems that don't have GNU readlink.
+# The following algorithm is fixed for names with spaces, but only on systems with GNU readlink.
+# See https://issues.gradle.org/browse/GRADLE-1087
+#
+# It is assumed that the script is placed in a directory with no spaces in the path.
+# The following code will be removed in a future version of Gradle.
+if [ "$(uname)" = "Darwin" ] ; then
+    GRADLE_OPTS_ESCAPED=""
+    for arg in $GRADLE_OPTS; do
+        GRADLE_OPTS_ESCAPED="$GRADLE_OPTS_ESCAPED '$arg'"
     done
+    GRADLE_OPTS=$GRADLE_OPTS_ESCAPED
 fi
+ALL_OPTS="$DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS"
 
-# Split up the GRADLE_OPTS passed in by the user.
-if [ -n "$GRADLE_OPTS" ]; then
-    GRADLE_OPTS_ARRAY=()
-    for GRADLE_OPT in $GRADLE_OPTS; do
-        GRADLE_OPTS_ARRAY[${#GRADLE_OPTS_ARRAY[*]}]="$GRADLE_OPT"
-    done
-fi
-
-# Collect all arguments for the java command, following the shell quoting and substitution rules
-#
-# (This is models after logic in IntelliJ IDEA's launcher script)
-#
-#   See https://youtrack.jetbrains.com/issue/IDEA-138941
-#
-if [ -n "$JVM_OPTS_ARRAY" ]; then
-    eval set -- "${JVM_OPTS_ARRAY[@]}"
-fi
-if [ -n "$DEFAULT_JVM_OPTS" ]; then
-    eval set -- "$@" $DEFAULT_JVM_OPTS
-fi
-if [ -n "$GRADLE_OPTS_ARRAY" ]; then
-    eval set -- "$@" "${GRADLE_OPTS_ARRAY[@]}"
-fi
-eval set -- "$@" -Dorg.gradle.appname="\"$APP_BASE_NAME\"" -classpath "\"$WRAPPER_JAR\"" org.gradle.wrapper.GradleWrapperMain "$@"
-
-# Start the wrapper
-if [ "$darwin" = "true" ]; then
-    # We have to start the wrapper in a new process on Mac OS X
-    # because the OS terminates the original process and all of its
-    # children after the JNI-based lang-java launcher exits.
-    #
-    #    See https://issues.gradle.org/browse/GRADLE-3420
-    #
-    "$JAVACMD" "$@" &
-else
-    exec "$JAVACMD" "$@"
-fi
+# Start Gradle.
+exec "$JAVACMD" $ALL_OPTS -cp "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"

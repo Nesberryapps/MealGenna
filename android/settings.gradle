@@ -1,4 +1,12 @@
-// Githib actions can't access submodule so we need to include them as part of the project
-include ':capacitor-cordova-android-plugins'
-project(':capacitor-cordova-android-plugins').projectDir = new File('../node_modules/@capacitor/cordova-android-plugins/android')
+// Top-level settings file where you can configure which projects are included in your build.
+
 include ':app'
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = new File('capacitor-cordova-android-plugins')
+
+include ':capacitor-core'
+project(':capacitor-core').projectDir = new File(settingsDir, '../node_modules/@capacitor/core/android')
+include ':revenuecat-purchases-capacitor'
+project(':revenuecat-purchases-capacitor').projectDir = new File(settingsDir, '../node_modules/@revenuecat/purchases-capacitor/android')
+
+apply from: 'capacitor.settings.gradle'
