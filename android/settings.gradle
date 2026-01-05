@@ -1,3 +1,11 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -5,9 +13,11 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "MealGenna"
-include ':app'
-include ':capacitor-cordova-android-plugins'
-project(':capacitor-cordova-android-plugins').projectDir = new File(rootProject.projectDir, '../node_modules/@capacitor/cordova-android-plugins/src/main')
+
+rootProject.name = "android"
+include(":app")
+include(":capacitor-cordova-android-plugins")
+project(":capacitor-cordova-android-plugins").projectDir = new File(settingsDir, "capacitor-cordova-android-plugins")
+
 include ':capacitor-android'
-project(':capacitor-android').projectDir = new File(rootProject.projectDir, '../node_modules/@capacitor/android/capacitor')
+project(':capacitor-android').projectDir = new File(rootProject.projectDir, '../../node_modules/@capacitor/android')
