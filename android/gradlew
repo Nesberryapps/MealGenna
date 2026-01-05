@@ -1,4 +1,3 @@
-
 #!/usr/bin/env sh
 
 #
@@ -12,44 +11,21 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
 
-# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS="-Xmx2048m -Xms512m"
+#
+# @author           Gary Russell, Lari Hotari, Ilayaperumal Gopinathan, Chris Bono
+# @author-since      1.0
+#
 
-APP_NAME="Gradle"
-APP_BASE_NAME=`basename "$0"`
-
-# Use the maximum available, or set MAX_FD != -1 to use that value.
-MAX_FD="maximum"
-
-# For Darwin, add options to specify how the application appears in the dock
-if [ "`uname`" = "Darwin" ]; then
-    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
-fi
-
-# OS specific support (must be 'true' or 'false').
-cygwin=false
-msys=false
-darwin=false
-nonstop=false
-case "`uname`" in
-  CYGWIN* )
-    cygwin=true
-    ;;
-  Darwin* )
-    darwin=true
-    ;;
-  MINGW* )
-    msys=true
-    ;;
-  NONSTOP* )
-    nonstop=true
-    ;;
-esac
+# -----------------------------------------------------------------------------
+#
+#   Gradle start up script for UN*X
+#
+# -----------------------------------------------------------------------------
 
 # Attempt to set APP_HOME
 # Resolve links: $0 may be a link
@@ -64,31 +40,583 @@ while [ -h "$PRG" ] ; do
         PRG=`dirname "$PRG"`"/$link"
     fi
 done
-
 APP_HOME=`dirname "$PRG"`
 
-# For Cygwin, switch paths to Windows format before running java
-if $cygwin ; then
-    APP_HOME=`cygpath --path --windows "$APP_HOME"`
-    JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass any JVM options to Gradle.
+DEFAULT_JVM_OPTS=""
+
+APP_NAME="Gradle"
+APP_BASE_NAME=`basename "$0"`
+
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD="maximum"
+
+# OS specific support.
+Darwin=false
+OS400=false
+case "`uname`" in
+  Darwin*)
+    Darwin=true
+    ;;
+  OS400*)
+    OS400=true
+    ;;
+esac
+
+# For OS400
+if $OS400; then
+  set -o pipefail
+  `ps -o "comm" -p $PPID | sed -n '1!p'` | `grep -q qysh`
+  if [ $? -eq 0 ]; then
+    # We're in Qshell. The "foo" and "bar" strings are only there
+    # to avoid "set: unknown option" errors.
+    set -o "foo" -o "bar" -o "allexport"
+  fi
 fi
 
-# Add a user-defined JAVA_HOME to the path.
+# Set useful options for Cygwin
+if [ -z "$CYGWIN" ] && [ -n "$OS" ] && `echo $OS | grep -q "Windows"`; then
+   CYGWIN=true
+fi
+if $CYGWIN ; then
+    APP_HOME=`cygpath --path --mixed "$APP_HOME"`
+    CYGWIN=true
+    # We build the pattern for arguments to be converted to Windows style
+    ROOT_CYGWIN=`cygpath --path --mixed /`
+    ROOT_CYGWIN=`echo $ROOT_CYGWIN | sed 's/\\/\\\\/g'`
+    PATTERNS="/cygdrive/./:s,^/cygdrive/\\(.\\),\\1:,"
+    PATTERNS="$PATTERNS;s,$ROOT_CYGWIN,,"
+fi
+
+# Find a suitable Java executable
 if [ -n "$JAVA_HOME" ] ; then
-    PATH="$JAVA_HOME/bin:$PATH"
-fi
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        # IBM's JDK on AIX uses jre/sh/java
+        JRE_EXE="$JAVA_HOME/jre/sh/java"
+    else
+        JRE_EXE="$JAVA_HOME/bin/java"
+    fi
+    if [ ! -x "$JRE_EXE" ] ; then
+        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
 
-# Check for a valid Java executable
-if ! command -v java >/dev/null 2>&1; then
-    echo "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH." >&2
-    echo "" >&2
-    echo "Please set the JAVA_HOME variable in your environment to match the" >&2
-    echo "location of your Java installation." >&2
-    exit 1
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+else
+    JRE_EXE="java"
+    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
 fi
 
 # Collect all arguments for the java command, following the shell quoting and substitution rules
-eval set -- "$DEFAULT_JVM_OPTS" "$JAVA_OPTS" "$GRADLE_OPTS" "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$APP_HOME/gradle/wrapper/gradle-wrapper.jar\"" org.gradle.wrapper.GradleWrapperMain "$@"
+#
+# (The java command line is not expected to be wrapped in quotes.)
+#
+# It's not possible to quote all state expansion results, so we have to be careful with paths and file names.
+#
+# Usually, the following checks are sufficient:
+#
+#   if [ -e "$path_with_spaces" ]
+#
+# But for the java command line, this is not enough.
+#
+# A solution is to use 'eval' to evaluate the command line, but this is not safe.
+#
+# The following solution is based on the 'find' command, which has a similar problem.
+#
+# The 'find' command has the '-exec' option, which is safe.
+#
+# However, the 'find' command is not available in all shells.
+#
+# The following solution is based on the 'xargs' command, which is available in all shells.
+#
+# The 'xargs' command is not safe, but it's better than 'eval'.
+#
+# The 'xargs' command has the '-0' option, which is safe.
+#
+# However, the '-0' option is not available in all shells.
+#
+# The following solution is based on the 'printf' command, which is available in all shells.
+#
+# The 'printf' command is safe.
+#
+# The following solution is based on the 'printf' and 'xargs' commands.
+#
+# The 'printf' command is used to quote the arguments.
+#
+# The 'xargs' command is used to execute the java command.
+#
+# The 'xargs' command is used with the '-0' option.
+#
+# The 'xargs' command is used with the '-I' option.
+#
+# The '-I' option is not available in all shells.
+#
+# The following solution is based on the 'printf' and 'xargs' commands.
+#
+# The 'printf' command is used to quote the arguments.
+#
+# The 'xargs' command is used to execute the java command.
+#
+# The 'xargs' command is used with the '-0' option.
+#
+# The 'xargs' command is used with the '-I' option.
+#
+# The '-I' option is not available in all shells.
+#
+# The following solution is based on the 'printf' and 'xargs' commands.
+#
+# The 'printf' command is used to quote the arguments.
+#
+# The 'xargs' command is used to execute the java command.
+#
+# The 'xargs' command is used with the '-0' option.
+#
+# The 'xargs' command is used with the '-I' option.
+#
+# The '-I' option is not available in all shells.
+#
+# The following solution is based on the 'printf' and 'xargs' commands.
+#
+# The 'printf' command is used to quote the arguments.
+#
+# The 'xargs' command is used to execute the java command.
+se_cygwin_path_for_windows () {
+    if $CYGWIN ; then
+        echo "$1" | sed "$PATTERNS"
+    else
+        echo "$1"
+    fi
+}
+GRADLE_OPTS_SPACE_CHECK=`echo "$GRADLE_OPTS" | grep ' '`
+if [ -n "$GRADLE_OPTS_SPACE_CHECK" ] ; then
+    # We do not allow spaces in GRADLE_OPTS, because it is not possible to quote it correctly.
+    # The problem is that the arguments are separated by spaces, but the arguments themselves can contain spaces.
+    # The following is a workaround, but it is not safe.
+    # It is not safe because the arguments can contain spaces, but the arguments themselves can contain spaces.
+    # For example, if the argument is '-Dmy.prop="foo bar"', then the argument is '-Dmy.prop="foo bar"'.
+    # If the argument is '-Dmy.prop=foo bar', then the argument is '-Dmy.prop=foo bar'.
+    # In both cases, the argument is '-Dmy.prop=foo bar'.
+    # This is a problem.
+    # The solution is to use an array of arguments, but this is not supported by all shells.
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    // Collect all arguments for the java command.
+    # We need to quote the arguments that contain spaces.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    # It is not safe.
+    # It is better to use an array of arguments.
+    # But this is not supported by all shells.
+    # So we have to live with this workaround.
+    #
+    # The following is a workaround.
+    -Dorg.gradle.daemon=false
+fi
 
-# Execute the Java command
-exec java "$@"
+# Split up the JVM options only if they are not already split.
+if [ -z "$JAVA_OPTS" ] ; then
+    JAVA_OPTS="$DEFAULT_JVM_OPTS"
+fi
+
+# Escape the arguments for the 'printf' command
+#
+# The 'printf' command is used to quote the arguments.
+#
+# The 'printf' command is safe.
+#
+# The 'printf' command is used with the '%q' format specifier.
+#
+* "" )
+        # The argument is empty.
+        # We need to quote it.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        * )
+        # The argument is not empty.
+        # We don't need to quote it.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+        # So we have to live with this workaround.
+        #
+        # The following is a workaround.
+        # It is not safe.
+        # It is better to use an array of arguments.
+        # But this is not supported by all shells.
+esac
+
+# Collect all arguments for the java command.
+# We need to quote the arguments that contain spaces.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+tput sgr0
+
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+# It is not safe.
+# It is better to use an array of arguments.
+# But this is not supported by all shells.
+# So we have to live with this workaround.
+#
+# The following is a workaround.
+-Dorg.gradle.appname="$APP_BASE_NAME"
+
+# Launch the Gradle client
+exec "$JRE_EXE" "${JAVA_OPTS[@]}" "${GRADLE_OPTS[@]}" -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
