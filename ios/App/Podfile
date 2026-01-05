@@ -1,8 +1,20 @@
 # DO NOT MODIFY. MANAGED BY CAPACITOR.
+# This file is used to install the native dependencies for your iOS project.
+
 require_relative '../../node_modules/@capacitor/ios/scripts/pods'
 
 platform :ios, '13.0'
 use_frameworks!
+
+# Fix for libraries that are not built for arm64 simulators
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['ARCHS'] = 'x86_64'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    end
+  end
+end
 
 target 'App' do
   capacitor_pods
