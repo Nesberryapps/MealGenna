@@ -53,7 +53,8 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug
-
+        shell: bash
+        
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
