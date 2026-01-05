@@ -11,60 +11,59 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
+
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
 
-# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS="-Xmx2048m -Xms512m"
+#
+# @author...
+#
+
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass any JVM options to this script.
+
+DEFAULT_JVM_OPTS=""
 
 APP_NAME="Gradle"
 APP_BASE_NAME=`basename "$0"`
 
-# Use the maximum available path length for the descriptive process name
-if uname -s | grep -i "linux" > /dev/null; then
-    # For Linux, the maximum length of the command line argument is 4096
-    MAX_PATH_LEN=4096
-else
-    # For other OSes, use a conservative value
-    MAX_PATH_LEN=1024
-fi
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD="maximum"
 
-# Use that either as the process name or as a fallback description
-if [ -z "$PROCNAME" ]; then
-    # Check for symbolic link
-    if [ -L "$0" ]; then
-        # Expand the symbolic link
-        LINK_TARGET=`readlink "$0"`
-        if [ "${LINK_TARGET#/}" = "$LINK_TARGET" ]; then
-            # Relative link
-            PROCPATH="`dirname "$0"`/$LINK_TARGET"
-        else
-            # Absolute link
-            PROCPATH="$LINK_TARGET"
-        fi
-        # Make the path absolute
-        PROCPATH="`cd \`dirname "$PROCPATH"\`; pwd -P`/`basename "$PROCPATH"`"
-    else
-        PROCPATH="$0"
-    fi
-    # Make the path absolute
-    PROCPATH="`cd \`dirname "$PROCPATH"\`; pwd -P`/`basename "$PROCPATH"`"
-    # Truncate the path to the maximum allowed length
-    PROCNAME=${PROCPATH#${PROCPATH%????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????}}
-    if [ "$PROCNAME" != "$PROCPATH" ]; then
-        PROCNAME="...${PROCNAME}"
-    fi
-    PROCDESC="$PROCPATH"
-else
-    PROCDESC="$PROCNAME"
-fi
-export PROCNAME
-export PROCDESC
+warn () {
+    echo "$*"
+}
 
-# For Cygwin, ensure paths are in UNIX format before anything is touched
-if $cygwin ; then
+die () {
+    echo
+    echo "ERROR: $*"
+    echo
+    exit 1
+}
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+msys=false
+darwin=false
+nonstop=false
+case "`uname`" in
+  CYGWIN* )
+    cygwin=true
+    ;;
+  Darwin* )
+    darwin=true
+    ;;
+  MINGW* )
+    msys=true
+    ;;
+  NONSTOP* )
+    nonstop=true
+    ;;
+esac
+
+# For Cygwin, ensure paths are in UNIX format before anything is touched.
+if ${cygwin} ; then
     [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
     [ -n "$GRADLE_HOME" ] && GRADLE_HOME=`cygpath --unix "$GRADLE_HOME"`
 fi
@@ -82,39 +81,42 @@ while [ -h "$PRG" ] ; do
         PRG=`dirname "$PRG"`"/$link"
     fi
 done
-SAVED="`pwd`"
-cd "`dirname \"$PRG\"`/" >/dev/null
-APP_HOME="`pwd -P`"
-cd "$SAVED" >/dev/null
+APP_HOME=`dirname "$PRG"`
 
-# Attempt to set APP_HOME for standalone build.
-if [ -z "$APP_HOME_TOKEN" ] ; then
-    APP_HOME_TOKEN=gradle
+# Absolutize APP_HOME
+# This is all sort of crazy, but it works consistently.
+# Eventually we should just use 'readlink -f', but that's not available on all platforms.
+if [ -z ${APP_HOME} -o ! -d ${APP_HOME} ]; then
+  #use zero-length APP_HOME to ensure that the logic below does not depend on the current working directory
+  APP_HOME=
 fi
-if [ -z "$APP_HOME" -o ! -d "$APP_HOME"/$APP_HOME_TOKEN ] ; then
-    # a more robust search for APP_HOME, checking each component of the path
-    # for the existence of the APP_HOME_TOKEN folder
-    # see: https://github.com/gradle/gradle/issues/10330
-    TEST_PATH="$APP_HOME"
-    while [ -n "$TEST_PATH" ] ; do
-        if [ -d "$TEST_PATH"/$APP_HOME_TOKEN ] ; then
-            APP_HOME="$TEST_PATH"
-            break
-        fi
-        # remove the last path component
-        TEST_PATH="${TEST_PATH%/*}"
-    done
-fi
-if [ -z "$APP_HOME" ] ; then
-    echo "Can't find APP_HOME, exiting"
-    exit 1
+if [ -z "${APP_HOME}" ] ; then
+  # If the script is called via a relative path, the logic below will not work.
+  # The a) clause below is the only one that will be triggered.
+  # The `pwd` command will be used to determine the script's location.
+  # It's not perfect, but it's the best we can do.
+  a=
+else
+  # The script is called via an absolute path.
+  # The logic below is resilient to embedded space characters in the path.
+  a=${APP_HOME}
 fi
 
-# Add default gradle props here. You can also use GRADLE_OPTS to pass any gradle properties to this script.
-#DEFAULT_GRADLE_PROPS="-Dorg.gradle.jvmargs=\"-Xmx64m -Xms64m\""
+saved_dir=`pwd`
+cd "${a}"
+APP_HOME=`pwd`
+cd "${saved_dir}"
 
-CLASSPATH="$APP_HOME"/gradle/wrapper/gradle-wrapper.jar
 
+# Add the JAVA_HOME to the path.
+if [ -n "$JAVA_HOME" ] ; then
+    # Add a path separator to the right of JAVA_HOME if it's not the last character.
+    if [ "${JAVA_HOME#${JAVA_HOME%?}}" != "/" ]; then
+        export PATH=$PATH:${JAVA_HOME}/bin
+    else
+        export PATH=$PATH:${JAVA_HOME}bin
+    fi
+fi
 
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then
@@ -138,50 +140,61 @@ Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
 fi
 
-# Increase the maximum file descriptors if we can.
-if [ "$cygwin" = "false" -a "$darwin" = "false" ] ; then
-    MAX_FD_LIMIT=`ulimit -H -n`
-    if [ $? -eq 0 ] ; then
-        if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
-            MAX_FD="$MAX_FD_LIMIT"
-        fi
-        ulimit -n $MAX_FD
+# Increase the maximum number of open files, if necessary.
+if ! ${cygwin} && ! ${msys} && ! ${nonstop} ; then
+    # Figure out the maximum number of open files
+    if [ "${MAX_FD}" = "maximum" -o "${MAX_FD}" = "max" ] ; then
+        # Use system's max limit
+        MAX_FD_LIMIT=`ulimit -H -n`
         if [ $? -ne 0 ] ; then
-            warn "Could not set maximum file descriptor limit: $MAX_FD"
+            warn "Could not query maximum file descriptor limit"
+        elif [ -n "$MAX_FD_LIMIT" -a "$MAX_FD_LIMIT" != "unlimited" ] ; then
+            if [ -z `echo "$MAX_FD_LIMIT" | egrep '^[0-9]+$'` ] ; then
+                warn "Could not parse maximum file descriptor limit: '$MAX_FD_LIMIT'"
+            else
+                ulimit -n $MAX_FD_LIMIT
+                if [ $? -ne 0 ] ; then
+                    warn "Could not set maximum file descriptor limit to $MAX_FD_LIMIT"
+                fi
+            fi
         fi
     else
-        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+        # Use MAX_FD value
+        if [ -z `echo "$MAX_FD" | egrep '^[0-9]+$'` ] ; then
+            warn "Could not parse file descriptor limit: '$MAX_FD'"
+        else
+            ulimit -n $MAX_FD
+            if [ $? -ne 0 ] ; then
+                warn "Could not set file descriptor limit to $MAX_FD"
+            fi
+        fi
     fi
 fi
 
-# For Darwin, add options to specify how the application appears in the dock
-if $darwin; then
-    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
-fi
-
 # For Cygwin, switch paths to Windows format before running java
-if $cygwin ; then
+if ${cygwin} ; then
     APP_HOME=`cygpath --path --windows "$APP_HOME"`
+    JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
     CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
 fi
 
-# Split up the JVM options only if this is not running on Cygwin
-if [ "$cygwin" = "true" ] ; then
-    split_jvm_opts=""
+# Split up the JVM options only if the JDK version is 9 or later
+if [ "`$JAVACMD -version 2>&1 | grep 'version' | egrep '\"(1\.[0-8]\.|[1-8]\.)' `" = "" ]; then
+    DEFAULT_JVM_OPTS_ARRAY=(${DEFAULT_JVM_OPTS})
+    JAVA_OPTS_ARRAY=(${JAVA_OPTS})
+    GRADLE_OPTS_ARRAY=(${GRADLE_OPTS})
 else
-    split_jvm_opts=true
+    DEFAULT_JVM_OPTS_ARRAY=("$DEFAULT_JVM_OPTS")
+    JAVA_OPTS_ARRAY=("$JAVA_OPTS")
+    GRADLE_OPTS_ARRAY=("$GRADLE_OPTS")
 fi
 
-# Split up the Gradle options only if this is not running on Cygwin
-if [ "$cygwin" = "true" ] ; then
-    split_gradle_opts=""
-else
-    split_gradle_opts=true
-fi
+# Collect all arguments for the java command, following the shell quoting and substitution rules
+eval set -- "$JAVACMD" "${DEFAULT_JVM_OPTS_ARRAY[@]}" "${JAVA_OPTS_ARRAY[@]}" "${GRADLE_OPTS_ARRAY[@]}" '-Dorg.gradle.appname=$APP_BASE_NAME' -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain '"$@"'
 
-# Execute Gradle
-if [ "$split_jvm_opts" ] ; then
-    eval exec \"\$JAVACMD\" \$DEFAULT_JVM_OPTS \$JAVA_OPTS \$GRADLE_OPTS \"-Dorg.gradle.appname=$APP_BASE_NAME\" -classpath \"\$CLASSPATH\" org.gradle.wrapper.GradleWrapperMain \"\$@\"
-else
-    exec "$JAVACMD" $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "-Dorg.gradle.appname=$APP_BASE_NAME" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-fi
+# This is an internal debug flag:
+# export GRADLE_EXIT_CONSOLE=true
+
+# Start the wrapper
+# We have to escape the double quotes for the shell to interpret them correctly
+exec "$@"
