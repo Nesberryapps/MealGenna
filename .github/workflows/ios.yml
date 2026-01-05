@@ -1,3 +1,4 @@
+
 name: Build iOS App
 
 on:
@@ -34,7 +35,7 @@ jobs:
 
       - name: Install CocoaPods
         run: |
-          cd ios
+          cd ios/App
           pod install
 
       - name: Decode and Install Certificates
