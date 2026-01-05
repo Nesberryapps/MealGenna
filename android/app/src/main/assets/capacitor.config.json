@@ -1,0 +1,10 @@
+{
+	"appId": "com.nesberry.mealgenna.pro",
+	"appName": "MealGenna",
+	"webDir": "public",
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {},
+	"ios": {}
+}
