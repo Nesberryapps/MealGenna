@@ -1,22 +1,23 @@
-
-apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android' version '1.8.21' apply false
+    id 'com.google.gms.google-services'
+}
 
 android {
     namespace "com.nesberry.mealgenna.pro"
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk 34
+
     defaultConfig {
         applicationId "com.nesberry.mealgenna.pro"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdk 22
+        targetSdk 34
         versionCode 1
         versionName "1.0"
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        aaptOptions {
-             // Do not compress PNG files which are already compressed
-             noCompress "png"
-        }
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -24,27 +25,24 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    lintOptions {
+    lint {
         abortOnError false
     }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
-    implementation "androidx.core:core-splashscreen:1.0.1"
-    testImplementation "junit:junit:4.13.2"
-    androidTestImplementation "androidx.test.ext:junit:1.1.5"
-    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation project(':capacitor-android')
-    implementation project(':capacitor-cordova-android-plugins')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.21'
 }
 
-apply from: "capacitor.build.gradle"
+apply from: 'capacitor.build.gradle'
