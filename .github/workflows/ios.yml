@@ -6,7 +6,7 @@ on:
       - main
       - release-v2
 
-jobs Mapped:
+jobs:
   build:
     runs-on: macos-latest
     steps:
@@ -24,6 +24,11 @@ jobs Mapped:
       - name: Build Next.js app
         run: npm run build
 
+      - name: Replace Google Services placeholders
+        run: |
+          echo "Replacing placeholders in GoogleService-Info.plist"
+          sed -i '' "s/\${GOOGLE_SERVICES_API_KEY}/${{ secrets.GOOGLE_SERVICES_API_KEY }}/g" ios/App/App/GoogleService-Info.plist
+      
       - name: Sync Capacitor
         run: npx cap sync ios
 

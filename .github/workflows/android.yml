@@ -30,6 +30,11 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
+      - name: Replace Google Services placeholders
+        run: |
+          echo "Replacing placeholders in google-services.json"
+          sed -i "s/\${GOOGLE_SERVICES_API_KEY}/${{ secrets.GOOGLE_SERVICES_API_KEY }}/g" android/app/google-services.json
+
       - name: Sync Capacitor
         run: npx cap sync android
 
