@@ -52,7 +52,7 @@ jobs:
       - name: Build Android Debug
         run: |
           cd android
-          bash ./gradlew assembleDebug
+          ./gradlew assembleDebug
         shell: bash
 
       - name: Upload APK
