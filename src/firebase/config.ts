@@ -1,5 +1,10 @@
+import getConfig from 'next/config';
 
-export const firebaseConfig = {
+const { publicRuntimeConfig } = getConfig() || {};
+
+const firebaseFromRuntime = publicRuntimeConfig?.firebase;
+
+export const firebaseConfig = firebaseFromRuntime ? firebaseFromRuntime : {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
