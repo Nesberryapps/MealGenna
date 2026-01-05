@@ -6,7 +6,7 @@ on:
       - main
       - release-v2
 
-jobs:
+jobs Mapped:
   build:
     runs-on: macos-latest
     steps:
