@@ -1,10 +1,17 @@
-include ':app'
-include ':capacitor-android'
-project(':capacitor-android').projectDir = new File(settingsDir, '../node_modules/@capacitor/android/capacitor')
-include ':@revenuecat-purchases-capacitor'
-project(':@revenuecat-purchases-capacitor').projectDir = new File(settingsDir, '../node_modules/@revenuecat/purchases-capacitor/android')
-try {
-    apply from: 'capacitor.settings.gradle'
-} catch (Exception e) {
-    println "Warning: capacitor.settings.gradle not found. Plugins might be missing."
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
 }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "android"
+include ':app'
+include ':capacitor-cordova-android-plugins'
