@@ -1,5 +1,32 @@
-# DO NOT MODIFY. MANAGED BY CAPACITOR.
-# This file is used to install the native dependencies for your project.
+require_relative '../../node_modules/@capacitor/ios/scripts/pods'
+
+platform :ios, '13.0'
+use_frameworks!
+
+# workaround for Google Sign-In and CocoaPods
+#
+# There's a known issue with the Google Sign-In Cocoapod and a static library
+# that it depends on, which makes it difficult to use with Swift and frameworks.
+#
+# This workaround forces an import of the GoogleSignIn framework into your project.
+#
+# For more info, see: https://github.com/ionic-team/capacitor-google-auth/issues/132
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    if target.name == 'App'
+      target.build_configurations.each do |config|
+        config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = '$(SRCROOT)/$(TARGET_NAME)/Bridging-Header.h'
+        config.build_settings['SWIFT_OBJC_INTERFACE_HEADER_NAME'] = ''
+      end
+    end
+    if target.name == "GoogleSignIn"
+      target.build_configurations.each do |config|
+        config.build_settings['FRAMEWORK_SEARCH_PATHS'] = '$(inherited) "${PODS_ROOT}/GoogleSignIn/Frameworks"'
+      end
+    end
+  end
+end
+
 
 target 'App' do
   capacitor_pods
