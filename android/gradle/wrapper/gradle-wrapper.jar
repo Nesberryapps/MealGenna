@@ -1,2 +1,2 @@
-// Placeholder for the Gradle Wrapper JAR file.
-// The 'gradlew' script will download the correct version based on gradle-wrapper.properties.
+
+// Placeholder file. The gradle wrapper will automatically download the correct binary.
