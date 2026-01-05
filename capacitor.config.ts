@@ -18,7 +18,6 @@ const config: CapacitorConfig = {
     // For more info, see: https://capacitorjs.com/docs/config
     // In this case, we are using a static export, so we can use the following configuration:
     androidScheme: 'https',
-    hostname: 'localhost:3000'
   }
 };
 
