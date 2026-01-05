@@ -10,147 +10,150 @@
 #      https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-本日
 # distributed under the License is distributed on an "AS IS" BASIS,
+to
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
 
-# ##########################################################################
-#
-#  Gradle startup script for UN*X
-#
-# ##########################################################################
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+DEFAULT_JVM_OPTS=""
+
+APP_NAME="Gradle"
+APP_BASE_NAME=$(basename "$0")
+
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD="maximum"
+
+warn () {
+    echo "$*"
+}
+
+die () {
+    echo
+    echo "ERROR: $*"
+    echo
+    exit 1
+}
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+msys=false
+darwin=false
+nonstop=false
+case "$(uname)" in
+  CYGWIN* )
+    cygwin=true
+    ;;
+  Darwin* )
+    darwin=true
+    ;;
+  MSYS* | MINGW* )
+    msys=true
+    ;;
+  NONSTOP* )
+    nonstop=true
+    ;;
+esac
+
+# For Cygwin, ensure paths are in UNIX format before anything is touched.
+if ${cygwin} ; then
+    [ -n "$JAVA_HOME" ] && JAVA_HOME=$(cygpath --unix "$JAVA_HOME")
+    [ -n "$GRADLE_HOME" ] && GRADLE_HOME=$(cygpath --unix "$GRADLE_HOME")
+fi
 
 # Attempt to set APP_HOME
 # Resolve links: $0 may be a link
 PRG="$0"
 # Need this for relative symlinks.
 while [ -h "$PRG" ] ; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \(.*\)$'`
+    ls=$(ls -ld "$PRG")
+    link=$(expr "$ls" : '.*-> \(.*\)$')
     if expr "$link" : '/.*' > /dev/null; then
         PRG="$link"
     else
-        PRG=`dirname "$PRG"`"/$link"
+        PRG=$(dirname "$PRG")"/$link"
     fi
 done
-SAVED="`pwd`"
-cd "`dirname \"$PRG\"`/" >/dev/null
-APP_HOME="`pwd -P`"
-cd "$SAVED" >/dev/null
 
-APP_NAME="Gradle"
-APP_BASE_NAME=`basename "$0"`
+APP_HOME=$(dirname "$PRG")
 
-# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS=""
-
-# Use the maximum available, or set MAX_FD != -1 to use that value.
-MAX_FD="maximum"
-
-# For Darwin, add options to specify how the application appears in the dock
-if [ "`uname`" = "Darwin" ]; then
-    GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
+# For Cygwin, switch paths to Windows format before running java
+if ${cygwin} ; then
+    APP_HOME=$(cygpath --path --windows "$APP_HOME")
+    JAVA_HOME=$(cygpath --path --windows "$JAVA_HOME")
+    GRADLE_HOME=$(cygpath --path --windows "$GRADLE_HOME")
+    CLASSPATH=$(cygpath --path --windows "$CLASSPATH")
 fi
 
-# For Cygwin, ensure paths are in UNIX format before anything is touched
-if $cygwin ; then
-    [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
-    [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --unix "$CLASSPATH"`
-fi
-
-# Attempt to set JAVA_HOME if it's not already set.
+# Attempt to find Java
 if [ -z "$JAVA_HOME" ] ; then
-    # In some cases, /usr/bin/java is a soft-link to another command:
-    if [ -x "/usr/bin/java" ] ; then
-        java_binary="/usr/bin/java"
-        # follow the link:
-        java_binary="$(readlink -f "$java_binary")"
-        # JAVACMD is the full path to the java binary:
-        JAVACMD="$java_binary"
-        # JAVA_HOME is the parent of the ../bin directory:
-        JAVA_HOME="$(dirname "$(dirname "$java_binary")")"
-    else
-        # No /usr/bin/java, so we will let the "java" command be found in the path.
-        # This may not work with all JVMs, but it's the best we can do.
-        JAVACMD="java"
+    # Macs with JDK 1.6 and above define JAVA_HOME in standard ways
+    if ${darwin} ; then
+        if [ -x '/usr/libexec/java_home' ] ; then
+            JAVA_HOME=$(/usr/libexec/java_home)
+        elif [ -d "/System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Home" ]; then
+            JAVA_HOME="/System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Home"
+        fi
     fi
-else
-    JAVACMD="$JAVA_HOME/bin/java"
-fi
 
-if [ ! -x "$JAVACMD" ] ; then
-    echo "Error: JAVA_HOME is not defined correctly."
-    echo "  We cannot execute $JAVACMD"
-    exit 1
-fi
+    if [ -z "$JAVA_HOME" ]; then
+        # ...less standard Java locations
+        if [ -x "/usr/bin/java" ]; then
+            JAVA_HOME="/usr"
+        fi
+    fi
 
-# Set lower priority
-if [ -z "$GRADLE_NICENESS" -a -x "/usr/bin/nice" ] ; then
-    GRADLE_NICENESS=0
-fi
-if [ -z "$GRADLE_IONICE_CLASS" -a -x "/usr/bin/ionice" ] ; then
-    GRADLE_IONICE_CLASS="2"
-fi
-if [ -z "$GRADLE_IONICE_PRIORITY" -a -x "/usr/bin/ionice" ] ; then
-    GRADLE_IONICE_PRIORITY="0"
-fi
+    if [ -z "$JAVA_HOME" ] ; then
+        die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
 
-# Read properties
-eval `sed -e 's/\\/\\\\/g' -e 's/=\(.*\)/=\"\1\"/' < "$APP_HOME/gradle/wrapper/gradle-wrapper.properties"`
-
-# Set up the CLASSPATH
-if [ -z "$CLASSPATH" ] ; then
-    CLASSPATH="$APP_HOME/gradle/wrapper/$distributionUrl"
-else
-    CLASSPATH="$CLASSPATH:$APP_HOME/gradle/wrapper/$distributionUrl"
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
 fi
-
-# Split up the JVM options only if this is the Bash shell.
-if [ -n "$BASH_VERSION" ] ; then
-    JVM_OPTS=()
-    for opt in $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS; do
-        JVM_OPTS+=("$opt")
-    done
-else
-    JVM_OPTS="$DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS"
-fi
-JVM_OPTS+=("-Dorg.gradle.appname=$APP_BASE_NAME")
-
-# Add the jar to the CLASSPATH
-if [ -n "$CLASSPATH" ] ; then
-    # Add the jar to the CLASSPATH
-    CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar:$CLASSPATH"
-fi
-
-# Add the main class to the CLASSPATH
-if [ -n "$CLASSPATH" ] ; then
-    CLASSPATH="$CLASSPATH:org.gradle.wrapper.GradleWrapperMain"
-else
-    CLASSPATH="org.gradle.wrapper.GradleWrapperMain"
-fi
-
-# Set the maximum number of file descriptors
-if [ "$MAX_FD" != "-1" ] ; then
-    if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
-        # Increase the maximum file descriptors if we can.
-        if [ "$cygwin" = "false" -a "$darwin" = "false" ] ; then
-            if ulimit -H -n > /dev/null 2>&1 ; then
-                ulimit -n `ulimit -H -n`
-            fi
+if [ -z "$JAVACMD" ] ; then
+    if [ -n "$JAVA_HOME"  ] ; then
+        if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+            # IBM's JDK on AIX uses strange locations for the executables
+            JAVACMD="$JAVA_HOME/jre/sh/java"
+        else
+            JAVACMD="$JAVA_HOME/bin/java"
         fi
     else
-        ulimit -n $MAX_FD
+        JAVACMD="java"
+    fi
+fi
+if [ ! -x "$JAVACMD" ] ; then
+    die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+fi
+
+# Increase the maximum number of open files
+if ! ${cygwin} && ! ${darwin} && ! ${nonstop} ; then
+    MAX_FD_LIMIT=$(ulimit -H -n)
+    if [ "$?" -eq 0 ] ; then
+        if [ "$MAX_FD" = "maximum" ] || [ "$MAX_FD" = "max" ] ; then
+            # Use the system limit
+            MAX_FD="$MAX_FD_LIMIT"
+        fi
+        ulimit -n "$MAX_FD"
+        if [ "$?" -ne 0 ] ; then
+            warn "Could not set maximum file descriptor limit: $MAX_FD"
+        fi
+    else
+        warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
     fi
 fi
 
-# Execute the command
-if [ -n "$GRADLE_NICENESS" -a -n "$GRADLE_IONICE_CLASS" -a -n "$GRADLE_IONICE_PRIORITY" ]; then
-    exec /usr/bin/nice -n $GRADLE_NICENESS /usr/bin/ionice -c $GRADLE_IONICE_CLASS -n $GRADLE_IONICE_PRIORITY "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-elif [ -n "$GRADLE_NICENESS" ]; then
-    exec /usr/bin/nice -n $GRADLE_NICENESS "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-else
-    exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-fi
+# Add the jar to the CLASSPATH and run the wrapper
+exec "$JAVACMD" \
+    "${DEFAULT_JVM_OPTS[@]}" \
+    "${JAVA_OPTS[@]}" \
+    "${GRADLE_OPTS[@]}" \
+    -Dorg.gradle.appname="$APP_BASE_NAME" \
+    -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+    org.gradle.wrapper.GradleWrapperMain \
+    "$@"
