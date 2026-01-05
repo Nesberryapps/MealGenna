@@ -19,6 +19,7 @@ import { Logo } from '@/components/Logo';
 import { Apple, Chrome } from 'lucide-react';
 import { Footer } from '@/components/features/Footer';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoginPage() {
   const { auth, firestore } = useFirebase();
@@ -72,8 +73,29 @@ export default function LoginPage() {
     handleSignIn(new OAuthProvider('apple.com'));
   };
 
-  if (isUserLoading || !isClient || user) {
-    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
+  if (!isClient || isUserLoading || user) {
+    return (
+      <div className="flex flex-col min-h-dvh bg-background text-foreground">
+        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+            <div className="flex justify-center mb-8">
+                <Link href="/">
+                <Logo />
+                </Link>
+            </div>
+            <Card>
+                <CardHeader className="text-center">
+                    <CardTitle>Welcome to MealGenna</CardTitle>
+                    <CardDescription>Sign in to continue to your account.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        </main>
+        <Footer/>
+      </div>
+    );
   }
 
   return (

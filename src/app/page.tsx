@@ -85,9 +85,15 @@ export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
   const [subGreeting, setSubGreeting] = useState("Instant Meal Ideas, Zero Hassle.");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const { toast } = useToast();
 
   const userRef = useMemoFirebase(() => {
@@ -131,6 +137,34 @@ export default function Home() {
       setGreeting("Late night snack? What are you cooking?");
     }
   }, []);
+
+  if (!isClient || isUserLoading) {
+    return (
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
+             <header className="py-4 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-md mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Logo />
+                        <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
+                    </div>
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                </div>
+            </header>
+            <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8">
+                <div className="text-left my-8 md:my-12">
+                    <Skeleton className="h-12 w-3/4 mb-2" />
+                    <Skeleton className="h-6 w-1/2" />
+                </div>
+                <div className="space-y-6">
+                    <Skeleton className="h-[288px] w-full rounded-xl" />
+                    <Skeleton className="h-[288px] w-full rounded-xl" />
+                    <Skeleton className="h-[288px] w-full rounded-xl" />
+                </div>
+            </main>
+            <Footer />
+        </div>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
