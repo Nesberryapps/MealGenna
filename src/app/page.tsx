@@ -199,7 +199,7 @@ export default function Home() {
               />
             </div>
           
-            <Link href="/ingredient-scanner" passHref>
+            <Link href="/ingredient-scanner">
               <ActionCard
                 title="Use My Ingredients"
                 description="Scan your pantry or fridge to get a meal idea from what you have."
@@ -214,7 +214,7 @@ export default function Home() {
             {isUserLoading ? (
               <Skeleton className="h-[288px] w-full rounded-xl" />
             ) : (
-               <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick}>
+               <Link href="/weekly-meal-planner" onClick={handleWeeklyPlanClick}>
                 <ActionCard
                   title="7-Day Meal Plan"
                   description="Generate a meal plan for the week, tailored to you."

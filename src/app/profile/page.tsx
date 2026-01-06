@@ -113,11 +113,11 @@ export default function ProfilePage() {
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto flex items-center justify-start">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
+          <Link href="/">
+            <Button variant="ghost" size="icon">
               <ArrowLeft />
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
       </header>
       <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">

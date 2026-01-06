@@ -28,11 +28,11 @@ export default function ContactPage() {
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
+          <Link href="/">
+            <Button variant="ghost" size="icon">
               <ArrowLeft />
-            </Link>
-          </Button>
+            </Button>
+          </Link>
           <div className="flex items-center gap-2">
             <Logo />
             <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
