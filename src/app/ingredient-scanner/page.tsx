@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { IdentifyIngredientsFromImageOutput } from '@/ai/flows/identify-ingredients-from-image';
 import type { GenerateMealIdeasFromIngredientsOutput } from '@/ai/flows/generate-meal-ideas-from-ingredients';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Camera, Loader2, Sparkles, Star } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
