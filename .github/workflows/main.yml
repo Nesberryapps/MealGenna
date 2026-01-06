@@ -20,7 +20,7 @@ jobs:
           node-version: '20.x'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build Next.js app
         run: npm run build
@@ -100,7 +100,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build Next.js app
         run: npm run build
@@ -172,6 +172,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /tmp/android_.build/app-release.aab
+          asset_path: /tmp/android_build/app-release.aab
           asset_name: MealGenna.aab
           asset_content_type: application/vnd.android.package-archive
