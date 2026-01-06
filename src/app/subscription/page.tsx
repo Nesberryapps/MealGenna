@@ -272,7 +272,7 @@ export default function SubscriptionPage() {
         <header className="py-4 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md mx-auto flex items-center justify-between">
                 <Button variant="ghost" size="icon" asChild>
-                    <Link href="/profile" legacyBehavior>
+                    <Link href="/profile">
                         <ArrowLeft />
                     </Link>
                 </Button>

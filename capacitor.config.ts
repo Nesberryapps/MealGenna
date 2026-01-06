@@ -5,9 +5,6 @@ const config: CapacitorConfig = {
   appId: 'com.nesberry.mealgenna.pro',
   appName: 'MealGenna',
   webDir: 'out',
-  server: {
-    androidScheme: 'https',
-  },
   android: {},
   ios: {}
 };

@@ -59,10 +59,10 @@ function ProfileButton() {
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                        <Link href="/profile" legacyBehavior><a><UserIcon className="mr-2" /> Profile</a></Link>
+                        <Link href="/profile"><UserIcon className="mr-2" /> Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                        <Link href="/subscription" legacyBehavior><a><CreditCard className="mr-2" /> Subscription</a></Link>
+                        <Link href="/subscription"><CreditCard className="mr-2" /> Subscription</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -75,7 +75,7 @@ function ProfileButton() {
 
     return (
         <Button asChild>
-            <Link href="/login" legacyBehavior><a>Sign In</a></Link>
+            <Link href="/login">Sign In</Link>
         </Button>
     )
 }
@@ -199,9 +199,7 @@ export default function Home() {
               />
             </div>
           
-
-          
-            <Link href="/ingredient-scanner" passHref legacyBehavior>
+            <Link href="/ingredient-scanner" passHref>
               <ActionCard
                 title="Use My Ingredients"
                 description="Scan your pantry or fridge to get a meal idea from what you have."
@@ -216,7 +214,7 @@ export default function Home() {
             {isUserLoading ? (
               <Skeleton className="h-[288px] w-full rounded-xl" />
             ) : (
-               <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick} legacyBehavior>
+               <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick}>
                 <ActionCard
                   title="7-Day Meal Plan"
                   description="Generate a meal plan for the week, tailored to you."
