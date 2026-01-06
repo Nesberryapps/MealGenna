@@ -1,3 +1,4 @@
+
 name: Build iOS App
 
 on:
@@ -41,7 +42,7 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.0'
+          xcode-version: '16.4.0'
 
       - name: Install Apple Certificate and Provisioning Profile
         env:
