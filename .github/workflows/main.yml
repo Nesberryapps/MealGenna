@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_ios:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -40,11 +40,6 @@ jobs:
 
       - name: Install Pods
         run: cd ios/App && pod install && cd ../..
-
-      - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.0'
 
       - name: Install Apple Certificate and Provisioning Profile
         env:
