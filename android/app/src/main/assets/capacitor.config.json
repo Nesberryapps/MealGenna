@@ -1,7 +1,7 @@
 {
 	"appId": "com.nesberry.mealgenna.pro",
 	"appName": "MealGenna",
-	"webDir": "public",
+	"webDir": "out",
 	"server": {
 		"androidScheme": "https"
 	},
