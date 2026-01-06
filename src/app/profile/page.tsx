@@ -114,7 +114,7 @@ export default function ProfilePage() {
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto flex items-center justify-start">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
+            <Link href="/" legacyBehavior>
               <ArrowLeft />
             </Link>
           </Button>
@@ -147,17 +147,17 @@ export default function ProfilePage() {
               />
             </div>
             <Button asChild variant="default" className="w-full">
-              <Link href="/subscription">
+              <Link href="/subscription" legacyBehavior><a>
                 <Star className="mr-2" />
                 Manage Subscription
-              </Link>
+              </a></Link>
             </Button>
             <Button onClick={handleSignOut} variant="destructive" className="w-full">
               <LogOut className="mr-2" />
               Sign Out
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/">Back to Home</Link>
+              <Link href="/" legacyBehavior><a>Back to Home</a></Link>
             </Button>
           </CardContent>
         </Card>

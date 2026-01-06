@@ -78,8 +78,8 @@ export default function LoginPage() {
       <div className="flex flex-col min-h-dvh bg-background text-foreground">
         <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
             <div className="flex justify-center mb-8">
-                <Link href="/">
-                <Logo />
+                <Link href="/" legacyBehavior>
+                  <a><Logo /></a>
                 </Link>
             </div>
             <Card>
@@ -102,8 +102,8 @@ export default function LoginPage() {
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
         <div className="flex justify-center mb-8">
-            <Link href="/">
-              <Logo />
+            <Link href="/" legacyBehavior>
+              <a><Logo /></a>
             </Link>
         </div>
         <Card>

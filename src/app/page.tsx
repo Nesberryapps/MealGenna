@@ -59,10 +59,10 @@ function ProfileButton() {
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                        <Link href="/profile"><UserIcon className="mr-2" /> Profile</Link>
+                        <Link href="/profile" legacyBehavior><a><UserIcon className="mr-2" /> Profile</a></Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                        <Link href="/subscription"><CreditCard className="mr-2" /> Subscription</Link>
+                        <Link href="/subscription" legacyBehavior><a><CreditCard className="mr-2" /> Subscription</a></Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -74,8 +74,8 @@ function ProfileButton() {
     }
 
     return (
-        <Button asChild variant="secondary">
-            <Link href="/login">Sign In</Link>
+        <Button asChild>
+            <Link href="/login" legacyBehavior><a>Sign In</a></Link>
         </Button>
     )
 }
@@ -201,7 +201,7 @@ export default function Home() {
           
 
           
-            <Link href="/ingredient-scanner" passHref>
+            <Link href="/ingredient-scanner" passHref legacyBehavior>
               <ActionCard
                 title="Use My Ingredients"
                 description="Scan your pantry or fridge to get a meal idea from what you have."
@@ -216,7 +216,7 @@ export default function Home() {
             {isUserLoading ? (
               <Skeleton className="h-[288px] w-full rounded-xl" />
             ) : (
-               <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick}>
+               <Link href="/weekly-meal-planner" passHref onClick={handleWeeklyPlanClick} legacyBehavior>
                 <ActionCard
                   title="7-Day Meal Plan"
                   description="Generate a meal plan for the week, tailored to you."
