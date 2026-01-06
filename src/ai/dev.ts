@@ -2,8 +2,9 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/generate-meal-ideas-from-ingredients.ts';
-import '@/ai/flows/generate-7-day-meal-plan.ts';
-import '@/ai/flows/generate-quick-meal-ideas.ts';
-import '@/ai/flows/generate-meal-idea.ts';
-import '@/ai/flows/identify-ingredients-from-image.ts';
+// All we need to do is import the flows, and the dev server will pick them up.
+import './flows/generate-meal-ideas-from-ingredients.ts';
+import './flows/generate-7-day-meal-plan.ts';
+import './flows/generate-quick-meal-ideas.ts';
+import './flows/generate-meal-idea.ts';
+import './flows/identify-ingredients-from-image.ts';
