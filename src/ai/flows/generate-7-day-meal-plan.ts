@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview Generates a 7-day meal plan based on user dietary preferences and allergies.
  *
- * - generate7DayMealPlan - A function that generates a 7-day meal plan.
+ * - generate7DayMealPlanFlow - A Genkit flow that generates a 7-day meal plan.
  * - Generate7DayMealPlanInput - The input type for the generate7DayMealPlan function.
  * - Generate7DayMealPlanOutput - The return type for the generate7DayMealPlan function.
  */
@@ -11,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const Generate7DayMealPlanInputSchema = z.object({
+export const Generate7DayMealPlanInputSchema = z.object({
   dietaryPreferences: z
     .string()
     .describe('The dietary preferences of the user (e.g., vegetarian, vegan, gluten-free).'),
@@ -34,17 +33,11 @@ const DayMealPlanSchema = z.object({
     dinner: z.string().describe("The meal for dinner."),
 });
 
-const Generate7DayMealPlanOutputSchema = z.object({
+export const Generate7DayMealPlanOutputSchema = z.object({
   mealPlan: z.array(DayMealPlanSchema).describe("A 7-day meal plan, including breakfast, lunch, and dinner for each day."),
 });
 
 export type Generate7DayMealPlanOutput = z.infer<typeof Generate7DayMealPlanOutputSchema>;
-
-export async function generate7DayMealPlan(
-  input: Generate7DayMealPlanInput
-): Promise<Generate7DayMealPlanOutput> {
-  return generate7DayMealPlanFlow(input);
-}
 
 const generate7DayMealPlanPrompt = ai.definePrompt({
   name: 'generate7DayMealPlanPrompt',
@@ -62,7 +55,7 @@ Return your response in valid JSON format.
 `,
 });
 
-const generate7DayMealPlanFlow = ai.defineFlow(
+export const generate7DayMealPlanFlow = ai.defineFlow(
   {
     name: 'generate7DayMealPlanFlow',
     inputSchema: Generate7DayMealPlanInputSchema,

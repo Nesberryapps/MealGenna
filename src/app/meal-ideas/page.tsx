@@ -4,7 +4,7 @@
 import { Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { generateMealIdea, GenerateMealIdeaInput, GenerateMealIdeaOutput } from '@/ai/flows/generate-meal-idea';
+import type { GenerateMealIdeaInput, GenerateMealIdeaOutput } from '@/ai/flows/generate-meal-idea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -30,6 +30,21 @@ type UserData = {
     subscriptionTier: 'free' | 'premium';
     trialGenerations?: number;
     trialStartedAt?: { toDate: () => Date };
+}
+
+async function generateMealIdea(params: GenerateMealIdeaInput): Promise<GenerateMealIdeaOutput> {
+    const response = await fetch('/api/genkit/flow/generateMealIdeaFlow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: params }),
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error('Failed to generate meal idea');
+    }
+    const result = await response.json();
+    return result.output;
 }
 
 function IngredientShoppingLink({ ingredient }: { ingredient: string }) {
@@ -347,7 +362,3 @@ export default function MealIdeasPage() {
         </Suspense>
     )
 }
-
-    
-
-    

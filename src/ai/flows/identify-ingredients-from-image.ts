@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview Identifies ingredients from an image of food items.
  *
- * - identifyIngredientsFromImage - A function that identifies ingredients from an image.
+ * - identifyIngredientsFlow - A Genkit flow that identifies ingredients from an image.
  * - IdentifyIngredientsFromImageInput - The input type for the identifyIngredientsFromImage function.
  * - IdentifyIngredientsFromImageOutput - The return type for the identifyIngredientsFromImage function.
  */
@@ -11,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const IdentifyIngredientsFromImageInputSchema = z.object({
+export const IdentifyIngredientsFromImageInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe(
@@ -22,7 +21,7 @@ export type IdentifyIngredientsFromImageInput = z.infer<
   typeof IdentifyIngredientsFromImageInputSchema
 >;
 
-const IdentifyIngredientsFromImageOutputSchema = z.object({
+export const IdentifyIngredientsFromImageOutputSchema = z.object({
   ingredients: z
     .array(z.string())
     .describe('A list of identified ingredients from the image.'),
@@ -31,11 +30,6 @@ export type IdentifyIngredientsFromImageOutput = z.infer<
   typeof IdentifyIngredientsFromImageOutputSchema
 >;
 
-export async function identifyIngredientsFromImage(
-  input: IdentifyIngredientsFromImageInput
-): Promise<IdentifyIngredientsFromImageOutput> {
-  return identifyIngredientsFlow(input);
-}
 
 const prompt = ai.definePrompt({
   name: 'identifyIngredientsPrompt',
@@ -50,7 +44,7 @@ const prompt = ai.definePrompt({
   Return your response in valid JSON format.`,
 });
 
-const identifyIngredientsFlow = ai.defineFlow(
+export const identifyIngredientsFlow = ai.defineFlow(
   {
     name: 'identifyIngredientsFlow',
     inputSchema: IdentifyIngredientsFromImageInputSchema,

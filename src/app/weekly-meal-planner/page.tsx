@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { generate7DayMealPlan, Generate7DayMealPlanOutput } from '@/ai/flows/generate-7-day-meal-plan';
+import type { Generate7DayMealPlanInput, Generate7DayMealPlanOutput } from '@/ai/flows/generate-7-day-meal-plan';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -35,6 +35,19 @@ const formSchema = z.object({
 });
 
 type WeeklyMealPlannerFormValues = z.infer<typeof formSchema>;
+
+async function generate7DayMealPlan(values: Generate7DayMealPlanInput): Promise<Generate7DayMealPlanOutput> {
+    const response = await fetch('/api/genkit/flow/generate7DayMealPlanFlow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: values }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to generate meal plan');
+    }
+    const result = await response.json();
+    return result.output;
+}
 
 export default function WeeklyMealPlannerPage() {
   const [mealPlan, setMealPlan] = useState<Generate7DayMealPlanOutput['mealPlan'] | null>(null);

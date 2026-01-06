@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview Generates a meal idea based on user preferences, including a generated image.
  *
- * - generateMealIdea - A function that generates a meal idea.
+ * - generateMealIdeaFlow - A Genkit flow that generates a meal idea.
  * - GenerateMealIdeaInput - The input type for the generateMealIdea function.
  * - GenerateMealIdeaOutput - The return type for the generateMealIdea function.
  */
@@ -11,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GenerateMealIdeaInputSchema = z.object({
+export const GenerateMealIdeaInputSchema = z.object({
   mealType: z.string().describe('The type of meal (e.g., Breakfast, Lunch, Dinner).'),
   dietaryPreference: z
     .string()
@@ -25,7 +24,7 @@ const GenerateMealIdeaInputSchema = z.object({
 });
 export type GenerateMealIdeaInput = z.infer<typeof GenerateMealIdeaInputSchema>;
 
-const GenerateMealIdeaOutputSchema = z.object({
+const MealDetailsSchema = z.object({
   title: z.string().describe('A creative title for the meal.'),
   description: z.string().describe('A brief, enticing description of the meal.'),
   ingredients: z.array(z.string()).describe('A list of ingredients for the meal.'),
@@ -41,22 +40,13 @@ const GenerateMealIdeaOutputSchema = z.object({
     .describe('Nutritional information for the meal.'),
 });
 
-// The final output type that the client will receive.
-export type GenerateMealIdeaOutput = z.infer<typeof MealDetailsWithImageSchema>;
-
-// An intermediate schema that includes the image search query.
-const MealDetailsSchema = GenerateMealIdeaOutputSchema;
 
 // The final schema for the flow output, which includes the final image URL.
-const MealDetailsWithImageSchema = MealDetailsSchema.extend({
+export const MealDetailsWithImageSchema = MealDetailsSchema.extend({
   imageDataUri: z.string().describe('A data URI for a generated image of the meal.'),
 });
 
-export async function generateMealIdea(
-  input: GenerateMealIdeaInput
-): Promise<GenerateMealIdeaOutput> {
-  return generateMealIdeaFlow(input);
-}
+export type GenerateMealIdeaOutput = z.infer<typeof MealDetailsWithImageSchema>;
 
 const mealDetailsPrompt = ai.definePrompt({
   name: 'generateMealDetailsPrompt',
@@ -77,7 +67,7 @@ Return your response as a valid JSON object that conforms to the output schema.
 `,
 });
 
-const generateMealIdeaFlow = ai.defineFlow(
+export const generateMealIdeaFlow = ai.defineFlow(
   {
     name: 'generateMealIdeaFlow',
     inputSchema: GenerateMealIdeaInputSchema,

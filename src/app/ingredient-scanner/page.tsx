@@ -5,8 +5,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { identifyIngredientsFromImage } from '@/ai/flows/identify-ingredients-from-image';
-import { generateMealIdeasFromIngredients } from '@/ai/flows/generate-meal-ideas-from-ingredients';
+import type { IdentifyIngredientsFromImageOutput } from '@/ai/flows/identify-ingredients-from-image';
+import type { GenerateMealIdeasFromIngredientsOutput } from '@/ai/flows/generate-meal-ideas-from-ingredients';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ArrowLeft, Camera, Loader2, Sparkles, Star } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +23,33 @@ type UserData = {
     trialGenerations?: number;
     trialStartedAt?: { toDate: () => Date };
 }
+
+async function identifyIngredientsFromImage(imageDataUri: string): Promise<IdentifyIngredientsFromImageOutput> {
+    const response = await fetch('/api/genkit/flow/identifyIngredientsFlow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: { imageDataUri } }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to identify ingredients');
+    }
+    const result = await response.json();
+    return result.output;
+}
+
+async function generateMealIdeasFromIngredients(ingredients: string[]): Promise<GenerateMealIdeasFromIngredientsOutput> {
+    const response = await fetch('/api/genkit/flow/generateMealIdeasFromIngredientsFlow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: { ingredients } }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to generate meal ideas');
+    }
+    const result = await response.json();
+    return result.output;
+}
+
 
 export default function IngredientScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -106,7 +133,7 @@ export default function IngredientScannerPage() {
     const imageDataUri = canvas.toDataURL('image/jpeg');
 
     try {
-      const { ingredients } = await identifyIngredientsFromImage({ imageDataUri });
+      const { ingredients } = await identifyIngredientsFromImage(imageDataUri);
       
       if (ingredients.length > 0) {
         setIdentifiedIngredients(ingredients);
@@ -161,7 +188,7 @@ export default function IngredientScannerPage() {
             return;
         }
 
-        const { mealIdeas } = await generateMealIdeasFromIngredients({ ingredients });
+        const { mealIdeas } = await generateMealIdeasFromIngredients(ingredients);
         setMealIdeas(mealIdeas);
 
         if (!isPremium) {

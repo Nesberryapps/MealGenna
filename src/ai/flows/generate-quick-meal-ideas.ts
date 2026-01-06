@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview Generates quick meal ideas for users who are short on time.
  *
- * - generateQuickMealIdeas - A function that generates quick meal ideas.
+ * - generateQuickMealIdeasFlow - A Genkit flow that generates quick meal ideas.
  * - GenerateQuickMealIdeasInput - The input type for the generateQuickMealIdeas function.
  * - GenerateQuickMealIdeasOutput - The return type for the generateQuickMealIdeas function.
  */
@@ -11,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GenerateQuickMealIdeasInputSchema = z.object({
+export const GenerateQuickMealIdeasInputSchema = z.object({
   ingredients: z
     .array(z.string())
     .describe('A list of ingredients available for the meal.'),
@@ -27,16 +26,11 @@ const GenerateQuickMealIdeasInputSchema = z.object({
 });
 export type GenerateQuickMealIdeasInput = z.infer<typeof GenerateQuickMealIdeasInputSchema>;
 
-const GenerateQuickMealIdeasOutputSchema = z.object({
+export const GenerateQuickMealIdeasOutputSchema = z.object({
   mealIdeas: z.array(z.string()).describe('A list of quick meal ideas.'),
 });
 export type GenerateQuickMealIdeasOutput = z.infer<typeof GenerateQuickMealIdeasOutputSchema>;
 
-export async function generateQuickMealIdeas(
-  input: GenerateQuickMealIdeasInput
-): Promise<GenerateQuickMealIdeasOutput> {
-  return generateQuickMealIdeasFlow(input);
-}
 
 const prompt = ai.definePrompt({
   name: 'generateQuickMealIdeasPrompt',
@@ -57,7 +51,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-const generateQuickMealIdeasFlow = ai.defineFlow(
+export const generateQuickMealIdeasFlow = ai.defineFlow(
   {
     name: 'generateQuickMealIdeasFlow',
     inputSchema: GenerateQuickMealIdeasInputSchema,
