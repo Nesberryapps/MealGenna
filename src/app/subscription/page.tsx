@@ -16,9 +16,8 @@ import { Footer } from '@/components/features/Footer';
 import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
 import { Capacitor } from '@capacitor/core';
-import { Purchases, LOG_LEVEL, PurchasesPackage, CustomerInfo } from '@revenuecat/purchases-capacitor';
+import type { Purchases, LOG_LEVEL, PurchasesPackage, CustomerInfo } from '@revenuecat/purchases-capacitor';
 
 
 type UserData = {
@@ -36,6 +35,8 @@ export default function SubscriptionPage() {
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isFetchingPackages, setIsFetchingPackages] = useState(true);
+  const [isRevenueCatReady, setIsRevenueCatReady] = useState(false);
+  const [Purchases, setPurchases] = useState<typeof import('@revenuecat/purchases-capacitor').Purchases | null>(null);
 
   const userRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -52,9 +53,16 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     const initRevenueCat = async () => {
-      if (!user) return;
+      if (!user || Capacitor.getPlatform() === 'web') {
+        setIsFetchingPackages(false);
+        return;
+      };
       
       try {
+        const RevenueCat = await import('@revenuecat/purchases-capacitor');
+        const Purchases = RevenueCat.Purchases;
+        setPurchases(Purchases);
+
         const platform = Capacitor.getPlatform();
         const apiKey = platform === 'ios' 
           ? process.env.NEXT_PUBLIC_REVENUECAT_API_KEY_APPLE 
@@ -66,18 +74,16 @@ export default function SubscriptionPage() {
             return;
         }
         
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
         await Purchases.configure({ apiKey });
 
-        // Associate the user with RevenueCat
         await Purchases.logIn({ appUserID: user.uid });
 
-        // Add a listener for purchaser info updates
+        setIsRevenueCatReady(true);
+
         Purchases.addCustomerInfoUpdateListener(async (info: CustomerInfo) => {
             await updateSubscriptionStatus(info);
         });
 
-        // Fetch offerings
         const offerings = await Purchases.getOfferings();
         if (offerings.current && offerings.current.availablePackages.length > 0) {
           setPackages(offerings.current.availablePackages);
@@ -94,10 +100,10 @@ export default function SubscriptionPage() {
       }
     };
 
-    if (user) {
+    if (user && !isUserLoading) {
         initRevenueCat();
     }
-  }, [user, toast]);
+  }, [user, isUserLoading, toast]);
 
   const updateSubscriptionStatus = async (customerInfo: CustomerInfo) => {
     if (!userRef) return;
@@ -114,7 +120,7 @@ export default function SubscriptionPage() {
 
 
   const handleSubscribe = async (pack: PurchasesPackage) => {
-    if (!user) {
+    if (!Purchases || !user) {
       toast({ title: "Please sign in to subscribe.", variant: "destructive" });
       return;
     }
@@ -141,6 +147,7 @@ export default function SubscriptionPage() {
   };
 
   const handleRestore = async () => {
+     if (!Purchases) return;
      try {
       const { customerInfo } = await Purchases.restorePurchases();
       if (customerInfo.entitlements.active['premium']) {
@@ -169,6 +176,18 @@ export default function SubscriptionPage() {
   const isPremium = userData?.subscriptionTier === 'premium';
   
   const renderPackageCard = () => {
+    if (Capacitor.getPlatform() === 'web') {
+      return (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Subscriptions Unavailable</AlertTitle>
+          <AlertDescription>
+            Managing subscriptions is only available in the mobile app.
+          </AlertDescription>
+        </Alert>
+      )
+    }
+
     if (isFetchingPackages) {
         return (
              <Card>
@@ -295,19 +314,21 @@ export default function SubscriptionPage() {
 
             {renderPackageCard()}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Manage Subscription</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                     <Button onClick={handleRestore} variant="outline" className="w-full" disabled={isPurchasing}>
-                        Restore Purchases
-                    </Button>
-                    {isPremium && (
-                        <p className="text-xs text-center text-muted-foreground">You can manage your subscription through your device's app store settings.</p>
-                    )}
-                </CardContent>
-            </Card>
+            {Capacitor.getPlatform() !== 'web' && (
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Manage Subscription</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                       <Button onClick={handleRestore} variant="outline" className="w-full" disabled={isPurchasing}>
+                          Restore Purchases
+                      </Button>
+                      {isPremium && (
+                          <p className="text-xs text-center text-muted-foreground">You can manage your subscription through your device's app store settings.</p>
+                      )}
+                  </CardContent>
+              </Card>
+            )}
 
           </div>
         )}
