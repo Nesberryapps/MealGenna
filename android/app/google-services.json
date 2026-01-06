@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "266513828882",
+    "project_id": "studio-8280698092-68a45",
+    "storage_bucket": "studio-8280698092-68a45.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266513828882:android:1d483f5fde54e7e2351ccb",
+        "android_client_info": {
+          "package_name": "com.nesberry.mealgenna.pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "266513828882-vm9mrd0dbmf5ss7itvh0ou9gl886ckno.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqEfiDgKvk6XtIH87krXvHSktMwP1oMOM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "266513828882-vm9mrd0dbmf5ss7itvh0ou9gl886ckno.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
