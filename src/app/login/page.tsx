@@ -64,7 +64,7 @@ export default function LoginPage() {
           }
           router.push('/profile');
         }
-      } catch (error) {
+      } catch (error: any) {
         // If no redirect operation was called, this error is expected and can be ignored.
         // Or if the popup was closed by user.
         if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
