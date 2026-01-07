@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Footer } from '@/components/features/Footer';
 import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc, updateDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, increment, setDoc } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
@@ -151,37 +151,26 @@ function MealIdeasContent() {
     setError(null);
     setMealIdea(null);
     
-    if (isUserLoading) return; // Wait until user status is resolved
+    if (isUserLoading) return;
 
     if (!user || !firestore) {
-      setError("Please sign in to generate meal ideas.");
+      setError("Please wait, initializing app...");
       setLoading(false);
-      toast({
-        title: "Authentication Required",
-        description: "You need to be signed in to generate meal ideas.",
-        variant: "destructive"
-      });
-      router.push('/login');
+      // Don't toast here, as anonymous sign-in should be fast.
       return;
     }
 
     const userRef = doc(firestore, 'users', user.uid);
     try {
         const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-            setError("User profile not found. Please sign in again.");
-            setLoading(false);
-            return;
-        }
+        // User doc might not exist for anonymous user yet, this is fine
+        const currentData = userDoc.data() as UserData | undefined;
+        setUserData(currentData ?? null);
 
-        const currentData = userDoc.data() as UserData;
-        setUserData(currentData);
+        const isPremium = currentData?.subscriptionTier === 'premium';
+        const trialGenerations = currentData?.trialGenerations || 0;
+        const trialStartedAt = currentData?.trialStartedAt?.toDate();
 
-        const isPremium = currentData.subscriptionTier === 'premium';
-        const trialGenerations = currentData.trialGenerations || 0;
-        const trialStartedAt = currentData.trialStartedAt?.toDate();
-
-        // Check if the 24-hour trial period has expired
         const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
 
         if (!isPremium && trialGenerations > 0 && isTrialExpired) {
@@ -210,12 +199,21 @@ function MealIdeasContent() {
         if (!isPremium) {
             const updates: any = { trialGenerations: increment(1) };
             if (trialGenerations === 0) {
-                 // Start the trial on the first generation
                 updates.trialStartedAt = serverTimestamp();
             }
-            await updateDoc(userRef, updates);
-             const newDoc = await getDoc(userRef);
-             if(newDoc.exists()) setUserData(newDoc.data() as UserData);
+             if(userDoc.exists()){
+                await updateDoc(userRef, updates);
+            } else {
+                await setDoc(userRef, {
+                    id: user.uid,
+                    email: user.email, // Will be null for anon users
+                    subscriptionTier: 'free',
+                    trialGenerations: 1,
+                    trialStartedAt: serverTimestamp(),
+                });
+            }
+            const newDoc = await getDoc(userRef);
+            if(newDoc.exists()) setUserData(newDoc.data() as UserData);
         }
     } catch (e) {
       setError('Failed to generate meal idea. Please try again.');

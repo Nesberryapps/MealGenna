@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Footer } from '@/components/features/Footer';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, serverTimestamp, setDoc } from 'firebase/firestore';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -106,14 +106,11 @@ export default function IngredientScannerPage() {
   const handleScan = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     
-    if (isUserLoading) return;
-    if (!user || !firestore) {
+    if (isUserLoading || !user || !firestore) {
         toast({
-            title: "Authentication Required",
-            description: "You must be signed in to scan ingredients.",
-            variant: "destructive"
+            title: "Loading...",
+            description: "Please wait until user data is loaded.",
         });
-        router.push('/login');
         return;
     }
 
@@ -165,16 +162,13 @@ export default function IngredientScannerPage() {
     
     try {
         const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-            throw new Error("User profile not found.");
-        }
+        // User doc might not exist for anonymous user yet, this is fine
         
-        const userData = userDoc.data() as UserData;
-        const isPremium = userData.subscriptionTier === 'premium';
-        const trialGenerations = userData.trialGenerations || 0;
-        const trialStartedAt = userData.trialStartedAt?.toDate();
+        const userData = userDoc.data() as UserData | undefined;
+        const isPremium = userData?.subscriptionTier === 'premium';
+        const trialGenerations = userData?.trialGenerations || 0;
+        const trialStartedAt = userData?.trialStartedAt?.toDate();
         
-        // Check if the 24-hour trial period has expired
         const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
 
         if (!isPremium && trialGenerations > 0 && isTrialExpired) {
@@ -194,10 +188,20 @@ export default function IngredientScannerPage() {
         if (!isPremium) {
             const updates: any = { trialGenerations: increment(1) };
             if (trialGenerations === 0) {
-                // Start the trial on the first generation
                 updates.trialStartedAt = serverTimestamp();
             }
-            await updateDoc(userRef, updates);
+
+            if(userDoc.exists()){
+                await updateDoc(userRef, updates);
+            } else {
+                await setDoc(userRef, {
+                    id: user.uid,
+                    email: user.email,
+                    subscriptionTier: 'free',
+                    trialGenerations: 1,
+                    trialStartedAt: serverTimestamp(),
+                });
+            }
         }
 
     } catch (error) {

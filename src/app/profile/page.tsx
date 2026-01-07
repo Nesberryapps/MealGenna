@@ -3,28 +3,43 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/features/Footer';
 import Link from 'next/link';
-import { ArrowLeft, LogOut, Star, Bell } from 'lucide-react';
+import { ArrowLeft, LogOut, Star, Bell, User as UserIcon, Apple, Chrome } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { GoogleAuthProvider, OAuthProvider, linkWithPopup, signInWithPopup, getRedirectResult, linkWithRedirect, signInWithRedirect } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Capacitor } from '@capacitor/core';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function ProfilePage() {
-  const auth = useAuth();
+  const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
+  const [isLinking, setIsLinking] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-      router.push('/login');
+      router.push('/');
     }
   }, [user, isUserLoading, router]);
 
@@ -40,11 +55,59 @@ export default function ProfilePage() {
     if (!auth) return;
     try {
       await auth.signOut();
-      router.push('/login');
+      router.push('/');
+      toast({
+        title: 'Signed Out',
+        description: 'You have been signed out.',
+      });
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
+  
+  const handleLinkAccount = async (provider: GoogleAuthProvider | OAuthProvider) => {
+    if (!auth || !user || !firestore) return;
+    setIsLinking(true);
+
+    const isNative = Capacitor.isNativePlatform();
+
+    try {
+        if(isNative) {
+            // For native, the experience is better if we just sign in with the new provider
+            // which will automatically link if the email is the same, or create a new user.
+            // Firebase handles this logic. We'll use signInWithRedirect.
+            await signInWithRedirect(auth, provider);
+            // The app will reload after the redirect, and onAuthStateChanged will handle the rest.
+        } else {
+            const result = await linkWithPopup(user, provider);
+            const linkedUser = result.user;
+
+            const userRef = doc(firestore, 'users', linkedUser.uid);
+            await setDoc(userRef, {
+                id: linkedUser.uid,
+                email: linkedUser.email,
+                name: linkedUser.displayName,
+                photoURL: linkedUser.photoURL,
+            }, { merge: true });
+
+            toast({
+                title: "Account Linked",
+                description: `Successfully linked your ${provider.providerId} account.`,
+            });
+        }
+    } catch (error: any) {
+        console.error('Error linking account:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Linking Failed',
+            description: error.code === 'auth/credential-already-in-use' 
+                ? 'This account is already linked to another user.' 
+                : 'Could not link account. Please try again.',
+        });
+    } finally {
+        setIsLinking(false);
+    }
+};
 
   const handleNotificationToggle = async (checked: boolean) => {
     if (!('Notification' in window)) {
@@ -125,14 +188,34 @@ export default function ProfilePage() {
           <CardHeader className="items-center text-center">
             <Avatar className="h-24 w-24">
               <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-              <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+              <AvatarFallback>
+                {user.isAnonymous ? <UserIcon /> : user.displayName?.charAt(0)}
+              </AvatarFallback>
             </Avatar>
             <div className="pt-4">
-              <CardTitle>{user.displayName}</CardTitle>
-              <CardDescription>{user.email}</CardDescription>
+              <CardTitle>{user.isAnonymous ? 'Anonymous User' : user.displayName || 'User'}</CardTitle>
+              <CardDescription>{user.isAnonymous ? 'Sign up to save your data' : user.email}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {user.isAnonymous && (
+                <Card className="bg-secondary/50">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Link Your Account</CardTitle>
+                        <CardDescription>
+                            Sign in with Google or Apple to save your meal plans and subscription across devices.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2">
+                        <Button onClick={() => handleLinkAccount(new GoogleAuthProvider())} variant="outline" disabled={isLinking}>
+                            <Chrome className="mr-2" /> Link with Google
+                        </Button>
+                         <Button onClick={() => handleLinkAccount(new OAuthProvider('apple.com'))} variant="outline" disabled={isLinking}>
+                            <Apple className="mr-2" /> Link with Apple
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="flex items-center space-x-3">
                 <Bell className="h-5 w-5 text-muted-foreground" />
@@ -152,13 +235,26 @@ export default function ProfilePage() {
                 Manage Subscription
               </Link>
             </Button>
-            <Button onClick={handleSignOut} variant="destructive" className="w-full">
-              <LogOut className="mr-2" />
-              Sign Out
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/">Back to Home</Link>
-            </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                        <LogOut className="mr-2" />
+                        Sign Out
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        If you are an anonymous user, signing out will permanently delete your data and any active subscription. Link your account to save your progress.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </main>

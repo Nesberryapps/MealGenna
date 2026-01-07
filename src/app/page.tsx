@@ -7,14 +7,13 @@ import { ActionCard } from '@/components/features/ActionCard';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, User as UserIcon, CreditCard } from 'lucide-react';
+import { LogOut, User as UserIcon, CreditCard, Settings } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,55 +28,37 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function ProfileButton() {
     const { user, isUserLoading } = useUser();
-    const auth = useAuth();
     const router = useRouter();
-
-     const handleSignOut = async () => {
-        if (!auth) return;
-        try {
-        await auth.signOut();
-        router.push('/login');
-        } catch (error) {
-        console.error('Error signing out:', error);
-        }
-    };
 
     if (isUserLoading) {
         return <Skeleton className="h-10 w-10 rounded-full" />;
     }
 
+    // Since we are using anonymous auth, user object will always exist after initial load.
+    // We can show a settings/profile icon.
     if (user) {
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                     <Avatar className="cursor-pointer h-10 w-10">
-                        <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                        <AvatarFallback>{user.displayName?.charAt(0) || <UserIcon />}</AvatarFallback>
-                    </Avatar>
+                     <Button variant="ghost" size="icon">
+                        <Settings className="h-6 w-6" />
+                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                        <Link href="/profile"><UserIcon className="mr-2" /> Profile</Link>
+                    <DropdownMenuItem onClick={() => router.push('/profile')}>
+                      <UserIcon className="mr-2" /> Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href="/subscription"><CreditCard className="mr-2" /> Subscription</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut}>
-                       <LogOut className="mr-2" /> Sign Out
+                    <DropdownMenuItem onClick={() => router.push('/subscription')}>
+                      <CreditCard className="mr-2" /> Subscription
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         )
     }
 
-    return (
-        <Button asChild>
-            <Link href="/login">Sign In</Link>
-        </Button>
-    )
+    return null; // Should not be reached in normal operation
 }
 
 export default function Home() {
@@ -92,8 +73,8 @@ export default function Home() {
   
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const router = useRouter();
   const { toast } = useToast();
+  const router = useRouter();
 
   const userRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -103,17 +84,11 @@ export default function Home() {
   const { data: userData } = useDoc<{subscriptionTier: string}>(userRef);
 
   const handleWeeklyPlanClick = (e: React.MouseEvent) => {
-    if (!user) {
-        e.preventDefault();
-        toast({
-            title: "Please Sign In",
-            description: "You need to be signed in to access the 7-Day Meal Plan.",
-            variant: "destructive"
-        });
-        router.push('/login'); // Redirect to login if not signed in
-        return;
+    if (isUserLoading) {
+      e.preventDefault();
+      return;
     }
-
+    
     if (userData?.subscriptionTier !== 'premium') {
         e.preventDefault();
         toast({
@@ -121,6 +96,7 @@ export default function Home() {
             description: "The 7-Day Meal Plan is a premium feature. Please subscribe to access it.",
             variant: "destructive"
         });
+        router.push('/subscription');
     }
   }
 
@@ -214,7 +190,7 @@ export default function Home() {
             {isUserLoading ? (
               <Skeleton className="h-[288px] w-full rounded-xl" />
             ) : (
-               <Link href="/weekly-meal-planner" onClick={handleWeeklyPlanClick}>
+               <div onClick={handleWeeklyPlanClick} className="cursor-pointer">
                 <ActionCard
                   title="7-Day Meal Plan"
                   description="Generate a meal plan for the week, tailored to you."
@@ -223,7 +199,7 @@ export default function Home() {
                   imageAlt="Several glass containers with prepped meals"
                   imageHint="meal prep"
                 />
-              </Link>
+              </div>
             )}
         </div>
       </main>
