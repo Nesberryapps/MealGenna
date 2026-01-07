@@ -54,8 +54,9 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # Import certificate and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          # We use tr -d '\n\r' to remove any accidental newlines from the base64 strings
+          echo -n "$BUILD_CERTIFICATE_BASE64" | tr -d '\n\r' | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | tr -d '\n\r' | base64 --decode -o $PP_PATH
 
           # create temporary keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -125,9 +126,11 @@ jobs:
       - name: Build Android App Bundle
         run: |
           cd android
-          echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > app/release.keystore
+          # Decode keystore into android/app/ directory
+          # Clean base64 string to remove newlines
+          echo "${{ secrets.ANDROID_SIGNING_KEY }}" | tr -d '\n\r' | base64 --decode > app/release.keystore
           
-          # DEBUG: List aliases in the keystore to help debug "Certificate chain not found" error
+          # DEBUG: List aliases in the keystore
           echo "Listing aliases in keystore:"
           keytool -list -v -keystore app/release.keystore -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" || echo "Failed to list keystore content"
 
