@@ -53,7 +53,13 @@ jobs:
           PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
+          # DEBUG: Print lengths to verify secrets are present
+          echo "Certificate Secret Length: ${#BUILD_CERTIFICATE_BASE64}"
+          echo "Profile Secret Length: ${#BUILD_PROVISION_PROFILE_BASE64}"
+
           # Import certificate and provisioning profile from secrets
+          # using -D to decode on linux/mac cross-compatibly (though we are on mac)
+          # using openssl base64 -d -A is safer for long strings without newlines
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
 
@@ -76,7 +82,21 @@ jobs:
       - name: Build iOS App
         run: |
           cd ios/App
-          ./build-and-export.sh
+          # Force manual signing in xcodebuild arguments
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_DEVELOPMENT_TEAM_ID }}
+
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -exportPath $RUNNER_TEMP/build \
+            -exportOptionsPlist App/ExportOptions.plist
         env:
           RUNNER_TEMP: ${{ runner.temp }}
           
