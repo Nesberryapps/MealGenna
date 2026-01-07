@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Capacitor } from '@capacitor/core';
 import type { Purchases, LOG_LEVEL, PurchasesPackage, CustomerInfo } from '@revenuecat/purchases-capacitor';
-
+import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 type UserData = {
   subscriptionTier: 'free' | 'premium';
@@ -268,72 +268,74 @@ export default function SubscriptionPage() {
   );
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background text-foreground">
-        <header className="py-4 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md mx-auto flex items-center justify-between">
-                <Link href="/profile">
-                  <Button variant="ghost" size="icon">
-                      <ArrowLeft />
-                  </Button>
-                </Link>
-                <div className="flex items-center gap-2">
-                    <Logo />
-                    <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
+    <WebRedirectGuard>
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
+            <header className="py-4 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-md mx-auto flex items-center justify-between">
+                    <Link href="/profile">
+                    <Button variant="ghost" size="icon">
+                        <ArrowLeft />
+                    </Button>
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <Logo />
+                        <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
+                    </div>
+                    <div className="w-8"></div>
                 </div>
-                <div className="w-8"></div>
+        </header>
+
+        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
+            {isLoading ? renderLoadingSkeleton() : (
+            <div className="space-y-6">
+                <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                    <CardTitle>Your Plan</CardTitle>
+                    <Badge variant={isPremium ? 'default' : 'secondary'}>
+                        {isPremium ? 'Premium' : 'Free'}
+                    </Badge>
+                    </div>
+                    <CardDescription>
+                    {isPremium ? 'You have full access to all features.' : 'Upgrade to premium to unlock all features.'}
+                    </CardDescription>
+                </CardHeader>
+                {isPremium && (
+                    <CardContent>
+                        <Alert variant="default">
+                            <Star className="h-4 w-4" />
+                            <AlertTitle>Thank You!</AlertTitle>
+                            <AlertDescription>
+                                Your support helps us continue to improve MealGenna.
+                            </AlertDescription>
+                        </Alert>
+                    </CardContent>
+                )}
+                </Card>
+
+                {renderPackageCard()}
+
+                {Capacitor.getPlatform() !== 'web' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Manage Subscription</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        <Button onClick={handleRestore} variant="outline" className="w-full" disabled={isPurchasing}>
+                            Restore Purchases
+                        </Button>
+                        {isPremium && (
+                            <p className="text-xs text-center text-muted-foreground">You can manage your subscription through your device's app store settings.</p>
+                        )}
+                    </CardContent>
+                </Card>
+                )}
+
             </div>
-      </header>
-
-      <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
-        {isLoading ? renderLoadingSkeleton() : (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Your Plan</CardTitle>
-                   <Badge variant={isPremium ? 'default' : 'secondary'}>
-                    {isPremium ? 'Premium' : 'Free'}
-                   </Badge>
-                </div>
-                <CardDescription>
-                  {isPremium ? 'You have full access to all features.' : 'Upgrade to premium to unlock all features.'}
-                </CardDescription>
-              </CardHeader>
-              {isPremium && (
-                 <CardContent>
-                    <Alert variant="default">
-                        <Star className="h-4 w-4" />
-                        <AlertTitle>Thank You!</AlertTitle>
-                        <AlertDescription>
-                            Your support helps us continue to improve MealGenna.
-                        </AlertDescription>
-                    </Alert>
-                </CardContent>
-              )}
-            </Card>
-
-            {renderPackageCard()}
-
-            {Capacitor.getPlatform() !== 'web' && (
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Manage Subscription</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                       <Button onClick={handleRestore} variant="outline" className="w-full" disabled={isPurchasing}>
-                          Restore Purchases
-                      </Button>
-                      {isPremium && (
-                          <p className="text-xs text-center text-muted-foreground">You can manage your subscription through your device's app store settings.</p>
-                      )}
-                  </CardContent>
-              </Card>
             )}
-
-          </div>
-        )}
-      </main>
-      <Footer />
-    </div>
+        </main>
+        <Footer />
+        </div>
+    </WebRedirectGuard>
   );
 }

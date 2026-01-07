@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 export default function ProfilePage() {
   const { auth, firestore } = useFirebase();
@@ -192,95 +193,97 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background text-foreground">
-      <header className="py-4 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md mx-auto flex items-center justify-start">
-          <Link href="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft />
-            </Button>
-          </Link>
+    <WebRedirectGuard>
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
+        <header className="py-4 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md mx-auto flex items-center justify-start">
+            <Link href="/">
+                <Button variant="ghost" size="icon">
+                <ArrowLeft />
+                </Button>
+            </Link>
+            </div>
+        </header>
+        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+            <Card>
+            <CardHeader className="items-center text-center">
+                <Avatar className="h-24 w-24">
+                <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                <AvatarFallback>
+                    {user.isAnonymous ? <UserIcon /> : user.displayName?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+                </Avatar>
+                <div className="pt-4">
+                <CardTitle>{user.isAnonymous ? 'Guest User' : user.displayName || 'User'}</CardTitle>
+                <CardDescription>{user.isAnonymous ? 'Link your account to save your data' : user.email}</CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {user.isAnonymous && (
+                    <Card className="bg-secondary/50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Link Your Account</CardTitle>
+                            <CardDescription>
+                                Create a permanent account to save your meal plans and use your subscription across multiple devices.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-2">
+                            <Button onClick={() => handleLinkAccount(new GoogleAuthProvider())} variant="outline" disabled={isLinking}>
+                                <Chrome className="mr-2" /> Link with Google
+                            </Button>
+                            <Button onClick={() => handleLinkAccount(new OAuthProvider('apple.com'))} variant="outline" disabled={isLinking}>
+                                <Apple className="mr-2" /> Link with Apple
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="flex items-center space-x-3">
+                    <Bell className="h-5 w-5 text-muted-foreground" />
+                    <Label htmlFor="notifications" className="font-medium">
+                    Mealtime Notifications
+                    </Label>
+                </div>
+                <Switch
+                    id="notifications"
+                    checked={notificationsEnabled}
+                    onCheckedChange={handleNotificationToggle}
+                />
+                </div>
+                <Button asChild variant="default" className="w-full">
+                <Link href="/subscription">
+                    <Star className="mr-2" />
+                    Manage Subscription
+                </Link>
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                            <LogOut className="mr-2" />
+                            Sign Out
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {user.isAnonymous 
+                                ? "Signing out as a guest is permanent. To save your subscription and meal history, please link your account first." 
+                                : "You will be signed out on this device."
+                            }
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardContent>
+            </Card>
+        </main>
+        <Footer />
         </div>
-      </header>
-      <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
-        <Card>
-          <CardHeader className="items-center text-center">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-              <AvatarFallback>
-                {user.isAnonymous ? <UserIcon /> : user.displayName?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="pt-4">
-              <CardTitle>{user.isAnonymous ? 'Guest User' : user.displayName || 'User'}</CardTitle>
-              <CardDescription>{user.isAnonymous ? 'Link your account to save your data' : user.email}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {user.isAnonymous && (
-                <Card className="bg-secondary/50">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Link Your Account</CardTitle>
-                        <CardDescription>
-                            Create a permanent account to save your meal plans and use your subscription across multiple devices.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                        <Button onClick={() => handleLinkAccount(new GoogleAuthProvider())} variant="outline" disabled={isLinking}>
-                            <Chrome className="mr-2" /> Link with Google
-                        </Button>
-                         <Button onClick={() => handleLinkAccount(new OAuthProvider('apple.com'))} variant="outline" disabled={isLinking}>
-                            <Apple className="mr-2" /> Link with Apple
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="flex items-center space-x-3">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-                <Label htmlFor="notifications" className="font-medium">
-                  Mealtime Notifications
-                </Label>
-              </div>
-              <Switch
-                id="notifications"
-                checked={notificationsEnabled}
-                onCheckedChange={handleNotificationToggle}
-              />
-            </div>
-            <Button asChild variant="default" className="w-full">
-              <Link href="/subscription">
-                <Star className="mr-2" />
-                Manage Subscription
-              </Link>
-            </Button>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                        <LogOut className="mr-2" />
-                        Sign Out
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {user.isAnonymous 
-                            ? "Signing out as a guest is permanent. To save your subscription and meal history, please link your account first." 
-                            : "You will be signed out on this device."
-                        }
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
-      </main>
-      <Footer />
-    </div>
+    </WebRedirectGuard>
   );
 }

@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -253,102 +254,104 @@ function MealIdeasContent() {
   );
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background text-foreground">
-       <header className="py-4 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-            <Link href="/">
-                <Button variant="ghost" size="icon">
-                    <ArrowLeft />
-                </Button>
-            </Link>
-          <div className="flex items-center gap-2">
-            <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
-          </div>
-          <div className="w-8"></div>
-        </div>
-      </header>
-      <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
-        <Card className="w-full overflow-hidden">
-          {loading && renderSkeleton()}
-          {error && <div className="p-6 text-center text-destructive">{error}</div>}
-          
-          <div ref={mealIdeaRef}>
-            {mealIdea && !loading && (
-                <div data-meal-idea-content>
-                  <div className="relative h-64 w-full">
-                    <Image src={mealIdea.imageDataUri} alt={mealIdea.title} fill className="object-cover" unoptimized/>
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-bold">{mealIdea.title}</CardTitle>
-                    <p className="text-muted-foreground pt-2">{mealIdea.description}</p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    
-                    <Separator />
-
-                    <div>
-                      <h3 className="text-lg font-semibold flex items-center gap-2"><ChefHat className="h-5 w-5 text-primary" /> Ingredients</h3>
-                      <ul className="mt-2 space-y-1 text-muted-foreground">
-                        {mealIdea.ingredients.map((item, index) => (
-                           <li key={index} className="flex items-center justify-between">
-                                <span>{item}</span>
-                                {userData?.subscriptionTier === 'premium' && (
-                                    <IngredientShoppingLink ingredient={item} />
-                                )}
-                            </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold flex items-center gap-2"><Flame className="h-5 w-5 text-primary" /> Instructions</h3>
-                       <ol className="list-decimal list-inside mt-2 space-y-2 text-muted-foreground">
-                        {mealIdea.instructions.map((item, index) => <li key={index}>{item}</li>)}
-                      </ol>
-                      <p className="text-sm text-muted-foreground mt-2"><strong>Cooking Time:</strong> {mealIdea.cookingTime}</p>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold flex items-center gap-2"><Scale className="h-5 w-5 text-primary" /> Nutritional Facts</h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-muted-foreground">
-                        <p><strong>Calories:</strong> {mealIdea.nutrition.calories}</p>
-                        <p><strong>Protein:</strong> {mealIdea.nutrition.protein}</p>
-                        <p><strong>Fat:</strong> {mealIdea.nutrition.fat}</p>
-                        <p><strong>Carbs:</strong> {mealIdea.nutrition.carbs}</p>
+    <WebRedirectGuard>
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
+           <header className="py-4 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md mx-auto flex items-center justify-between">
+                <Link href="/">
+                    <Button variant="ghost" size="icon">
+                        <ArrowLeft />
+                    </Button>
+                </Link>
+              <div className="flex items-center gap-2">
+                <Logo />
+                <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
+              </div>
+              <div className="w-8"></div>
+            </div>
+          </header>
+          <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+            <Card className="w-full overflow-hidden">
+              {loading && renderSkeleton()}
+              {error && <div className="p-6 text-center text-destructive">{error}</div>}
+              
+              <div ref={mealIdeaRef}>
+                {mealIdea && !loading && (
+                    <div data-meal-idea-content>
+                      <div className="relative h-64 w-full">
+                        <Image src={mealIdea.imageDataUri} alt={mealIdea.title} fill className="object-cover" unoptimized/>
                       </div>
-                    </div>
-                  </CardContent>
-                </div>
-            )}
-          </div>
-          {!loading && !error && mealIdea && (
-            <div className="p-6 pt-0 space-y-4">
-              {userData?.subscriptionTier === 'premium' && (
-                  <Button onClick={handleDownload} variant="outline" className="w-full">
-                      <Download className="mr-2 h-4 w-4"/>
-                      Download PDF
-                  </Button>
-              )}
-              <Button onClick={getMealIdea} disabled={loading || isUserLoading} className="w-full">
-                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Generate Another
-              </Button>
-            </div>
-          )}
+                      <CardHeader>
+                        <CardTitle className="text-2xl font-bold">{mealIdea.title}</CardTitle>
+                        <p className="text-muted-foreground pt-2">{mealIdea.description}</p>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        
+                        <Separator />
 
-          {error && (
-             <div className="p-6 pt-0 space-y-4">
-                <Button onClick={() => router.push('/subscription')} className="w-full">
-                    <Star className="mr-2 h-4 w-4" />
-                    Upgrade to Premium
-                </Button>
-            </div>
-          )}
-        </Card>
-      </main>
-      <Footer />
-    </div>
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center gap-2"><ChefHat className="h-5 w-5 text-primary" /> Ingredients</h3>
+                          <ul className="mt-2 space-y-1 text-muted-foreground">
+                            {mealIdea.ingredients.map((item, index) => (
+                               <li key={index} className="flex items-center justify-between">
+                                    <span>{item}</span>
+                                    {userData?.subscriptionTier === 'premium' && (
+                                        <IngredientShoppingLink ingredient={item} />
+                                    )}
+                                </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center gap-2"><Flame className="h-5 w-5 text-primary" /> Instructions</h3>
+                           <ol className="list-decimal list-inside mt-2 space-y-2 text-muted-foreground">
+                            {mealIdea.instructions.map((item, index) => <li key={index}>{item}</li>)}
+                          </ol>
+                          <p className="text-sm text-muted-foreground mt-2"><strong>Cooking Time:</strong> {mealIdea.cookingTime}</p>
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center gap-2"><Scale className="h-5 w-5 text-primary" /> Nutritional Facts</h3>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-muted-foreground">
+                            <p><strong>Calories:</strong> {mealIdea.nutrition.calories}</p>
+                            <p><strong>Protein:</strong> {mealIdea.nutrition.protein}</p>
+                            <p><strong>Fat:</strong> {mealIdea.nutrition.fat}</p>
+                            <p><strong>Carbs:</strong> {mealIdea.nutrition.carbs}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </div>
+                )}
+              </div>
+              {!loading && !error && mealIdea && (
+                <div className="p-6 pt-0 space-y-4">
+                  {userData?.subscriptionTier === 'premium' && (
+                      <Button onClick={handleDownload} variant="outline" className="w-full">
+                          <Download className="mr-2 h-4 w-4"/>
+                          Download PDF
+                  </Button>
+                  )}
+                  <Button onClick={getMealIdea} disabled={loading || isUserLoading} className="w-full">
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    Generate Another
+                  </Button>
+                </div>
+              )}
+
+              {error && (
+                 <div className="p-6 pt-0 space-y-4">
+                    <Button onClick={() => router.push('/subscription')} className="w-full">
+                        <Star className="mr-2 h-4 w-4" />
+                        Upgrade to Premium
+                    </Button>
+                </div>
+              )}
+            </Card>
+          </main>
+          <Footer />
+        </div>
+    </WebRedirectGuard>
   );
 }
 

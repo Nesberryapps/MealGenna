@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Footer } from '@/components/features/Footer';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc, updateDoc, increment, serverTimestamp, setDoc } from 'firebase/firestore';
+import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -218,91 +219,93 @@ export default function IngredientScannerPage() {
 
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background text-foreground">
-       <header className="py-4 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-            <Link href="/">
-                <Button variant="ghost" size="icon">
-                    <ArrowLeft />
-                </Button>
-            </Link>
-          <div className="flex items-center gap-2">
-            <Logo />
-            <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
-          </div>
-          <div className="w-8"></div>
-        </div>
-      </header>
+    <WebRedirectGuard>
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
+           <header className="py-4 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md mx-auto flex items-center justify-between">
+                <Link href="/">
+                    <Button variant="ghost" size="icon">
+                        <ArrowLeft />
+                    </Button>
+                </Link>
+              <div className="flex items-center gap-2">
+                <Logo />
+                <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
+              </div>
+              <div className="w-8"></div>
+            </div>
+          </header>
 
-      <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center">
-        <Card className="w-full">
-            <CardHeader>
-                <CardTitle>Ingredient Scanner</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="relative aspect-video w-full bg-muted rounded-md overflow-hidden border">
-                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                    <canvas ref={canvasRef} className="hidden" />
-                    {hasCameraPermission === false && (
-                         <div className="absolute inset-0 flex items-center justify-center p-4">
-                            <Alert variant="destructive">
-                                <AlertTitle>Camera Access Required</AlertTitle>
-                                <AlertDescription>
-                                    Please allow camera access in your browser to use this feature.
-                                </AlertDescription>
-                            </Alert>
-                         </div>
-                    )}
-                     {(isScanning && !isGenerating) && (
-                        <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center space-y-2">
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                            <p>Scanning for ingredients...</p>
-                        </div>
-                    )}
-                </div>
-
-                <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading} className="w-full">
-                    {isScanning || isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                    Scan Ingredients
-                </Button>
-
-                {identifiedIngredients.length > 0 && (
-                    <div className="space-y-4 pt-4">
-                        <Separator />
-                        <h3 className="text-lg font-semibold">Identified Ingredients:</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {identifiedIngredients.map((ingredient, index) => (
-                                <Badge key={index} variant="secondary">{ingredient}</Badge>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                
-                {(isGenerating || mealIdeas.length > 0) && (
-                     <div className="space-y-4 pt-4">
-                        <Separator />
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                           <Sparkles className="h-5 w-5 text-primary" /> Meal Ideas
-                        </h3>
-                        {isGenerating ? (
-                             <div className="flex flex-col items-center justify-center py-4 space-y-2">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                                <p className="text-sm text-muted-foreground">Generating ideas...</p>
+          <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+            <Card className="w-full">
+                <CardHeader>
+                    <CardTitle>Ingredient Scanner</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="relative aspect-video w-full bg-muted rounded-md overflow-hidden border">
+                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+                        <canvas ref={canvasRef} className="hidden" />
+                        {hasCameraPermission === false && (
+                             <div className="absolute inset-0 flex items-center justify-center p-4">
+                                <Alert variant="destructive">
+                                    <AlertTitle>Camera Access Required</AlertTitle>
+                                    <AlertDescription>
+                                        Please allow camera access in your browser to use this feature.
+                                    </AlertDescription>
+                                </Alert>
                              </div>
-                        ) : (
-                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                                {mealIdeas.map((idea, index) => (
-                                    <li key={index}>{idea}</li>
-                                ))}
-                            </ul>
+                        )}
+                         {(isScanning && !isGenerating) && (
+                            <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center space-y-2">
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                                <p>Scanning for ingredients...</p>
+                            </div>
                         )}
                     </div>
-                )}
 
-            </CardContent>
-        </Card>
-      </main>
-      <Footer />
-    </div>
+                    <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading} className="w-full">
+                        {isScanning || isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                        Scan Ingredients
+                    </Button>
+
+                    {identifiedIngredients.length > 0 && (
+                        <div className="space-y-4 pt-4">
+                            <Separator />
+                            <h3 className="text-lg font-semibold">Identified Ingredients:</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {identifiedIngredients.map((ingredient, index) => (
+                                    <Badge key={index} variant="secondary">{ingredient}</Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {(isGenerating || mealIdeas.length > 0) && (
+                         <div className="space-y-4 pt-4">
+                            <Separator />
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                               <Sparkles className="h-5 w-5 text-primary" /> Meal Ideas
+                            </h3>
+                            {isGenerating ? (
+                                 <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                    <p className="text-sm text-muted-foreground">Generating ideas...</p>
+                                 </div>
+                            ) : (
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                    {mealIdeas.map((idea, index) => (
+                                        <li key={index}>{idea}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
+                </CardContent>
+            </Card>
+          </main>
+          <Footer />
+        </div>
+    </WebRedirectGuard>
   );
 }
