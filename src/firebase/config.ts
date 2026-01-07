@@ -13,26 +13,45 @@ export const firebaseConfig = {
 };
 
 type FirebaseServices = {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
+  firebaseApp: FirebaseApp | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
 };
 
 // This function is the single point of entry for Firebase initialization.
 export function initializeFirebase(): FirebaseServices {
-  if (getApps().length) {
-    const app = getApp();
+  // Check if critical config is present
+  if (!firebaseConfig.apiKey) {
+    console.warn("Firebase API Key is missing. Skipping initialization.");
     return {
-      firebaseApp: app,
-      auth: getAuth(app),
-      firestore: getFirestore(app),
+      firebaseApp: null,
+      auth: null,
+      firestore: null,
     };
   }
-  
-  const firebaseApp = initializeApp(firebaseConfig);
-  return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
-  };
+
+  try {
+      if (getApps().length) {
+        const app = getApp();
+        return {
+          firebaseApp: app,
+          auth: getAuth(app),
+          firestore: getFirestore(app),
+        };
+      }
+      
+      const firebaseApp = initializeApp(firebaseConfig);
+      return {
+        firebaseApp,
+        auth: getAuth(firebaseApp),
+        firestore: getFirestore(firebaseApp),
+      };
+  } catch (error) {
+    console.error("Error initializing Firebase:", error);
+    return {
+        firebaseApp: null,
+        auth: null,
+        firestore: null,
+    };
+  }
 }
