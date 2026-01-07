@@ -20,7 +20,7 @@ jobs:
           node-version: '20.x'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install
 
       - name: Build Next.js app
         run: npm run build
@@ -54,9 +54,8 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # Import certificate and provisioning profile from secrets
-          # We use tr -d '\n\r' to remove any accidental newlines from the base64 strings
-          echo -n "$BUILD_CERTIFICATE_BASE64" | tr -d '\n\r' | base64 --decode -o $CERTIFICATE_PATH
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | tr -d '\n\r' | base64 --decode -o $PP_PATH
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
 
           # create temporary keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -105,7 +104,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install
 
       - name: Build Next.js app
         run: npm run build
@@ -123,23 +122,19 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Create Keystore Properties
+        run: bash create-keystore-properties.sh
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_ALIAS }}
+
       - name: Build Android App Bundle
         run: |
           cd android
           # Decode keystore into android/app/ directory
-          # Clean base64 string to remove newlines
-          echo "${{ secrets.ANDROID_SIGNING_KEY }}" | tr -d '\n\r' | base64 --decode > app/release.keystore
-          
-          # DEBUG: List aliases in the keystore
-          echo "Listing aliases in keystore:"
-          keytool -list -v -keystore app/release.keystore -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" || echo "Failed to list keystore content"
-
+          echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > app/release.keystore
           ./gradlew bundleRelease
-        env:
-          ANDROID_KEYSTORE_FILE: release.keystore
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
