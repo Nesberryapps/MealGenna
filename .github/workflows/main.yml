@@ -53,15 +53,10 @@ jobs:
           PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          # DEBUG: Print lengths to verify secrets are present
-          echo "Certificate Secret Length: ${#BUILD_CERTIFICATE_BASE64}"
-          echo "Profile Secret Length: ${#BUILD_PROVISION_PROFILE_BASE64}"
-
           # Import certificate and provisioning profile from secrets
-          # using -D to decode on linux/mac cross-compatibly (though we are on mac)
-          # using openssl base64 -d -A is safer for long strings without newlines
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          # FIX: Use -D for macOS base64 decoding
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 -D -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 -D -o $PP_PATH
 
           # create temporary keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -152,7 +147,7 @@ jobs:
       - name: Build Android App Bundle
         run: |
           cd android
-          # Decode keystore into android/app/ directory
+          # Decode keystore into android/app/ directory using Linux base64
           echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > app/release.keystore
           ./gradlew bundleRelease
 
