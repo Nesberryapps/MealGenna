@@ -11,6 +11,8 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,7 @@ import { Apple, Chrome } from 'lucide-react';
 import { Footer } from '@/components/features/Footer';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Capacitor } from '@capacitor/core';
 
 export default function LoginPage() {
   const { auth, firestore } = useFirebase();
@@ -37,29 +40,73 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router, isClient]);
 
+  // Handle redirect result (for mobile flow)
+  useEffect(() => {
+    const checkRedirect = async () => {
+      if (!auth || !firestore) return;
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const user = result.user;
+          // Check if user document already exists
+          const userRef = doc(firestore, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+
+          if (!userDoc.exists()) {
+            await setDoc(userRef, {
+              id: user.uid,
+              name: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+              subscriptionTier: 'free',
+              trialGenerations: 0,
+            });
+          }
+          router.push('/profile');
+        }
+      } catch (error) {
+        // If no redirect operation was called, this error is expected and can be ignored.
+        // Or if the popup was closed by user.
+        if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+             console.log('Redirect result check:', error);
+        }
+      }
+    };
+
+    if (auth && firestore) {
+        checkRedirect();
+    }
+  }, [auth, firestore, router]);
+
+
   const handleSignIn = async (provider: GoogleAuthProvider | OAuthProvider) => {
     if (!auth || !firestore) return;
+    
+    // Use Redirect for Native Apps (Android/iOS), Popup for Web
+    const isNative = Capacitor.isNativePlatform();
+
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      if (isNative) {
+        await signInWithRedirect(auth, provider);
+        // The page will redirect, so no further code execution here
+      } else {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
 
-      // Check if user document already exists
-      const userRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
+        const userRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
 
-      if (!userDoc.exists()) {
-        // New user, create the document
-        await setDoc(userRef, {
-          id: user.uid,
-          name: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          subscriptionTier: 'free',
-          trialGenerations: 0,
-        });
+        if (!userDoc.exists()) {
+          await setDoc(userRef, {
+            id: user.uid,
+            name: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL,
+            subscriptionTier: 'free',
+            trialGenerations: 0,
+          });
+        }
       }
-      // If user exists, we don't need to do anything, just let them sign in.
-      
     } catch (error) {
       console.error('Error during Sign-In:', error);
     }
