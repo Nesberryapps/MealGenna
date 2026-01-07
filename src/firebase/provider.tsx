@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -72,7 +73,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         } else {
           // If no user, sign in anonymously
           try {
-            const userCredential = await signInAnonymously(auth);
+            await signInAnonymously(auth);
             // The onAuthStateChanged listener will fire again with the new anonymous user
           } catch (error) {
             console.error("FirebaseProvider: Anonymous sign-in error:", error);

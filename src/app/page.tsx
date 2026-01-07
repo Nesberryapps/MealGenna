@@ -8,58 +8,13 @@ import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, User as UserIcon, CreditCard, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useToast } from '@/hooks/use-toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-
-
-function ProfileButton() {
-    const { user, isUserLoading } = useUser();
-    const router = useRouter();
-
-    if (isUserLoading) {
-        return <Skeleton className="h-10 w-10 rounded-full" />;
-    }
-
-    // Since we are using anonymous auth, user object will always exist after initial load.
-    // We can show a settings/profile icon.
-    if (user) {
-        return (
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                     <Button variant="ghost" size="icon">
-                        <Settings className="h-6 w-6" />
-                     </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/profile')}>
-                      <UserIcon className="mr-2" /> Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/subscription')}>
-                      <CreditCard className="mr-2" /> Subscription
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        )
-    }
-
-    return null; // Should not be reached in normal operation
-}
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
@@ -84,13 +39,19 @@ export default function Home() {
   const { data: userData } = useDoc<{subscriptionTier: string}>(userRef);
 
   const handleWeeklyPlanClick = (e: React.MouseEvent) => {
-    if (isUserLoading) {
-      e.preventDefault();
+    e.preventDefault(); // Always prevent default to handle logic here
+    if (isUserLoading || !user) {
+      // Don't let user proceed if auth state is not ready
+      toast({
+        title: "Loading...",
+        description: "Please wait a moment while we get things ready.",
+      });
       return;
     }
     
-    if (userData?.subscriptionTier !== 'premium') {
-        e.preventDefault();
+    if (userData?.subscriptionTier === 'premium') {
+        router.push('/weekly-meal-planner');
+    } else {
         toast({
             title: "Premium Feature",
             description: "The 7-Day Meal Plan is a premium feature. Please subscribe to access it.",
@@ -149,7 +110,13 @@ export default function Home() {
             <Logo />
             <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
           </div>
-          <ProfileButton />
+          {user && (
+            <Link href="/profile">
+              <Button variant="ghost" size="icon">
+                <Settings className="h-6 w-6" />
+              </Button>
+            </Link>
+          )}
         </div>
       </header>
       <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8">

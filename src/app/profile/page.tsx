@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { GoogleAuthProvider, OAuthProvider, linkWithPopup, signInWithPopup, getRedirectResult, linkWithRedirect, signInWithRedirect } from 'firebase/auth';
+import { GoogleAuthProvider, OAuthProvider, linkWithCredential, getRedirectResult, signInWithRedirect, signInWithPopup, AuthError, OAuthCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -42,6 +42,40 @@ export default function ProfilePage() {
       router.push('/');
     }
   }, [user, isUserLoading, router]);
+  
+  // Handle redirect result for account linking on mobile
+  useEffect(() => {
+    const handleRedirect = async () => {
+        if (Capacitor.isNativePlatform() && auth && user && user.isAnonymous) {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    toast({
+                        title: 'Account Linked',
+                        description: 'Your account has been successfully linked.',
+                    });
+                }
+            } catch (error: any) {
+                if (error.code === 'auth/credential-already-in-use') {
+                    toast({
+                        title: 'Linking Failed',
+                        description: 'This Google/Apple account is already linked to another user.',
+                        variant: 'destructive',
+                    });
+                } else if (error.code !== 'auth/no-auth-operation-for-redirect') {
+                    console.error('Redirect link error', error);
+                    toast({
+                        title: 'Linking Failed',
+                        description: 'Could not link your account. Please try again.',
+                        variant: 'destructive',
+                    });
+                }
+            }
+        }
+    };
+    handleRedirect();
+}, [auth, user, toast]);
+
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -66,33 +100,18 @@ export default function ProfilePage() {
   };
   
   const handleLinkAccount = async (provider: GoogleAuthProvider | OAuthProvider) => {
-    if (!auth || !user || !firestore) return;
+    if (!auth || !user || !user.isAnonymous) return;
     setIsLinking(true);
 
-    const isNative = Capacitor.isNativePlatform();
-
     try {
-        if(isNative) {
-            // For native, the experience is better if we just sign in with the new provider
-            // which will automatically link if the email is the same, or create a new user.
-            // Firebase handles this logic. We'll use signInWithRedirect.
+        if (Capacitor.isNativePlatform()) {
             await signInWithRedirect(auth, provider);
-            // The app will reload after the redirect, and onAuthStateChanged will handle the rest.
         } else {
-            const result = await linkWithPopup(user, provider);
-            const linkedUser = result.user;
-
-            const userRef = doc(firestore, 'users', linkedUser.uid);
-            await setDoc(userRef, {
-                id: linkedUser.uid,
-                email: linkedUser.email,
-                name: linkedUser.displayName,
-                photoURL: linkedUser.photoURL,
-            }, { merge: true });
-
+            const result = await signInWithPopup(auth, provider);
+            // This will link automatically if the email is verified and matches
             toast({
-                title: "Account Linked",
-                description: `Successfully linked your ${provider.providerId} account.`,
+                title: 'Account Linked',
+                description: 'Your account is now permanent.',
             });
         }
     } catch (error: any) {
@@ -100,8 +119,8 @@ export default function ProfilePage() {
         toast({
             variant: 'destructive',
             title: 'Linking Failed',
-            description: error.code === 'auth/credential-already-in-use' 
-                ? 'This account is already linked to another user.' 
+            description: error.code === 'auth/credential-already-in-use'
+                ? 'This account is already linked to another user.'
                 : 'Could not link account. Please try again.',
         });
     } finally {
@@ -189,12 +208,12 @@ export default function ProfilePage() {
             <Avatar className="h-24 w-24">
               <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
               <AvatarFallback>
-                {user.isAnonymous ? <UserIcon /> : user.displayName?.charAt(0)}
+                {user.isAnonymous ? <UserIcon /> : user.displayName?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="pt-4">
-              <CardTitle>{user.isAnonymous ? 'Anonymous User' : user.displayName || 'User'}</CardTitle>
-              <CardDescription>{user.isAnonymous ? 'Sign up to save your data' : user.email}</CardDescription>
+              <CardTitle>{user.isAnonymous ? 'Guest User' : user.displayName || 'User'}</CardTitle>
+              <CardDescription>{user.isAnonymous ? 'Link your account to save your data' : user.email}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -203,7 +222,7 @@ export default function ProfilePage() {
                     <CardHeader>
                         <CardTitle className="text-lg">Link Your Account</CardTitle>
                         <CardDescription>
-                            Sign in with Google or Apple to save your meal plans and subscription across devices.
+                            Create a permanent account to save your meal plans and use your subscription across multiple devices.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
@@ -246,7 +265,10 @@ export default function ProfilePage() {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        If you are an anonymous user, signing out will permanently delete your data and any active subscription. Link your account to save your progress.
+                        {user.isAnonymous 
+                            ? "Signing out as a guest is permanent. To save your subscription and meal history, please link your account first." 
+                            : "You will be signed out on this device."
+                        }
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
