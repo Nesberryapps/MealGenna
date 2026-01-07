@@ -125,8 +125,12 @@ jobs:
       - name: Build Android App Bundle
         run: |
           cd android
-          # Decode keystore into android/app/ directory
           echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > app/release.keystore
+          
+          # DEBUG: List aliases in the keystore to help debug "Certificate chain not found" error
+          echo "Listing aliases in keystore:"
+          keytool -list -v -keystore app/release.keystore -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" || echo "Failed to list keystore content"
+
           ./gradlew bundleRelease
         env:
           ANDROID_KEYSTORE_FILE: release.keystore
