@@ -1,11 +1,12 @@
 
 'use client';
 
-import { useState, useRef, createRef } from 'react';
+import { useState, useRef, createRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Generate7DayMealPlanInput, Generate7DayMealPlanOutput } from '@/ai/flows/generate-7-day-meal-plan';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,9 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Footer } from '@/components/features/Footer';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 const formSchema = z.object({
   dietaryPreferences: z.string().min(1, 'Please enter at least one preference.'),
@@ -55,6 +59,34 @@ export default function WeeklyMealPlannerPage() {
   const [loading, setLoading] = useState(false);
   const [accordionState, setAccordionState] = useState<string[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
+  
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
+
+  const { data: userData, isLoading: isUserDataLoading } = useDoc<{subscriptionTier: string}>(userRef);
+
+  useEffect(() => {
+    if (!isUserLoading && !isUserDataLoading) {
+        if (!user) {
+            router.push('/');
+            return;
+        }
+        if (userData?.subscriptionTier !== 'premium') {
+            toast({
+                variant: "destructive",
+                title: "Premium Required",
+                description: "The 7-Day Meal Plan is exclusive to premium subscribers."
+            });
+            router.push('/subscription');
+        }
+    }
+  }, [user, isUserLoading, userData, isUserDataLoading, router, toast]);
   
   // Create an array of refs, one for each day
   const dayRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);

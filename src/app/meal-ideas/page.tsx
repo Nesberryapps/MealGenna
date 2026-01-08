@@ -170,16 +170,16 @@ function MealIdeasContent() {
 
         const isPremium = currentData?.subscriptionTier === 'premium';
         const trialGenerations = currentData?.trialGenerations || 0;
-        const trialStartedAt = currentData?.trialStartedAt?.toDate();
+        
+        // --- CHANGED LOGIC: Check count instead of time ---
+        const FREE_GENERATION_LIMIT = 3;
 
-        const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
-
-        if (!isPremium && trialGenerations > 0 && isTrialExpired) {
-            setError("Your 24-hour trial period has expired.");
+        if (!isPremium && trialGenerations >= FREE_GENERATION_LIMIT) {
+            setError("You have used your free meal ideas.");
             setLoading(false);
             toast({
-                title: "Trial Period Expired",
-                description: "Please upgrade to a premium subscription to continue generating meal ideas.",
+                title: "Free Limit Reached",
+                description: `You have used your ${FREE_GENERATION_LIMIT} free meal generations. Please upgrade to Premium for unlimited access.`,
                 variant: "destructive",
                 action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });

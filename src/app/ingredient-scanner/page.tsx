@@ -168,14 +168,14 @@ export default function IngredientScannerPage() {
         const userData = userDoc.data() as UserData | undefined;
         const isPremium = userData?.subscriptionTier === 'premium';
         const trialGenerations = userData?.trialGenerations || 0;
-        const trialStartedAt = userData?.trialStartedAt?.toDate();
         
-        const isTrialExpired = trialStartedAt && (new Date().getTime() - trialStartedAt.getTime()) > 24 * 60 * 60 * 1000;
+        // --- CHANGED LOGIC: Check count instead of time ---
+        const FREE_GENERATION_LIMIT = 3;
 
-        if (!isPremium && trialGenerations > 0 && isTrialExpired) {
+        if (!isPremium && trialGenerations >= FREE_GENERATION_LIMIT) {
             toast({
-                title: "Trial Period Expired",
-                description: "Your 24-hour trial has ended. Please upgrade to continue generating meal ideas.",
+                title: "Free Limit Reached",
+                description: `You have used your ${FREE_GENERATION_LIMIT} free meal generations. Please upgrade to Premium.`,
                 variant: "destructive",
                 action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
             });
