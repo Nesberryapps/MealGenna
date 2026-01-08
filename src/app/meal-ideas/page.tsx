@@ -14,7 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, updateDoc, serverTimestamp, increment, setDoc } from 'firebase/firestore';
 import jsPDF from 'jspdf';
@@ -79,6 +79,7 @@ function IngredientShoppingLink({ ingredient }: { ingredient: string }) {
 }
 
 function MealIdeasContent() {
+  const [isClient, setIsClient] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const [mealIdea, setMealIdea] = useState<GenerateMealIdeaOutput | null>(null);
@@ -90,6 +91,10 @@ function MealIdeasContent() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const mealIdeaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
 
   const handleDownload = async () => {
@@ -157,21 +162,18 @@ function MealIdeasContent() {
     if (!user || !firestore) {
       setError("Please wait, initializing app...");
       setLoading(false);
-      // Don't toast here, as anonymous sign-in should be fast.
       return;
     }
 
     const userRef = doc(firestore, 'users', user.uid);
     try {
         const userDoc = await getDoc(userRef);
-        // User doc might not exist for anonymous user yet, this is fine
         const currentData = userDoc.data() as UserData | undefined;
         setUserData(currentData ?? null);
 
         const isPremium = currentData?.subscriptionTier === 'premium';
         const trialGenerations = currentData?.trialGenerations || 0;
         
-        // --- CHANGED LOGIC: Check count instead of time ---
         const FREE_GENERATION_LIMIT = 3;
 
         if (!isPremium && trialGenerations >= FREE_GENERATION_LIMIT) {
@@ -207,7 +209,7 @@ function MealIdeasContent() {
             } else {
                 await setDoc(userRef, {
                     id: user.uid,
-                    email: user.email, // Will be null for anon users
+                    email: user.email,
                     subscriptionTier: 'free',
                     trialGenerations: 1,
                     trialStartedAt: serverTimestamp(),
@@ -225,11 +227,10 @@ function MealIdeasContent() {
   };
 
   useEffect(() => {
-    if(!isUserLoading) {
+    if(isClient && !isUserLoading) {
       getMealIdea();
     }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, user, isUserLoading]);
+  }, [isClient, searchParams, user, isUserLoading]);
   
   const renderSkeleton = () => (
     <div className="w-full">
@@ -252,6 +253,29 @@ function MealIdeasContent() {
       </div>
     </div>
   );
+  
+  if (!isClient) {
+    return (
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
+             <header className="py-4 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-md mx-auto flex items-center justify-between">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-6 w-24" />
+                    </div>
+                    <div className="w-8"></div>
+                </div>
+            </header>
+            <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+                <Card className="w-full overflow-hidden">
+                    {renderSkeleton()}
+                </Card>
+            </main>
+            <Footer />
+        </div>
+    );
+  }
 
   return (
     <WebRedirectGuard>

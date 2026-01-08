@@ -7,7 +7,7 @@ import { ActionCard } from '@/components/features/ActionCard';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase/client';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { doc } from 'firebase/firestore';

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser, useFirebase } from '@/firebase';
+import { useAuth, useUser, useFirebase } from '@/firebase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +31,7 @@ import {
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 export default function ProfilePage() {
+  const [isClient, setIsClient] = useState(false);
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
@@ -39,52 +40,58 @@ export default function ProfilePage() {
   const [isLinking, setIsLinking] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !isUserLoading && !user) {
       router.push('/');
     }
-  }, [user, isUserLoading, router]);
+  }, [isClient, user, isUserLoading, router]);
   
   // Handle redirect result for account linking on mobile
   useEffect(() => {
-    const handleRedirect = async () => {
-        if (Capacitor.isNativePlatform() && auth && user && user.isAnonymous) {
-            try {
-                const result = await getRedirectResult(auth);
-                if (result) {
-                    toast({
-                        title: 'Account Linked',
-                        description: 'Your account has been successfully linked.',
-                    });
-                }
-            } catch (error: any) {
-                if (error.code === 'auth/credential-already-in-use') {
-                    toast({
-                        title: 'Linking Failed',
-                        description: 'This Google/Apple account is already linked to another user.',
-                        variant: 'destructive',
-                    });
-                } else if (error.code !== 'auth/no-auth-operation-for-redirect') {
-                    console.error('Redirect link error', error);
-                    toast({
-                        title: 'Linking Failed',
-                        description: 'Could not link your account. Please try again.',
-                        variant: 'destructive',
-                    });
-                }
-            }
-        }
-    };
-    handleRedirect();
-}, [auth, user, toast]);
+    if (isClient) {
+      const handleRedirect = async () => {
+          if (Capacitor.isNativePlatform() && auth && user && user.isAnonymous) {
+              try {
+                  const result = await getRedirectResult(auth);
+                  if (result) {
+                      toast({
+                          title: 'Account Linked',
+                          description: 'Your account has been successfully linked.',
+                      });
+                  }
+              } catch (error: any) {
+                  if (error.code === 'auth/credential-already-in-use') {
+                      toast({
+                          title: 'Linking Failed',
+                          description: 'This Google/Apple account is already linked to another user.',
+                          variant: 'destructive',
+                      });
+                  } else if (error.code !== 'auth/no-auth-operation-for-redirect') {
+                      console.error('Redirect link error', error);
+                      toast({
+                          title: 'Linking Failed',
+                          description: 'Could not link your account. Please try again.',
+                          variant: 'destructive',
+                      });
+                  }
+              }
+          }
+      };
+      handleRedirect();
+    }
+}, [isClient, auth, user, toast]);
 
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (isClient && typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'granted' && localStorage.getItem('mealgenna-notifications-enabled') === 'true') {
         setNotificationsEnabled(true);
       }
     }
-  }, []);
+  }, [isClient]);
 
   const handleSignOut = async () => {
     if (!auth) return;
@@ -188,14 +195,14 @@ export default function ProfilePage() {
     </div>
   );
 
-  if (isUserLoading || !user) {
+  if (!isClient || isUserLoading || !user) {
     return renderLoading();
   }
 
   return (
     <WebRedirectGuard>
         <div className="flex flex-col min-h-dvh bg-background text-foreground">
-        <header className="py-4 px-4 sm:px-6 lg:px-8">
+        <header className="py-4 px-4 sm:px-6 lg:p-8">
             <div className="max-w-md mx-auto flex items-center justify-start">
             <Link href="/">
                 <Button variant="ghost" size="icon">

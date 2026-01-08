@@ -20,6 +20,14 @@ type FirebaseServices = {
 
 // This function is the single point of entry for Firebase initialization.
 export function initializeFirebase(): FirebaseServices {
+  if (typeof window === 'undefined') {
+    return {
+      firebaseApp: null,
+      auth: null,
+      firestore: null,
+    };
+  }
+
   // Check if critical config is present
   if (!firebaseConfig.apiKey) {
     console.warn("Firebase API Key is missing. Skipping initialization.");

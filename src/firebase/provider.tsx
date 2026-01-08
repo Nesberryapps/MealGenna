@@ -3,10 +3,10 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, setDoc } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-import { initializeFirebase } from '@/firebase/config';
+import { initializeFirebase } from './config';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -43,9 +43,15 @@ export interface UserHookResult {
   userError: Error | null;
 }
 
-export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
-
-const { firebaseApp, auth, firestore } = initializeFirebase();
+export const FirebaseContext = createContext<FirebaseContextState>({
+  areServicesAvailable: false,
+  firebaseApp: null,
+  firestore: null,
+  auth: null,
+  user: null,
+  isUserLoading: true,
+  userError: null,
+});
 
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
@@ -59,9 +65,24 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
   });
 
+  const [isClient, setIsClient] = useState(false);
+
   useEffect(() => {
-    if (!auth || !firestore) {
-      setUserAuthState({ user: null, isUserLoading: false, userError: null });
+    setIsClient(true);
+  }, []);
+
+  const firebaseServices = useMemo(() => {
+    if (!isClient) {
+        return null;
+    }
+    return initializeFirebase();
+  }, [isClient]);
+
+  const { firebaseApp, auth, firestore } = firebaseServices || {};
+
+  useEffect(() => {
+    if (!isClient || !auth || !firestore) {
+      if(isClient) setUserAuthState(prev => ({ ...prev, isUserLoading: false }));
       return;
     }
 
@@ -71,10 +92,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         if (firebaseUser) {
           setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
         } else {
-          // If no user, sign in anonymously
           try {
             await signInAnonymously(auth);
-            // The onAuthStateChanged listener will fire again with the new anonymous user
           } catch (error) {
             console.error("FirebaseProvider: Anonymous sign-in error:", error);
             setUserAuthState({ user: null, isUserLoading: false, userError: error as Error });
@@ -87,7 +106,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       }
     );
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [isClient, auth, firestore]);
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
@@ -100,11 +119,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
     };
-  }, [userAuthState]);
+  }, [userAuthState, firebaseApp, auth, firestore]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
+      {isClient && <FirebaseErrorListener />}
       {children}
     </FirebaseContext.Provider>
   );
@@ -115,11 +134,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
  */
 export const useFirebase = (): FirebaseServicesAndUser => {
   const context = useContext(FirebaseContext);
-
-  if (context === undefined) {
-    throw new Error('useFirebase must be used within a FirebaseProvider.');
-  }
-
   return {
     firebaseApp: context.firebaseApp,
     firestore: context.firestore,
@@ -132,9 +146,6 @@ export const useFirebase = (): FirebaseServicesAndUser => {
 
 export const useAuth = (): Auth | null => {
   const context = useContext(FirebaseContext);
-   if (context === undefined) {
-    throw new Error('useAuth must be used within a FirebaseProvider.');
-  }
   return context.auth;
 };
 

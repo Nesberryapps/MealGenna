@@ -29,9 +29,10 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Footer } from '@/components/features/Footer';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase/client';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   dietaryPreferences: z.string().min(1, 'Please enter at least one preference.'),
@@ -55,6 +56,7 @@ async function generate7DayMealPlan(values: Generate7DayMealPlanInput): Promise<
 }
 
 export default function WeeklyMealPlannerPage() {
+  const [isClient, setIsClient] = useState(false);
   const [mealPlan, setMealPlan] = useState<Generate7DayMealPlanOutput['mealPlan'] | null>(null);
   const [loading, setLoading] = useState(false);
   const [accordionState, setAccordionState] = useState<string[]>([]);
@@ -70,9 +72,13 @@ export default function WeeklyMealPlannerPage() {
   }, [firestore, user?.uid]);
 
   const { data: userData, isLoading: isUserDataLoading } = useDoc<{subscriptionTier: string}>(userRef);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
-    if (!isUserLoading && !isUserDataLoading) {
+    if (isClient && !isUserLoading && !isUserDataLoading) {
         if (!user) {
             router.push('/');
             return;
@@ -86,9 +92,8 @@ export default function WeeklyMealPlannerPage() {
             router.push('/subscription');
         }
     }
-  }, [user, isUserLoading, userData, isUserDataLoading, router, toast]);
+  }, [isClient, user, isUserLoading, userData, isUserDataLoading, router, toast]);
   
-  // Create an array of refs, one for each day
   const dayRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);
   if (mealPlan && dayRefs.current.length !== mealPlan.length) {
     dayRefs.current = Array(mealPlan.length).fill(null).map((_, i) => dayRefs.current[i] || createRef<HTMLDivElement>());
@@ -109,7 +114,6 @@ export default function WeeklyMealPlannerPage() {
     try {
       const result = await generate7DayMealPlan(values);
       setMealPlan(result.mealPlan);
-      // Set the accordion to initially open the first day
       if (result.mealPlan && result.mealPlan.length > 0) {
         setAccordionState(['item-1']);
       }
@@ -141,7 +145,6 @@ export default function WeeklyMealPlannerPage() {
             scale: 2,
             backgroundColor: null, 
             onclone: (document) => {
-                // Ensure the background is not transparent for the capture
                 const content = document.querySelector('[data-day-content]');
                 if (content) {
                     (content as HTMLElement).style.backgroundColor = 'hsl(var(--card))';
@@ -157,10 +160,9 @@ export default function WeeklyMealPlannerPage() {
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
         
-        let imgWidth = pdfWidth - 20; // with margin
+        let imgWidth = pdfWidth - 20;
         let imgHeight = imgWidth / ratio;
         
-        // If image height is larger than page, scale it down
         if(imgHeight > pdfHeight - 20) {
             imgHeight = pdfHeight - 20;
             imgWidth = imgHeight * ratio;
@@ -181,7 +183,40 @@ export default function WeeklyMealPlannerPage() {
         });
     }
   };
+  
+  const renderLoadingSkeleton = () => (
+     <div className="flex flex-col min-h-dvh bg-background text-foreground">
+        <header className="py-4 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md mx-auto flex items-center justify-between">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-6 w-24" />
+            </div>
+            <div className="w-8"></div>
+            </div>
+        </header>
+        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
+           <Card className="w-full">
+            <CardHeader>
+                <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <Skeleton className="h-6 w-36" />
+                 <Skeleton className="h-20 w-full" />
+                 <Skeleton className="h-6 w-24" />
+                 <Skeleton className="h-20 w-full" />
+                 <Skeleton className="h-10 w-full" />
+            </CardContent>
+            </Card>
+        </main>
+        <Footer />
+    </div>
+  );
 
+  if (!isClient || isUserLoading || isUserDataLoading) {
+    return renderLoadingSkeleton();
+  }
 
   return (
     <WebRedirectGuard>

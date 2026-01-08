@@ -15,9 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase/client';
 import { doc, getDoc, updateDoc, increment, serverTimestamp, setDoc } from 'firebase/firestore';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -53,6 +54,7 @@ async function generateMealIdeasFromIngredients(ingredients: string[]): Promise<
 
 
 export default function IngredientScannerPage() {
+  const [isClient, setIsClient] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -66,35 +68,41 @@ export default function IngredientScannerPage() {
   const firestore = useFirestore();
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Not Supported',
-          description: 'Your browser does not support camera access. Please try a different browser.',
-        });
-        return;
-      }
+    setIsClient(true);
+  }, []);
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+  useEffect(() => {
+    if (isClient) {
+      const getCameraPermission = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Not Supported',
+            description: 'Your browser does not support camera access. Please try a different browser.',
+          });
+          return;
         }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this feature.',
-        });
-      }
-    };
 
-    getCameraPermission();
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this feature.',
+          });
+        }
+      };
+
+      getCameraPermission();
+    }
 
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
@@ -102,7 +110,7 @@ export default function IngredientScannerPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [toast]);
+  }, [isClient, toast]);
 
   const handleScan = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -163,13 +171,11 @@ export default function IngredientScannerPage() {
     
     try {
         const userDoc = await getDoc(userRef);
-        // User doc might not exist for anonymous user yet, this is fine
         
         const userData = userDoc.data() as UserData | undefined;
         const isPremium = userData?.subscriptionTier === 'premium';
         const trialGenerations = userData?.trialGenerations || 0;
         
-        // --- CHANGED LOGIC: Check count instead of time ---
         const FREE_GENERATION_LIMIT = 3;
 
         if (!isPremium && trialGenerations >= FREE_GENERATION_LIMIT) {
@@ -216,6 +222,37 @@ export default function IngredientScannerPage() {
         setIsGenerating(false);
     }
   };
+
+  const renderLoadingSkeleton = () => (
+     <div className="flex flex-col min-h-dvh bg-background text-foreground">
+        <header className="py-4 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-md mx-auto flex items-center justify-between">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-6 w-24" />
+            </div>
+            <div className="w-8"></div>
+            </div>
+        </header>
+        <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+           <Card className="w-full">
+            <CardHeader>
+                <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <Skeleton className="aspect-video w-full" />
+                 <Skeleton className="h-10 w-full" />
+            </CardContent>
+            </Card>
+        </main>
+        <Footer />
+    </div>
+  );
+
+  if (!isClient) {
+    return renderLoadingSkeleton();
+  }
 
 
   return (

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase/client';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import { Logo } from '@/components/Logo';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Capacitor } from '@capacitor/core';
-import type { Purchases, LOG_LEVEL, PurchasesPackage, CustomerInfo } from '@revenuecat/purchases-capacitor';
+import type { Purchases as RevenueCatPurchases, PurchasesPackage, CustomerInfo } from '@revenuecat/purchases-capacitor';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 type UserData = {
@@ -31,12 +31,18 @@ export default function SubscriptionPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  
+
+  const [isClient, setIsClient] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isFetchingPackages, setIsFetchingPackages] = useState(true);
   const [isRevenueCatReady, setIsRevenueCatReady] = useState(false);
-  const [Purchases, setPurchases] = useState<typeof import('@revenuecat/purchases-capacitor').Purchases | null>(null);
+  const [Purchases, setPurchases] = useState<typeof RevenueCatPurchases | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const userRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -53,19 +59,19 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     const initRevenueCat = async () => {
-      if (!user || Capacitor.getPlatform() === 'web') {
+      if (!isClient || !user || Capacitor.getPlatform() === 'web') {
         setIsFetchingPackages(false);
         return;
-      };
-      
+      }
+
       try {
         const RevenueCat = await import('@revenuecat/purchases-capacitor');
         const Purchases = RevenueCat.Purchases;
         setPurchases(Purchases);
 
         const platform = Capacitor.getPlatform();
-        const apiKey = platform === 'ios' 
-          ? process.env.NEXT_PUBLIC_REVENUECAT_API_KEY_APPLE 
+        const apiKey = platform === 'ios'
+          ? process.env.NEXT_PUBLIC_REVENUECAT_API_KEY_APPLE
           : process.env.NEXT_PUBLIC_REVENUECAT_API_KEY_GOOGLE;
 
         if (!apiKey) {
@@ -73,11 +79,9 @@ export default function SubscriptionPage() {
             setIsFetchingPackages(false);
             return;
         }
-        
+
         await Purchases.configure({ apiKey });
-
         await Purchases.logIn({ appUserID: user.uid });
-
         setIsRevenueCatReady(true);
 
         Purchases.addCustomerInfoUpdateListener(async (info: CustomerInfo) => {
@@ -103,12 +107,12 @@ export default function SubscriptionPage() {
     if (user && !isUserLoading) {
         initRevenueCat();
     }
-  }, [user, isUserLoading, toast]);
+  }, [user, isUserLoading, toast, isClient]);
 
   const updateSubscriptionStatus = async (customerInfo: CustomerInfo) => {
     if (!userRef) return;
     const isPremium = typeof customerInfo.entitlements.active['premium'] !== "undefined";
-    
+
     try {
         await updateDoc(userRef, {
             subscriptionTier: isPremium ? 'premium' : 'free'
@@ -123,6 +127,15 @@ export default function SubscriptionPage() {
     if (!Purchases || !user) {
       toast({ title: "Please sign in to subscribe.", variant: "destructive" });
       return;
+    }
+
+    if (Capacitor.getPlatform() === 'web') {
+        toast({
+          title: "Subscriptions Unavailable",
+          description: "Purchases can only be made from the mobile app.",
+          variant: "default",
+        });
+        return;
     }
     setIsPurchasing(true);
     try {
@@ -148,6 +161,14 @@ export default function SubscriptionPage() {
 
   const handleRestore = async () => {
      if (!Purchases) return;
+      if (Capacitor.getPlatform() === 'web') {
+        toast({
+          title: "Action Unavailable",
+          description: "You can only restore purchases from the mobile app.",
+          variant: "default",
+        });
+        return;
+    }
      try {
       const { customerInfo } = await Purchases.restorePurchases();
       if (customerInfo.entitlements.active['premium']) {
@@ -174,20 +195,28 @@ export default function SubscriptionPage() {
 
   const isLoading = isUserLoading || isUserDataLoading;
   const isPremium = userData?.subscriptionTier === 'premium';
-  
-  const renderPackageCard = () => {
-    if (Capacitor.getPlatform() === 'web') {
-      return (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Subscriptions Unavailable</AlertTitle>
-          <AlertDescription>
-            Managing subscriptions is only available in the mobile app.
-          </AlertDescription>
-        </Alert>
-      )
-    }
 
+  const renderPackageCard = () => {
+
+    if (!isClient) {
+        return (
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-full" />
+                </CardContent>
+                <CardFooter>
+                    <Skeleton className="h-10 w-full" />
+                </CardFooter>
+            </Card>
+        );
+    }
+      
     if (isFetchingPackages) {
         return (
              <Card>
@@ -208,6 +237,33 @@ export default function SubscriptionPage() {
     }
 
     if (isPremium) return null;
+      
+    if (Capacitor.getPlatform() === 'web' && packages.length === 0) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Upgrade to Premium</CardTitle>
+                    <CardDescription>Get more out of MealGenna.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <ul className="space-y-2 text-muted-foreground">
+                        <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-primary" /><span>Unlimited meal generations.</span></li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-primary" /><span>Access to the 7-Day Meal Planner.</span></li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-primary" /><span>Download recipes as PDFs.</span></li>
+                         <li className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-primary" /><span>Shop for ingredients online.</span></li>
+                    </ul>
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Subscription Management</AlertTitle>
+                        <AlertDescription>
+                          To subscribe or manage your plan, please use the MealGenna mobile app.
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+        )
+    }
+
 
     if (packages.length === 0) {
         return (
@@ -314,9 +370,9 @@ export default function SubscriptionPage() {
                 </Card>
 
                 {renderPackageCard()}
-
-                {Capacitor.getPlatform() !== 'web' && (
-                <Card>
+                
+                {isClient && (
+                 <Card>
                     <CardHeader>
                         <CardTitle>Manage Subscription</CardTitle>
                     </CardHeader>
