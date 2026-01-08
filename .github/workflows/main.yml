@@ -69,11 +69,9 @@ jobs:
 
           # apply provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          # Rename to UUID to ensure Xcode finds it (UUID taken from the actual file)
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/d222e18d-83d6-43ae-9982-9b58a9de0129.mobileprovision
       
-      - name: Grant execute permission to build script
-        run: chmod +x ios/App/build-and-export.sh
-
       - name: Build iOS App
         run: |
           cd ios/App
