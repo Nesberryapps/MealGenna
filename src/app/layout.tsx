@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseProvider } from '@/firebase';
 import { NotificationsManager } from '@/components/features/NotificationsManager';
+import { WebDownloadModal } from '@/components/WebDownloadModal';
 
 export const metadata: Metadata = {
   title: 'MealGenna',
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseProvider>
           {children}
+          <WebDownloadModal />
           <NotificationsManager />
         </FirebaseProvider>
         <Toaster />

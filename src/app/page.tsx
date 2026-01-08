@@ -9,19 +9,17 @@ import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { Settings, X } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Capacitor } from '@capacitor/core';
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
   const [subGreeting, setSubGreeting] = useState("Instant Meal Ideas, Zero Hassle.");
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
-  const [showPromoBanner, setShowPromoBanner] = useState(false);
   
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -34,13 +32,6 @@ export default function Home() {
   }, [firestore, user?.uid]);
 
   const { data: userData } = useDoc<{subscriptionTier: string}>(userRef);
-
-  useEffect(() => {
-    // Show promo banner ONLY on web (not native)
-    if (!Capacitor.isNativePlatform()) {
-        setShowPromoBanner(true);
-    }
-  }, []);
 
   const handleWeeklyPlanClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
@@ -107,24 +98,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground">
-      {/* Web Promo Banner */}
-      {showPromoBanner && (
-        <div className="bg-primary text-primary-foreground px-4 py-3 relative text-center">
-            <p className="text-sm font-medium pr-8">
-                Get the full experience! Download the mobile app for unlimited features.
-                <a href="https://apps.apple.com" target="_blank" className="underline ml-2 font-bold">iOS</a>
-                <span className="mx-1">|</span>
-                <a href="https://play.google.com" target="_blank" className="underline font-bold">Android</a>
-            </p>
-            <button 
-                onClick={() => setShowPromoBanner(false)} 
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-primary-foreground/10 rounded-full"
-            >
-                <X className="h-4 w-4" />
-            </button>
-        </div>
-      )}
-
       <header className="py-4 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
