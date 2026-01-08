@@ -54,18 +54,9 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # Import certificate and provisioning profile from secrets
-          # DEBUG: Print lengths of secrets (safely)
-          echo "Certificate Secret Length: ${#BUILD_CERTIFICATE_BASE64}"
-          echo "Profile Secret Length: ${#BUILD_PROVISION_PROFILE_BASE64}"
-
           # FIX: Use -D for macOS base64 decoding
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 -D -o $CERTIFICATE_PATH
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 -D -o $PP_PATH
-
-          # DEBUG: Check file sizes and types
-          ls -l $CERTIFICATE_PATH
-          ls -l $PP_PATH
-          file $PP_PATH
 
           # create temporary keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -80,9 +71,6 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           # Rename to UUID to ensure Xcode finds it (UUID taken from the actual file)
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/d222e18d-83d6-43ae-9982-9b58a9de0129.mobileprovision
-          
-          # DEBUG: List profiles dir
-          ls -l ~/Library/MobileDevice/Provisioning\ Profiles/
       
       - name: Build iOS App
         run: |
