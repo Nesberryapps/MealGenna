@@ -80,12 +80,7 @@ jobs:
             -scheme App \
             -configuration Release \
             -archivePath $RUNNER_TEMP/App.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE="d222e18d-83d6-43ae-9982-9b58a9de0129" \
-            PROVISIONING_PROFILE_SPECIFIER="MealGenna Pro Store" \
-            DEVELOPMENT_TEAM="5BYJT9QTKZ"
+            archive
 
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/App.xcarchive \
