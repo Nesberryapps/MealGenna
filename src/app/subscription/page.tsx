@@ -43,7 +43,7 @@ export default function SubscriptionPage() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isFetchingPackages, setIsFetchingPackages] = useState(true);
   const [isRevenueCatReady, setIsRevenueCatReady] = useState(false);
-  const [Purchases, setPurchases] = useState<typeof RevenueCatPurchases | null>(null);
+  const [Purchases, setPurchases] = useState<RevenueCatPurchases | null>(null);
 
   useEffect(() => {
     setIsClient(true);
