@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
-import { useAdMob } from '@/hooks/use-admob';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -86,7 +85,6 @@ function MealIdeasContent() {
   const [mealIdea, setMealIdea] = useState<GenerateMealIdeaOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { showRewardedAd, isLoading: isAdLoading } = useAdMob();
   
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
@@ -152,7 +150,6 @@ function MealIdeasContent() {
 
 
   const getMealIdea = async (isRegeneration = false) => {
-    if (isAdLoading) return;
     setLoading(true);
     setError(null);
     if (!isRegeneration) {
@@ -164,14 +161,6 @@ function MealIdeasContent() {
     if (!user) {
       setError("Please wait, initializing app...");
       setLoading(false);
-      return;
-    }
-
-    // Show an ad before generating
-    const adWatched = await showRewardedAd();
-    if (!adWatched) {
-      setLoading(false);
-      setError("You need to watch an ad to generate a meal idea.");
       return;
     }
 
@@ -264,11 +253,11 @@ function MealIdeasContent() {
           </header>
           <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
             <Card className="w-full overflow-hidden">
-              {(loading || isAdLoading) && renderSkeleton()}
+              {loading && renderSkeleton()}
               {error && <div className="p-6 text-center text-destructive">{error}</div>}
               
               <div ref={mealIdeaRef}>
-                {mealIdea && !loading && !isAdLoading &&(
+                {mealIdea && !loading &&(
                     <div data-meal-idea-content>
                       <div className="relative h-64 w-full">
                         <Image src={mealIdea.imageDataUri} alt={mealIdea.title} fill className="object-cover" unoptimized/>
@@ -313,10 +302,10 @@ function MealIdeasContent() {
                     </div>
                 )}
               </div>
-              {!loading && !isAdLoading && !error && mealIdea && (
+              {!loading && !error && mealIdea && (
                 <div className="p-6 pt-0 space-y-4">
-                  <Button onClick={() => getMealIdea(true)} disabled={loading || isAdLoading || isUserLoading} className="w-full">
-                    <RefreshCw className={`mr-2 h-4 w-4 ${(loading || isAdLoading) ? 'animate-spin' : ''}`} />
+                  <Button onClick={() => getMealIdea(true)} disabled={loading || isUserLoading} className="w-full">
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     Generate Another
                   </Button>
                 </div>
@@ -325,8 +314,7 @@ function MealIdeasContent() {
               {error && (
                  <div className="p-6 pt-0 space-y-4">
                     <Button onClick={() => getMealIdea()} className="w-full">
-                        <Clapperboard className="mr-2 h-4 w-4" />
-                        Watch Ad to Retry
+                        Try Again
                     </Button>
                 </div>
               )}

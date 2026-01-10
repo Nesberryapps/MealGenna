@@ -31,7 +31,6 @@ import { Footer } from '@/components/features/Footer';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 import { useUser } from '@/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAdMob } from '@/hooks/use-admob';
 
 const formSchema = z.object({
   dietaryPreferences: z.string().min(1, 'Please enter at least one preference.'),
@@ -62,7 +61,6 @@ export default function WeeklyMealPlannerPage() {
   const { toast } = useToast();
   
   const { user, isUserLoading } = useUser();
-  const { showRewardedAd, isLoading: isAdLoading } = useAdMob();
   
   useEffect(() => {
     setIsClient(true);
@@ -85,18 +83,6 @@ export default function WeeklyMealPlannerPage() {
   async function onSubmit(values: WeeklyMealPlannerFormValues) {
     setLoading(true);
     setMealPlan(null);
-
-    // Require 2 ads for generating the plan
-    const adWatched = await showRewardedAd(2);
-    if (!adWatched) {
-        toast({
-            variant: 'destructive',
-            title: 'Ads Required',
-            description: 'You must watch 2 ads to generate a 7-day meal plan.',
-        });
-        setLoading(false);
-        return;
-    }
 
     try {
       const result = await generate7DayMealPlan(values);
@@ -123,17 +109,6 @@ export default function WeeklyMealPlannerPage() {
             variant: "destructive",
             title: "Download Failed",
             description: "Could not find the content for this day."
-        });
-        return;
-    }
-
-    // Require 1 ad for download
-    const adWatched = await showRewardedAd();
-     if (!adWatched) {
-        toast({
-            variant: 'destructive',
-            title: 'Ad Required',
-            description: 'You must watch an ad to download the meal plan.',
         });
         return;
     }
@@ -290,19 +265,19 @@ export default function WeeklyMealPlannerPage() {
                         </FormItem>
                     )}
                     />
-                    <Button type="submit" disabled={loading || isAdLoading} className="w-full">
-                    {loading || isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-                    {isAdLoading ? 'Loading ads...' : 'Generate My Plan'}
+                    <Button type="submit" disabled={loading} className="w-full">
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WandSparkles className="mr-2 h-4 w-4" />}
+                    Generate My Plan
                     </Button>
                 </form>
                 </Form>
             </CardContent>
             </Card>
 
-            {(loading || isAdLoading) && !mealPlan && (
+            {loading && !mealPlan && (
                 <div className="flex flex-col items-center justify-center pt-8 space-y-2">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-muted-foreground">{isAdLoading ? 'Loading ads...' : 'Generating your personalized meal plan...'}</p>
+                    <p className="text-muted-foreground">Generating your personalized meal plan...</p>
                 </div>
             )}
 
@@ -337,8 +312,8 @@ export default function WeeklyMealPlannerPage() {
                                     </div>
                                 </div>
                             </div>
-                            <Button variant="outline" onClick={() => handleDownloadDay(index, day.day)} className="mt-4 w-full" disabled={isAdLoading}>
-                                    {isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                            <Button variant="outline" onClick={() => handleDownloadDay(index, day.day)} className="mt-4 w-full">
+                                    <Download className="mr-2 h-4 w-4" />
                                     Download Day {day.day}
                                 </Button>
                             </AccordionContent>

@@ -18,7 +18,6 @@ import { Footer } from '@/components/features/Footer';
 import { useUser } from '@/firebase/client';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAdMob } from '@/hooks/use-admob';
 
 async function identifyIngredientsFromImage(imageDataUri: string): Promise<IdentifyIngredientsFromImageOutput> {
     const response = await fetch('/api/genkit/flow/identifyIngredientsFlow', {
@@ -58,7 +57,6 @@ export default function IngredientScannerPage() {
   const [mealIdeas, setMealIdeas] = useState<string[]>([]);
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
-  const { showRewardedAd, isLoading: isAdLoading } = useAdMob();
 
   useEffect(() => {
     setIsClient(true);
@@ -106,7 +104,7 @@ export default function IngredientScannerPage() {
   }, [isClient, toast]);
 
   const handleScan = async () => {
-    if (!videoRef.current || !canvasRef.current || isAdLoading) return;
+    if (!videoRef.current || !canvasRef.current) return;
     
     if (isUserLoading || !user) {
         toast({
@@ -158,16 +156,6 @@ export default function IngredientScannerPage() {
   
   const handleGenerateMeals = async (ingredients: string[]) => {
     if (!user) return;
-
-    const adWatched = await showRewardedAd();
-    if (!adWatched) {
-        toast({
-            title: 'Ad Required',
-            description: 'You must watch an ad to generate meal ideas.',
-            variant: 'destructive',
-        });
-        return;
-    }
 
     setIsGenerating(true);
     try {
@@ -254,16 +242,16 @@ export default function IngredientScannerPage() {
                                 </Alert>
                              </div>
                         )}
-                         {(isScanning || isAdLoading) && (
+                         {isScanning && (
                             <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center space-y-2">
                                 <Loader2 className="h-8 w-8 animate-spin" />
-                                <p>{isAdLoading ? 'Loading ad...' : 'Scanning for ingredients...'}</p>
+                                <p>Scanning for ingredients...</p>
                             </div>
                         )}
                     </div>
 
-                    <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading || isAdLoading} className="w-full">
-                        {isScanning || isGenerating || isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                    <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading} className="w-full">
+                        {isScanning || isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
                         Scan & Generate
                     </Button>
 
