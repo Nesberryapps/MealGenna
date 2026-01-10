@@ -1,5 +1,5 @@
-
 'use client';
+export const ssr = false;
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -31,7 +31,7 @@ import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 export default function ProfilePage() {
   const [isClient, setIsClient] = useState(false);
-  const { auth } = useAuth();
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -148,7 +148,7 @@ export default function ProfilePage() {
       <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
         <Card>
           <CardHeader className="items-center text-center">
-            <Skeleton className="h-24 w-24 rounded-full" />
+            <Skeleton className="h-24 w-24 rounded-.full" />
             <div className="space-y-2 pt-4">
               <Skeleton className="h-6 w-40" />
               <Skeleton className="h-4 w-52" />

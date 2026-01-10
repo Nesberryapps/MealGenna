@@ -21,7 +21,7 @@ export function ReCaptchaProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
+    <GoogleReCaptchaProvider sitekey={recaptchaSiteKey}>
       {children}
     </GoogleReCaptchaProvider>
   );
