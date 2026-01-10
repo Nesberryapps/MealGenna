@@ -1,7 +1,7 @@
 
 'use client';
 
-import { GoogleReCaptchaProvider } from 'react-google-recaptcha';
+import GoogleReCaptchaProvider from 'react-google-recaptcha';
 import React from 'react';
 
 export function ReCaptchaProvider({ children }: { children: React.ReactNode }) {
