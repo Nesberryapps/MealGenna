@@ -46,7 +46,7 @@ jobs:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
-          KEYCHAIN_PASSWORD: "temporary_keychain_password" 
+          KEYCHAIN_PASSWORD: "temporary_keychain_password"
         run: |
           # Create variables
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
@@ -54,7 +54,6 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # Import certificate and provisioning profile from secrets
-          # FIX: Use -D for macOS base64 decoding
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 -D -o $CERTIFICATE_PATH
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 -D -o $PP_PATH
 
@@ -69,9 +68,10 @@ jobs:
 
           # apply provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          # Rename to UUID to ensure Xcode finds it (UUID taken from the actual file)
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/d222e18d-83d6-43ae-9982-9b58a9de0129.mobileprovision
-      
+          # Dynamically extract UUID and rename profile
+          PROFILE_UUID=$(grep UUID -A1 -a "$PP_PATH" | grep -io "[-A-F0-9]\{36\}")
+          cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+
       - name: Build iOS App
         run: |
           cd ios/App
