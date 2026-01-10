@@ -69,7 +69,7 @@ jobs:
           # apply provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           # Dynamically extract UUID and rename profile
-          PROFILE_UUID=$(grep UUID -A1 -a "$PP_PATH" | grep -io "[-A-F0-9]\{36\}")
+          PROFILE_UUID=$(grep UUID -A1 -a "$PP_PATH" | grep -io "[-A-F0-9]{36}")
           cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
 
       - name: Build iOS App
