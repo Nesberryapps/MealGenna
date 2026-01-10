@@ -7,14 +7,11 @@ import { ActionCard } from '@/components/features/ActionCard';
 import Link from 'next/link';
 import { MealPreferencesForm } from '@/components/features/MealPreferencesForm';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase/client';
+import { useUser } from '@/firebase/client';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
-import { doc } from 'firebase/firestore';
-import { useDoc } from '@/firebase/firestore/use-doc';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [greeting, setGreeting] = useState("Good morning! What's on the menu?");
@@ -22,37 +19,12 @@ export default function Home() {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-  const { toast } = useToast();
   const router = useRouter();
 
-  const userRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user?.uid]);
-
-  const { data: userData } = useDoc<{subscriptionTier: string}>(userRef);
 
   const handleWeeklyPlanClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
-    if (isUserLoading || !user) {
-      toast({
-        title: "Loading...",
-        description: "Please wait a moment while we get things ready.",
-      });
-      return;
-    }
-    
-    if (userData?.subscriptionTier === 'premium') {
-        router.push('/weekly-meal-planner');
-    } else {
-        toast({
-            title: "Premium Feature",
-            description: "The 7-Day Meal Plan is a premium feature. Please subscribe to access it.",
-            variant: "destructive"
-        });
-        router.push('/subscription');
-    }
+    router.push('/weekly-meal-planner');
   }
 
   useEffect(() => {
@@ -148,20 +120,16 @@ export default function Home() {
               />
             </Link>
           
-            {isUserLoading ? (
-              <Skeleton className="h-[288px] w-full rounded-xl" />
-            ) : (
-               <div onClick={handleWeeklyPlanClick} className="cursor-pointer">
-                <ActionCard
-                  title="7-Day Meal Plan"
-                  description="Generate a meal plan for the week, tailored to you."
-                  buttonText="Plan My Week"
-                  imageUrl="/meal-prep.jpg"
-                  imageAlt="Several glass containers with prepped meals"
-                  imageHint="meal prep"
-                />
-              </div>
-            )}
+            <div onClick={handleWeeklyPlanClick} className="cursor-pointer">
+              <ActionCard
+                title="7-Day Meal Plan"
+                description="Generate a meal plan for the week, tailored to you."
+                buttonText="Plan My Week"
+                imageUrl="/meal-prep.jpg"
+                imageAlt="Several glass containers with prepped meals"
+                imageHint="meal prep"
+              />
+            </div>
         </div>
       </main>
       <MealPreferencesForm open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} />

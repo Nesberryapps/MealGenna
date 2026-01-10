@@ -3,19 +3,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser, useFirebase } from '@/firebase/client';
+import { useAuth, useUser } from '@/firebase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Footer } from '@/components/features/Footer';
 import Link from 'next/link';
-import { ArrowLeft, LogOut, Star, Bell, User as UserIcon, Apple, Chrome } from 'lucide-react';
+import { ArrowLeft, LogOut, Bell, User as UserIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { GoogleAuthProvider, OAuthProvider, linkWithCredential, getRedirectResult, signInWithRedirect, signInWithPopup, AuthError, OAuthCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getRedirectResult } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import {
   AlertDialog,
@@ -32,12 +31,11 @@ import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 
 export default function ProfilePage() {
   const [isClient, setIsClient] = useState(false);
-  const { auth, firestore } = useFirebase();
+  const { auth } = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
-  const [isLinking, setIsLinking] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -53,7 +51,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (isClient) {
       const handleRedirect = async () => {
-          if (Capacitor.isNativePlatform() && auth && user && user.isAnonymous) {
+          if (Capacitor.isNativePlatform() && auth && user?.isAnonymous) {
               try {
                   const result = await getRedirectResult(auth);
                   if (result) {
@@ -106,35 +104,6 @@ export default function ProfilePage() {
       console.error('Error signing out:', error);
     }
   };
-  
-  const handleLinkAccount = async (provider: GoogleAuthProvider | OAuthProvider) => {
-    if (!auth || !user || !user.isAnonymous) return;
-    setIsLinking(true);
-
-    try {
-        if (Capacitor.isNativePlatform()) {
-            await signInWithRedirect(auth, provider);
-        } else {
-            const result = await signInWithPopup(auth, provider);
-            // This will link automatically if the email is verified and matches
-            toast({
-                title: 'Account Linked',
-                description: 'Your account is now permanent.',
-            });
-        }
-    } catch (error: any) {
-        console.error('Error linking account:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Linking Failed',
-            description: error.code === 'auth/credential-already-in-use'
-                ? 'This account is already linked to another user.'
-                : 'Could not link account. Please try again.',
-        });
-    } finally {
-        setIsLinking(false);
-    }
-};
 
   const handleNotificationToggle = async (checked: boolean) => {
     if (!('Notification' in window)) {
@@ -222,28 +191,10 @@ export default function ProfilePage() {
                 </Avatar>
                 <div className="pt-4">
                 <CardTitle>{user.isAnonymous ? 'Guest User' : user.displayName || 'User'}</CardTitle>
-                <CardDescription>{user.isAnonymous ? 'Link your account to save your data' : user.email}</CardDescription>
+                <CardDescription>{user.isAnonymous ? 'You are using a temporary guest account.' : user.email}</CardDescription>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                {user.isAnonymous && (
-                    <Card className="bg-secondary/50">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Link Your Account</CardTitle>
-                            <CardDescription>
-                                Create a permanent account to save your meal plans and use your subscription across multiple devices.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-2">
-                            <Button onClick={() => handleLinkAccount(new GoogleAuthProvider())} variant="outline" disabled={isLinking}>
-                                <Chrome className="mr-2" /> Link with Google
-                            </Button>
-                            <Button onClick={() => handleLinkAccount(new OAuthProvider('apple.com'))} variant="outline" disabled={isLinking}>
-                                <Apple className="mr-2" /> Link with Apple
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
                 <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="flex items-center space-x-3">
                     <Bell className="h-5 w-5 text-muted-foreground" />
@@ -257,12 +208,6 @@ export default function ProfilePage() {
                     onCheckedChange={handleNotificationToggle}
                 />
                 </div>
-                <Button asChild variant="default" className="w-full">
-                <Link href="/subscription">
-                    <Star className="mr-2" />
-                    Manage Subscription
-                </Link>
-                </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="w-full">
@@ -275,7 +220,7 @@ export default function ProfilePage() {
                         <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
                         <AlertDialogDescription>
                             {user.isAnonymous 
-                                ? "Signing out as a guest is permanent. To save your subscription and meal history, please link your account first." 
+                                ? "Signing out as a guest is permanent. To save your meal history, please create a permanent account first." 
                                 : "You will be signed out on this device."
                             }
                         </AlertDialogDescription>

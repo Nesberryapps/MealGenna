@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
-import { ArrowLeft, ChefHat, Download, Flame, RefreshCw, Scale, ShoppingCart, Star } from 'lucide-react';
+import { ArrowLeft, ChefHat, Download, Flame, RefreshCw, Scale, ShoppingCart, Star, Clapperboard } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
+import { useAdMob } from '@/hooks/use-admob';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -83,19 +84,17 @@ function MealIdeasContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [mealIdea, setMealIdea] = useState<GenerateMealIdeaOutput | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showRewardedAd, isLoading: isAdLoading } = useAdMob();
   
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const mealIdeaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
 
   const handleDownload = async () => {
     if (!mealIdeaRef.current || !mealIdea) {
@@ -152,42 +151,31 @@ function MealIdeasContent() {
   };
 
 
-  const getMealIdea = async () => {
+  const getMealIdea = async (isRegeneration = false) => {
+    if (isAdLoading) return;
     setLoading(true);
     setError(null);
-    setMealIdea(null);
+    if (!isRegeneration) {
+      setMealIdea(null);
+    }
     
     if (isUserLoading) return;
 
-    if (!user || !firestore) {
+    if (!user) {
       setError("Please wait, initializing app...");
       setLoading(false);
       return;
     }
 
-    const userRef = doc(firestore, 'users', user.uid);
+    // Show an ad before generating
+    const adWatched = await showRewardedAd();
+    if (!adWatched) {
+      setLoading(false);
+      setError("You need to watch an ad to generate a meal idea.");
+      return;
+    }
+
     try {
-        const userDoc = await getDoc(userRef);
-        const currentData = userDoc.data() as UserData | undefined;
-        setUserData(currentData ?? null);
-
-        const isPremium = currentData?.subscriptionTier === 'premium';
-        const trialGenerations = currentData?.trialGenerations || 0;
-        
-        const FREE_GENERATION_LIMIT = 3;
-
-        if (!isPremium && trialGenerations >= FREE_GENERATION_LIMIT) {
-            setError("You have used your free meal ideas.");
-            setLoading(false);
-            toast({
-                title: "Free Limit Reached",
-                description: `You have used your ${FREE_GENERATION_LIMIT} free meal generations. Please upgrade to Premium for unlimited access.`,
-                variant: "destructive",
-                action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
-            });
-            return;
-        }
-        
         const params: GenerateMealIdeaInput = {
           mealType: searchParams.get('mealType') || 'Breakfast',
           dietaryPreference: searchParams.get('dietaryPreference') || 'No preference',
@@ -198,26 +186,6 @@ function MealIdeasContent() {
 
         const result = await generateMealIdea(params);
         setMealIdea(result);
-
-        if (!isPremium) {
-            const updates: any = { trialGenerations: increment(1) };
-            if (trialGenerations === 0) {
-                updates.trialStartedAt = serverTimestamp();
-            }
-             if(userDoc.exists()){
-                await updateDoc(userRef, updates);
-            } else {
-                await setDoc(userRef, {
-                    id: user.uid,
-                    email: user.email,
-                    subscriptionTier: 'free',
-                    trialGenerations: 1,
-                    trialStartedAt: serverTimestamp(),
-                });
-            }
-            const newDoc = await getDoc(userRef);
-            if(newDoc.exists()) setUserData(newDoc.data() as UserData);
-        }
     } catch (e) {
       setError('Failed to generate meal idea. Please try again.');
       console.error(e);
@@ -296,11 +264,11 @@ function MealIdeasContent() {
           </header>
           <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
             <Card className="w-full overflow-hidden">
-              {loading && renderSkeleton()}
+              {(loading || isAdLoading) && renderSkeleton()}
               {error && <div className="p-6 text-center text-destructive">{error}</div>}
               
               <div ref={mealIdeaRef}>
-                {mealIdea && !loading && (
+                {mealIdea && !loading && !isAdLoading &&(
                     <div data-meal-idea-content>
                       <div className="relative h-64 w-full">
                         <Image src={mealIdea.imageDataUri} alt={mealIdea.title} fill className="object-cover" unoptimized/>
@@ -319,9 +287,6 @@ function MealIdeasContent() {
                             {mealIdea.ingredients.map((item, index) => (
                                <li key={index} className="flex items-center justify-between">
                                     <span>{item}</span>
-                                    {userData?.subscriptionTier === 'premium' && (
-                                        <IngredientShoppingLink ingredient={item} />
-                                    )}
                                 </li>
                             ))}
                           </ul>
@@ -348,16 +313,10 @@ function MealIdeasContent() {
                     </div>
                 )}
               </div>
-              {!loading && !error && mealIdea && (
+              {!loading && !isAdLoading && !error && mealIdea && (
                 <div className="p-6 pt-0 space-y-4">
-                  {userData?.subscriptionTier === 'premium' && (
-                      <Button onClick={handleDownload} variant="outline" className="w-full">
-                          <Download className="mr-2 h-4 w-4"/>
-                          Download PDF
-                  </Button>
-                  )}
-                  <Button onClick={getMealIdea} disabled={loading || isUserLoading} className="w-full">
-                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  <Button onClick={() => getMealIdea(true)} disabled={loading || isAdLoading || isUserLoading} className="w-full">
+                    <RefreshCw className={`mr-2 h-4 w-4 ${(loading || isAdLoading) ? 'animate-spin' : ''}`} />
                     Generate Another
                   </Button>
                 </div>
@@ -365,9 +324,9 @@ function MealIdeasContent() {
 
               {error && (
                  <div className="p-6 pt-0 space-y-4">
-                    <Button onClick={() => router.push('/subscription')} className="w-full">
-                        <Star className="mr-2 h-4 w-4" />
-                        Upgrade to Premium
+                    <Button onClick={() => getMealIdea()} className="w-full">
+                        <Clapperboard className="mr-2 h-4 w-4" />
+                        Watch Ad to Retry
                     </Button>
                 </div>
               )}

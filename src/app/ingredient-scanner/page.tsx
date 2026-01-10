@@ -15,16 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Footer } from '@/components/features/Footer';
-import { useUser, useFirestore } from '@/firebase/client';
-import { doc, getDoc, updateDoc, increment, serverTimestamp, setDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase/client';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type UserData = {
-    subscriptionTier: 'free' | 'premium';
-    trialGenerations?: number;
-    trialStartedAt?: { toDate: () => Date };
-}
+import { useAdMob } from '@/hooks/use-admob';
 
 async function identifyIngredientsFromImage(imageDataUri: string): Promise<IdentifyIngredientsFromImageOutput> {
     const response = await fetch('/api/genkit/flow/identifyIngredientsFlow', {
@@ -63,9 +57,8 @@ export default function IngredientScannerPage() {
   const [identifiedIngredients, setIdentifiedIngredients] = useState<string[]>([]);
   const [mealIdeas, setMealIdeas] = useState<string[]>([]);
   const { toast } = useToast();
-  const router = useRouter();
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
+  const { showRewardedAd, isLoading: isAdLoading } = useAdMob();
 
   useEffect(() => {
     setIsClient(true);
@@ -113,9 +106,9 @@ export default function IngredientScannerPage() {
   }, [isClient, toast]);
 
   const handleScan = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || isAdLoading) return;
     
-    if (isUserLoading || !user || !firestore) {
+    if (isUserLoading || !user) {
         toast({
             title: "Loading...",
             description: "Please wait until user data is loaded.",
@@ -164,53 +157,22 @@ export default function IngredientScannerPage() {
   };
   
   const handleGenerateMeals = async (ingredients: string[]) => {
-    if (!user || !firestore) return;
+    if (!user) return;
+
+    const adWatched = await showRewardedAd();
+    if (!adWatched) {
+        toast({
+            title: 'Ad Required',
+            description: 'You must watch an ad to generate meal ideas.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
     setIsGenerating(true);
-
-    const userRef = doc(firestore, 'users', user.uid);
-    
     try {
-        const userDoc = await getDoc(userRef);
-        
-        const userData = userDoc.data() as UserData | undefined;
-        const isPremium = userData?.subscriptionTier === 'premium';
-        const trialGenerations = userData?.trialGenerations || 0;
-        
-        const FREE_GENERATION_LIMIT = 3;
-
-        if (!isPremium && trialGenerations >= FREE_GENERATION_LIMIT) {
-            toast({
-                title: "Free Limit Reached",
-                description: `You have used your ${FREE_GENERATION_LIMIT} free meal generations. Please upgrade to Premium.`,
-                variant: "destructive",
-                action: <Button variant="secondary" onClick={() => router.push('/subscription')}>Upgrade</Button>
-            });
-            setIsGenerating(false);
-            return;
-        }
-
         const { mealIdeas } = await generateMealIdeasFromIngredients(ingredients);
         setMealIdeas(mealIdeas);
-
-        if (!isPremium) {
-            const updates: any = { trialGenerations: increment(1) };
-            if (trialGenerations === 0) {
-                updates.trialStartedAt = serverTimestamp();
-            }
-
-            if(userDoc.exists()){
-                await updateDoc(userRef, updates);
-            } else {
-                await setDoc(userRef, {
-                    id: user.uid,
-                    email: user.email,
-                    subscriptionTier: 'free',
-                    trialGenerations: 1,
-                    trialStartedAt: serverTimestamp(),
-                });
-            }
-        }
-
     } catch (error) {
         console.error('Error generating meal ideas:', error);
         toast({
@@ -292,17 +254,17 @@ export default function IngredientScannerPage() {
                                 </Alert>
                              </div>
                         )}
-                         {(isScanning && !isGenerating) && (
+                         {(isScanning || isAdLoading) && (
                             <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center space-y-2">
                                 <Loader2 className="h-8 w-8 animate-spin" />
-                                <p>Scanning for ingredients...</p>
+                                <p>{isAdLoading ? 'Loading ad...' : 'Scanning for ingredients...'}</p>
                             </div>
                         )}
                     </div>
 
-                    <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading} className="w-full">
-                        {isScanning || isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                        Scan Ingredients
+                    <Button onClick={handleScan} disabled={isScanning || isGenerating || hasCameraPermission !== true || isUserLoading || isAdLoading} className="w-full">
+                        {isScanning || isGenerating || isAdLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                        Scan & Generate
                     </Button>
 
                     {identifiedIngredients.length > 0 && (

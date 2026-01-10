@@ -14,7 +14,7 @@
     "build:android:release": "npx cap sync android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
-    "@capacitor/assets": "^3.0.5",
+    "@capacitor-community/admob": "5.4.0",
     "@capacitor/core": "5.7.4",
     "@genkit-ai/google-genai": "1.20.0",
     "@genkit-ai/next": "1.20.0",
