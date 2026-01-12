@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
+import { useAdMob } from '@/hooks/use-admob';
 
 type UserData = {
     subscriptionTier: 'free' | 'premium';
@@ -89,12 +90,26 @@ function MealIdeasContent() {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const mealIdeaRef = useRef<HTMLDivElement>(null);
+  const { showRewardedVideo, isAdShowing } = useAdMob();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const firestore = useFirestore();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleDownload = async () => {
+  useEffect(() => {
+    if (user && firestore) {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setUserData(docSnap.data() as UserData);
+        }
+      });
+    }
+  }, [user, firestore]);
+
+  const performDownload = async () => {
     if (!mealIdeaRef.current || !mealIdea) {
         toast({
             variant: "destructive",
@@ -148,14 +163,22 @@ function MealIdeasContent() {
     }
   };
 
+  const handleDownload = () => {
+    if (userData?.subscriptionTier === 'premium') {
+      performDownload();
+    } else {
+      showRewardedVideo(performDownload);
+    }
+  };
 
-  const getMealIdea = async (isRegeneration = false) => {
+
+  const performMealGeneration = async (isRegeneration = false) => {
     setLoading(true);
     setError(null);
     if (!isRegeneration) {
       setMealIdea(null);
     }
-    
+
     if (isUserLoading) return;
 
     if (!user) {
@@ -183,11 +206,19 @@ function MealIdeasContent() {
     }
   };
 
-  useEffect(() => {
-    if(isClient && !isUserLoading) {
-      getMealIdea();
+  const getMealIdea = (isRegeneration = false) => {
+    if (userData?.subscriptionTier === 'premium') {
+      performMealGeneration(isRegeneration);
+    } else {
+      showRewardedVideo(() => performMealGeneration(isRegeneration));
     }
-  }, [isClient, searchParams, user, isUserLoading]);
+  }
+
+  useEffect(() => {
+    if(isClient && !isUserLoading && user) {
+      setLoading(false);
+    }
+  }, [isClient, user, isUserLoading]);
   
   const renderSkeleton = () => (
     <div className="w-full">
@@ -248,7 +279,9 @@ function MealIdeasContent() {
                 <Logo />
                 <h1 className="text-xl font-bold text-foreground">MealGenna</h1>
               </div>
-              <div className="w-8"></div>
+               <Button variant="ghost" size="icon" onClick={handleDownload} disabled={!mealIdea || isAdShowing}>
+                <Download />
+              </Button>
             </div>
           </header>
           <main className="flex-grow w-full max-w-md mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
@@ -276,6 +309,7 @@ function MealIdeasContent() {
                             {mealIdea.ingredients.map((item, index) => (
                                <li key={index} className="flex items-center justify-between">
                                     <span>{item}</span>
+                                    <IngredientShoppingLink ingredient={item} />
                                 </li>
                             ))}
                           </ul>
@@ -302,11 +336,17 @@ function MealIdeasContent() {
                     </div>
                 )}
               </div>
+              {!loading && !error && !mealIdea && (
+                 <div className="p-6 pt-0 space-y-4">
+                    <Button onClick={() => getMealIdea()} disabled={isAdShowing} className="w-full">
+                         {isAdShowing ? 'Loading Ad...' : <><Clapperboard className="mr-2 h-4 w-4"/> Watch Ad to Generate</>}
+                    </Button>
+                </div>
+              )}
               {!loading && !error && mealIdea && (
                 <div className="p-6 pt-0 space-y-4">
-                  <Button onClick={() => getMealIdea(true)} disabled={loading || isUserLoading} className="w-full">
-                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    Generate Another
+                  <Button onClick={() => getMealIdea(true)} disabled={loading || isUserLoading || isAdShowing} className="w-full">
+                    {isAdShowing ? 'Loading Ad...' : <><RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Generate Another</>}
                   </Button>
                 </div>
               )}

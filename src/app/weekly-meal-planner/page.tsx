@@ -22,15 +22,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Logo } from '@/components/Logo';
-import { ArrowLeft, Download, Loader2, WandSparkles } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, WandSparkles, Clapperboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Footer } from '@/components/features/Footer';
 import { WebRedirectGuard } from '@/components/WebRedirectGuard';
-import { useUser } from '@/firebase/client';
+import { useUser, useFirestore } from '@/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAdMob } from '@/hooks/use-admob';
+import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   dietaryPreferences: z.string().min(1, 'Please enter at least one preference.'),
@@ -39,6 +41,10 @@ const formSchema = z.object({
 });
 
 type WeeklyMealPlannerFormValues = z.infer<typeof formSchema>;
+
+type UserData = {
+    subscriptionTier: 'free' | 'premium';
+}
 
 async function generate7DayMealPlan(values: Generate7DayMealPlanInput): Promise<Generate7DayMealPlanOutput> {
     const response = await fetch('/api/genkit/flow/generate7DayMealPlanFlow', {
@@ -61,10 +67,25 @@ export default function WeeklyMealPlannerPage() {
   const { toast } = useToast();
   
   const { user, isUserLoading } = useUser();
+  const { showRewardedVideo, isAdShowing } = useAdMob();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [adWatchCount, setAdWatchCount] = useState(0);
+  const firestore = useFirestore();
   
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (user && firestore) {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setUserData(docSnap.data() as UserData);
+        }
+      });
+    }
+  }, [user, firestore]);
   
   const dayRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);
   if (mealPlan && dayRefs.current.length !== mealPlan.length) {
@@ -80,7 +101,7 @@ export default function WeeklyMealPlannerPage() {
     },
   });
 
-  async function onSubmit(values: WeeklyMealPlannerFormValues) {
+  const performMealPlanGeneration = async (values: WeeklyMealPlannerFormValues) => {
     setLoading(true);
     setMealPlan(null);
 
@@ -99,11 +120,28 @@ export default function WeeklyMealPlannerPage() {
       });
     } finally {
       setLoading(false);
+      setAdWatchCount(0);
     }
   }
 
-  const handleDownloadDay = async (dayIndex: number, dayNumber: number) => {
-    const dayContent = dayRefs.current[dayIndex]?.current;
+  async function onSubmit(values: WeeklyMealPlannerFormValues) {
+    if (userData?.subscriptionTier === 'premium') {
+      performMealPlanGeneration(values);
+    } else {
+        if (adWatchCount < 2) {
+            showRewardedVideo(() => {
+                const newCount = adWatchCount + 1;
+                setAdWatchCount(newCount);
+                if (newCount === 2) {
+                    performMealPlanGeneration(values);
+                }
+            });
+        }
+    }
+  }
+
+  const performDownload = async (dayIndex: number, dayNumber: number) => {
+     const dayContent = dayRefs.current[dayIndex]?.current;
     if (!dayContent) {
         toast({
             variant: "destructive",
@@ -155,6 +193,14 @@ export default function WeeklyMealPlannerPage() {
             description: "Could not create the PDF file. Please try again."
         });
     }
+  }
+
+  const handleDownloadDay = (dayIndex: number, dayNumber: number) => {
+     if (userData?.subscriptionTier === 'premium') {
+      performDownload(dayIndex, dayNumber);
+    } else {
+      showRewardedVideo(() => performDownload(dayIndex, dayNumber));
+    }
   };
   
   const renderLoadingSkeleton = () => (
@@ -189,6 +235,16 @@ export default function WeeklyMealPlannerPage() {
 
   if (!isClient || isUserLoading) {
     return renderLoadingSkeleton();
+  }
+
+  const getButtonText = () => {
+    if (loading) return <Loader2 className="mr-2 h-4 w-4 animate-spin" />;
+    if (isAdShowing) return 'Loading Ad...';
+    if (userData?.subscriptionTier !== 'premium') {
+      if (adWatchCount === 0) return <><Clapperboard className="mr-2 h-4 w-4"/> Watch Ad (1/2) to Generate</>;
+      if (adWatchCount === 1) return <><Clapperboard className="mr-2 h-4 w-4"/> Watch Ad (2/2) to Generate</>;
+    }
+    return <><WandSparkles className="mr-2 h-4 w-4" /> Generate My Plan</>;
   }
 
   return (
@@ -265,9 +321,8 @@ export default function WeeklyMealPlannerPage() {
                         </FormItem>
                     )}
                     />
-                    <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-                    Generate My Plan
+                    <Button type="submit" disabled={loading || isAdShowing} className="w-all">
+                        {getButtonText()}
                     </Button>
                 </form>
                 </Form>
@@ -312,10 +367,9 @@ export default function WeeklyMealPlannerPage() {
                                     </div>
                                 </div>
                             </div>
-                            <Button variant="outline" onClick={() => handleDownloadDay(index, day.day)} className="mt-4 w-full">
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Download Day {day.day}
-                                </Button>
+                            <Button variant="outline" onClick={() => handleDownloadDay(index, day.day)} disabled={isAdShowing} className="mt-4 w-full">
+                                {isAdShowing ? 'Loading Ad...' : <><Download className="mr-2 h-4 w-4" /> Download Day {day.day}</>}
+                            </Button>
                             </AccordionContent>
                         </AccordionItem>
                     </Card>
