@@ -9,11 +9,7 @@
     pkgs.zulu
   ];
   # Sets environment variables in the workspace
-  env = {
-    NEXT_PUBLIC_RECAPTCHA_SITE_KEY = "6Lci1EYsAAAAACM5Oz6MBKauRTVtcwCPERKjgdXq"; # Replace with your actual key
-    NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyCw0GBnFTxp5eFLDaLAKq4TVaf0XTqPNRg"; # Add or update this line
-    # ... other Firebase related environment variables like NEXT_PUBLIC_FIREBASE_AUTH_DOM
-  };
+  env = {};
   # This adds a file watcher to startup the firebase emulators. The emulators will only start if
   # a firebase.json file is written into the user's directory
   services.firebase.emulators = {
